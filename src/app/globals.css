@@ -1,26 +1,41 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import 'tailwindcss';
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy: #0e1a2b;
+  --color-blue-deep: #17304f;
+  --color-blue-mid: #1d3b60;
+  --color-amber: #f5a524;
+  --color-amber-dark: #d98c0c;
+  --color-success: #1f9d55;
+  --color-danger: #c8343b;
+  --color-soft: #f3f5f8;
+  --color-ink: #0e1a2b;
+  --color-muted: #55627a;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgba(14, 26, 43, 0.7);
 }

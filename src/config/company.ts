@@ -4,12 +4,12 @@ export const company = {
   wordmark: { prefix: '951', accent: 'EXPRESS' },
   phone: '(951) 427-9763',
   phoneHref: 'tel:+19514279763',
-  email: 'info@example.com', // TODO(client): public contact email
+  email: '', // TODO(client): public contact email (hidden until set)
   address: {
-    street: 'TODO(client): street address',
+    street: '', // TODO(client): street address (hidden until set)
     city: 'Corona',
     state: 'CA',
-    zip: 'TODO(client)',
+    zip: '', // TODO(client)
   },
   usdot: '4020917',
   mc: '1516594',
