@@ -119,6 +119,8 @@ export const leads = pgTable('leads', {
   operable: boolean('operable').notNull(),
   modified: boolean('modified').notNull(),
   topDeck: boolean('top_deck').notNull().default(false),
+  /** Optional preference only: a lead never holds a spot. */
+  preferredWeekStart: date('preferred_week_start', { mode: 'string' }),
   name: text('name').notNull(),
   phone: text('phone').notNull(),
   email: text('email').notNull(),

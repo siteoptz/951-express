@@ -77,7 +77,7 @@ export function ZipCheckBox() {
       .replace('{opposite}', regionLabels[result.opposite]);
     message = (
       <>
-        <p className="font-semibold text-success">{text}</p>
+        <p className="font-semibold text-success-dark">{text}</p>
         <Button className="mt-3 w-full" onClick={() => openBooking({ pickupZip: result.zip })}>
           {t.cta}
         </Button>

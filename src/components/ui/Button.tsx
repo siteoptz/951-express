@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 
 const base =
-  'inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-bold transition-colors';
+  'inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50';
 const variants = {
   primary: 'bg-amber text-navy hover:bg-amber-dark',
   ghost: 'border-2 border-white/60 text-white hover:bg-white/10',

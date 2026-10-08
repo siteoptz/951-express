@@ -217,6 +217,10 @@ in a row.
 
 ## Phase 5: Booking modal, Step 1 (Qualify & Quote)
 
+**Status:** built, awaiting approval. Playwright (`npm run e2e`, against the Neon dev branch) covers both directions,
+same-region and unserved ZIPs, unknown vehicles, the lead path, a full week, top deck, and axe on every state.
+The Step 2 summary is a placeholder: its payment button stays disabled until Phase 6.
+
 **Goal:** proposal Figure 4, working end to end up to "See My Price & Deposit".
 
 1. **Modal shell:** an accessible dialog (focus trap, Esc to close with a confirm prompt if partly filled,

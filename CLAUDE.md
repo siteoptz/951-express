@@ -59,7 +59,7 @@ password-protected /admin.
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 
 ## Commands
-- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright)
+- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright with vPIC mocked; `npm run e2e:live` is the real-NHTSA smoke test; uses the DATABASE_URL in .env.local: a dev branch only)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 

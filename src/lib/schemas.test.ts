@@ -38,6 +38,15 @@ describe('quoteRequestSchema (large-vehicle lead)', () => {
       quoteRequestSchema.safeParse({ ...valid, vehicle: { ...vehicle, year: 1800 } }).success,
     ).toBe(false);
   });
+  it('takes an optional preferred pickup week that must be a Monday', () => {
+    expect(
+      quoteRequestSchema.safeParse({ ...valid, preferredWeekStart: '2026-10-19' }).success,
+    ).toBe(true);
+    expect(
+      quoteRequestSchema.safeParse({ ...valid, preferredWeekStart: '2026-10-20' }).success,
+    ).toBe(false);
+    expect(quoteRequestSchema.parse(valid).preferredWeekStart).toBeUndefined();
+  });
   it('allows large as a selectable class', () => {
     expect(selectableClass.safeParse('large').success).toBe(true);
     expect(selectableClass.safeParse('huge').success).toBe(false);

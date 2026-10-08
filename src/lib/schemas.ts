@@ -53,6 +53,10 @@ export const quoteRequestSchema = z.object({
   operable: z.boolean(),
   modified: z.boolean(),
   topDeck: z.boolean().default(false),
+  /** Only used when the vehicle is unknown and the customer picked "large". The server re-classifies. */
+  selectedClass: selectableClass.optional(),
+  /** Optional: a Monday the customer would like. Preference only, no spot is held. */
+  preferredWeekStart: weekStartSchema.optional(),
   notes: notes.optional(),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
