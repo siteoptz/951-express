@@ -170,6 +170,9 @@ performance and accessibility; there are no layout shifts from images.
 
 ## Phase 4: Database + race-safe capacity
 
+**Status:** done and verified on the Neon `dev` branch: migration applied, seed run twice with no changes, and the
+13-hold concurrency test passed 10 times in a row.
+
 **Goal:** persistent bookings, with a hold system that can never sell spot 13.
 
 1. Provision Neon Postgres from the Vercel Marketplace, connected to the project so `DATABASE_URL` is set for
@@ -177,13 +180,14 @@ performance and accessibility; there are no layout shifts from images.
 2. **Drizzle schema** (`src/db/schema.ts`):
    - `routes` (id, slug, name, pickup_region, delivery_region, weekly_capacity int default 12,
      active bool), seeded from `routes.ts` (`west-to-east`, `east-to-west`).
-   - `leads` (id, created_at, name, phone, email, pickup_zip, delivery_zip, vehicle jsonb, operable bool,
-     modified bool, notes) for the quote-required (large vehicle) form.
+   - `leads` (id, created_at, route_id, pickup_zip, delivery_zip, vehicle jsonb, operable, modified, top_deck,
+     name, phone, email, notes, status `new|contacted|closed`) for the quote-required (large vehicle) form.
    - `week_overrides` (route_id, week_start date, capacity_override int null, closed bool), with a primary
      key of (route_id, week_start).
    - `bookings` (id uuid, public_token text unique, status enum `held|paid|completed|cancelled|expired`,
-     route_id, week_start date, vehicle jsonb, operable bool, modified bool, top_deck bool, personal_items bool,
-     size_class, total_cents, deposit_cents, balance_cents, needs_review bool, terms_version,
+     route_id, week_start date, pickup_zip, delivery_zip, pickup_region, delivery_region, vehicle jsonb,
+     operable bool, modified bool, top_deck bool, personal_items bool, size_class,
+     size_class_source `table|customer`, total_cents, deposit_cents, balance_cents, needs_review bool, terms_version,
      terms_accepted_at, stripe_session_id unique, stripe_payment_intent, payer_email, hold_expires_at,
      customer jsonb null, pickup_address jsonb null, delivery_address jsonb null, notes text, created_at,
      paid_at, details_submitted_at, cancelled_at).
@@ -197,10 +201,10 @@ performance and accessibility; there are no layout shifts from images.
      then insert a `held` booking with `hold_expires_at = now() + holdMinutes`. If the week is full, it
      returns `{ full: true, nextAvailableWeek }`.
    - `getAvailability(routeId)` returns each bookable week with `{ capacity, taken, remaining, closed }`.
-4. A Vercel Cron job (`vercel.json`, every 15 min) hitting `/api/cron/expire-holds`, protected by
+4. A Vercel Cron job (`vercel.json`, daily because the Hobby plan allows nothing more frequent; every 15 min on Pro) hitting `/api/cron/expire-holds`, protected by
    `CRON_SECRET`, marks stale holds `expired`. The counting query ignores stale holds anyway, so the cron
    job is only cleanup.
-5. **Concurrency test:** fire 13 `createHold` calls in parallel against a test database for one route
+5. **Concurrency test** (`src/server/capacity.concurrency.test.ts`, runs only with `TEST_DATABASE_URL` set to a dev branch): fire 13 `createHold` calls in parallel against a test database for one route
    and week. Exactly 12 succeed and 1 returns `full`.
 
 **Done when:** migrations run on Preview, the seed is idempotent, and the concurrency test passes ten times

@@ -10,12 +10,17 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --coverage",
     "e2e": "playwright test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
+    "@neondatabase/serverless": "^1.2.0",
     "d3-geo": "^3.1.1",
     "date-fns": "^4.4.0",
+    "drizzle-orm": "^0.45.4",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -36,12 +41,14 @@
     "@types/topojson-specification": "^1.0.5",
     "@types/zipcodes": "^8.0.5",
     "@vitest/coverage-v8": "^5.0.3",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "fflate": "^0.8.3",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   }
