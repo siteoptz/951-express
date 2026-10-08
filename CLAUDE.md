@@ -7,14 +7,21 @@ Work through it one phase at a time. Do not start a phase until the previous pha
 
 ## What we are building
 One landing page with a booking modal:
-1. **Qualify & Quote:** pickup/delivery zips checked against service routes; vehicle year/make/model sets a
-   size class; operable and modified radios; personal items radio (Yes shows "100 lbs included. Anything over
-   100 lbs is at the driver's discretion."); pickup-week calendar limited to 12 spots per route, per direction,
-   per week; required Terms & Conditions checkbox linked to /terms.
+1. **Qualify & Quote:** pickup/delivery ZIPs checked against two regions, WEST and EAST, defined only by the
+   client's ZIP lists (`data/raw/`, built into `src/data/zips/`). A shipment must cross regions; same-region
+   moves are rejected. The two routes, `west-to-east` and `east-to-west`, each have 12 spots per week. Once the
+   pickup ZIP resolves, the UI shows "Shipping West → East" (or East → West) and the delivery ZIP accepts only the
+   opposite list. Vehicle year/make/model sets a size class (7 priced classes); unknown vehicles let the
+   customer pick a class and the booking gets `needsReview`. Large SUVs and pickups have no online price: they
+   get a "Request a personalized quote" form that stores a lead (no deposit, no hold). Options: operable and
+   modified radios, a Standard / Top Deck Load (+$150) radio, personal items radio (Yes shows "100 lbs included.
+   Anything over 100 lbs is at the driver's discretion."), a pickup-week calendar limited to 12 spots per route
+   per week, and a required Terms & Conditions checkbox linked to /terms.
 2. **Cart & Deposit:** price breakdown plus deposit paid through Stripe Embedded Checkout.
 3. **Customer details** (only after payment): name, phone, email, address, pickup and delivery addresses, notes.
 4. **Email:** full booking record to the 951 Express team, plus a confirmation to the customer.
-Also: service-area map, company sections with real photography, /terms page, password-protected /admin.
+Also: service-area map (from `src/data/zips/coverage.json`), company sections with real photography, /terms page,
+password-protected /admin.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind CSS, deployed on Vercel (Git-connected).
@@ -24,12 +31,15 @@ Also: service-area map, company sections with real photography, /terms page, pas
 - Resend + React Email for transactional email.
 - NHTSA vPIC API for vehicle makes and models (free, no key).
 - Map: `d3-geo` + `us-atlas` + `topojson-client`, rendered as an SVG React component (no map-library dependency).
-- Validation: `zod` on both client and server. Tests: Vitest (unit) + Playwright (e2e).
+- Validation: `zod` on both client and server. Tests: Vitest (unit, 95% coverage gate on `src/lib`) + Playwright (e2e).
+- ZIP data: `node scripts/build-zip-data.mjs` regenerates `src/data/zips/*` from `data/raw/`; the `zipcodes` package validates it.
 
 ## Rules that must never be broken
 - **The server is the only source of truth for price and capacity.** Never trust a total, deposit, route,
   or availability sent from the browser. Recompute everything server-side before creating a hold or a
   Stripe session.
+- **The full ZIP lists are server-only.** Import `src/data/zips/{west,east}.json` only from server modules
+  (`*.server.ts`, with `import 'server-only'`). Client code may use `coverage.json` only.
 - **Capacity must be race-safe.** Check and insert holds inside one DB transaction guarded by
   `pg_advisory_xact_lock(route_id, week_number)`. A concurrency test (13 simultaneous holds, exactly 12
   succeed) must stay green.
@@ -49,7 +59,7 @@ Also: service-area map, company sections with real photography, /terms page, pas
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 
 ## Commands
-- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest), `npm run e2e` (Playwright)
+- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 

@@ -10,7 +10,8 @@ to start it.
 | 0 | Repo audit, project setup, image inventory, config skeleton | Wk 1 |
 | 1 | Design system + static landing page | Wk 1–2 |
 | 2 | Interactive service-area map | Wk 2 |
-| 3 | Business logic: zips, routes, pricing, weeks (pure + tested) | Wk 2 |
+| 3A | Booking rules: ZIP regions, routing, pricing, vehicle classes (pure + tested) | Wk 2 |
+| 3B | Remaining business logic: vPIC helpers, weeks, shared schemas | Wk 2 |
 | 4 | Database + race-safe capacity holds | Wk 2–3 |
 | 5 | Booking modal, Step 1 (Qualify & Quote) | Wk 3 |
 | 6 | Step 2: cart + Stripe deposit + webhooks | Wk 3 |
@@ -104,13 +105,16 @@ performance and accessibility; there are no layout shifts from images.
 
 1. Install `d3-geo`, `topojson-client`, and `us-atlas`. Build `ServiceAreaMap` as a server-rendered SVG
    using `states-albers-10m.json`, so no projection runs on the client.
-2. Fill states from `service-area.ts`: home state amber, serviced states navy, others `#E4E8EE`, with white
-   borders. Mark the Corona terminal with a pin.
-3. A small client wrapper adds a hover/focus tooltip (state name, plus "We service this state" or
-   "Not currently serviced") and keyboard focus on states (`role="img"` with `aria-label` on the SVG, and
-   a visually hidden list of serviced states for screen readers).
+2. Drive it from `src/data/zips/coverage.json` (Phase 3A): per-region state ZIP counts plus lat/lng points
+   (`[lat, lng, zipCount]` per 0.25° cell). Never import `west.json` or `east.json`. Fill states that have West
+   coverage in navy and East coverage in a second brand blue (legend: "West pickup/delivery", "East
+   pickup/delivery"), others `#E4E8EE`, with white borders. Plot the coverage points as small dots so partly covered
+   states (for example Texas for El Paso, or the Georgia blocks) read honestly. Mark the Corona terminal with a pin.
+3. A small client wrapper adds a hover/focus tooltip (state name, region, and "We service part of this state" or
+   "Not currently serviced") and keyboard focus on states (`role="img"` with `aria-label` on the SVG, and a
+   visually hidden list of covered states for screen readers).
 4. Add a legend and a "Check My Route" button that opens the booking modal.
-5. Test that the map and `routes.ts` agree: every state in any route appears as serviced on the map.
+5. Test that every state in `coverage.json` is drawn as covered, and that no state outside it is.
 
 **Done when:** the map renders with JS disabled, the tooltip works with mouse and keyboard, and the test passes.
 
@@ -118,40 +122,48 @@ performance and accessibility; there are no layout shifts from images.
 
 ---
 
-## Phase 3: Business logic (pure functions, fully tested)
+## Phase 3A: Booking rules (pure functions, fully tested)
 
-**Goal:** all decision logic lives in `src/lib/` with no UI or DB dependencies, so it can be tested in isolation.
+**Status:** done. The client's rules replaced the placeholder routes and pricing.
 
-1. **`zip.ts`:** map ZIP to state using the `zipcodes` npm package (offline). Also validate the 5-digit format.
-2. **`routing.ts`:** `resolveRoute(pickupZip, deliveryZip)` returns `{ ok: true, route }`, or
-   `{ ok: false, reason: 'invalid_zip' | 'pickup_out_of_area' | 'delivery_out_of_area' | 'no_route' }`.
-   Direction matters: CA→TX and TX→CA are different routes.
-3. **`vehicles.ts`:** helpers for NHTSA vPIC:
+- **ZIP data:** raw client files live in `data/raw/`. `scripts/build-zip-data.mjs` normalizes to 5-digit strings,
+  removes duplicates, checks each ZIP with the `zipcodes` package, refuses to write if a ZIP is in both lists, and
+  writes `src/data/zips/{west,east,coverage}.json`. The full lists are server-only.
+- **Routing** (`src/lib/routing.ts`, `routing.server.ts`): two regions defined by the lists; a shipment must cross
+  regions. `resolveRoute` returns `{ ok: true, route, pickupRegion, deliveryRegion }` or `ok: false` with
+  `invalid_zip | pickup_not_served | delivery_not_served | same_region`. `resolvePickup` drives the "Shipping
+  West → East" label and restricts the delivery ZIP to the opposite list. Routes: `west-to-east`, `east-to-west`,
+  12 per week each.
+- **Pricing** (`src/lib/pricing.ts`, `src/config/pricing.ts`): seven classes from $1,400 to $1,900; large vehicles
+  return `{ quoteRequired: true }`. Surcharges: inoperable +$150, modified +$100, Top Deck Load +$150. Deposit 25%.
+- **Vehicle classes** (`src/lib/size-class.ts`, `src/config/vehicle-classes.ts`): longest-prefix model lists plus
+  year rules for Ranger, Tacoma, and Frontier. Unknown returns `null`; `resolveSizeClass` is the server decision
+  and never lets a customer pick a cheaper class than the table assigns.
+- **Quote-required path:** `quoteRequestSchema` in `src/lib/schemas.ts`. The lead is stored in Phase 4 (`leads`
+  table) and emailed in Phase 7.
+- Vitest with a 95% coverage gate on `src/lib`.
+
+---
+
+## Phase 3B: Remaining business logic
+
+1. **`vehicles.ts`:** helpers for NHTSA vPIC:
    - makes: `GetMakesForVehicleType/car` and `/truck` (merged and de-duplicated)
    - models: `GetModelsForMakeYear/make/{make}/modelyear/{year}/vehicletype/{type}`
    Cache with `fetch(..., { next: { revalidate: 86400 } })`. Verify these endpoints against the live API
    before relying on them.
-4. **`size-class.ts`:** `classifyVehicle({ year, make, model, vpicType })`. Passenger Car maps to sedan;
-   MPV maps to mid-size SUV unless the model is in a full-size override list (Tahoe, Suburban, Yukon,
-   Expedition, Sequoia, Escalade, Navigator, Armada, QX80, Wagoneer, minivans); Truck maps to pickup unless
-   the model is in an oversized list (any 2500/3500/250/350 heavy-duty pickup or dually). Overrides live in
-   `src/config/vehicle-overrides.ts`. Unknown vehicles return `null`, and the UI then asks the customer to pick
-   a size manually.
-5. **`pricing.ts`:** `calculateQuote({ sizeClass, operable, modified })` returns
-   `{ baseCents, surcharges[], totalCents, depositCents, balanceCents, needsReview }`. Round the deposit to
-   whole cents and make sure deposit plus balance always equals the total.
-6. **`weeks.ts`:** `bookableWeeks(now)` returns the next `weeksShown` Monday-start weeks in
+2. **`weeks.ts`:** `bookableWeeks(now)` returns the next `weeksShown` Monday-start weeks in
    America/Los_Angeles, skipping any week that starts within `leadDays`. Use `date-fns` + `@date-fns/tz`.
    Labels look like "Oct 19 – 25" and "Oct 26 – Nov 1".
-7. **`schemas.ts`:** zod schemas for the Step 1 payload, the Step 3 payload, and admin actions. These are
-   shared by client and server.
-8. **Tests** cover every branch, including both route directions, out-of-area zips, the 100 lb notice flag,
-   deposit rounding, weeks crossing a month or year boundary, and DST changes.
+3. **`schemas.ts`:** add the zod schemas for the Step 1 payload (including `topDeck` and the optional selected
+   class), the Step 3 payload, and admin actions. Shared by client and server.
+4. **Tests** cover every branch, including the 100 lb notice flag, weeks crossing a month or year boundary, and
+   DST changes. Keep `src/lib` at 95% coverage or better.
 
-**Done when:** `npm test` passes with at least 95% line coverage on `src/lib/`.
+**Done when:** `npm test` passes with at least 95% coverage on `src/lib/`.
 
-> **Prompt:** Do Phase 3 of docs/BUILD_PLAN.md. Write the pure business-logic modules and their tests. Show
-> me the pricing and routing test cases before moving on.
+> **Prompt:** Do Phase 3B of docs/BUILD_PLAN.md. Write the vPIC helpers, the weeks logic, and the shared
+> schemas with tests.
 
 ---
 
@@ -162,12 +174,14 @@ performance and accessibility; there are no layout shifts from images.
 1. Provision Neon Postgres from the Vercel Marketplace, connected to the project so `DATABASE_URL` is set for
    Preview and Production. Use a separate Neon branch for local dev and Preview.
 2. **Drizzle schema** (`src/db/schema.ts`):
-   - `routes` (id, slug, name, origin_states text[], dest_states text[], weekly_capacity int default 12,
-     active bool), seeded from `routes.ts`.
+   - `routes` (id, slug, name, pickup_region, delivery_region, weekly_capacity int default 12,
+     active bool), seeded from `routes.ts` (`west-to-east`, `east-to-west`).
+   - `leads` (id, created_at, name, phone, email, pickup_zip, delivery_zip, vehicle jsonb, operable bool,
+     modified bool, notes) for the quote-required (large vehicle) form.
    - `week_overrides` (route_id, week_start date, capacity_override int null, closed bool), with a primary
      key of (route_id, week_start).
    - `bookings` (id uuid, public_token text unique, status enum `held|paid|completed|cancelled|expired`,
-     route_id, week_start date, vehicle jsonb, operable bool, modified bool, personal_items bool,
+     route_id, week_start date, vehicle jsonb, operable bool, modified bool, top_deck bool, personal_items bool,
      size_class, total_cents, deposit_cents, balance_cents, needs_review bool, terms_version,
      terms_accepted_at, stripe_session_id unique, stripe_payment_intent, payer_email, hold_expires_at,
      customer jsonb null, pickup_address jsonb null, delivery_address jsonb null, notes text, created_at,
@@ -205,17 +219,24 @@ in a row.
    labeled "Vehicle & Route", "Deposit", "Your Details". Form state lives in a `useReducer`, persisted to
    `sessionStorage` so a refresh doesn't lose answers.
 2. **Fields, in this order:**
-   1. Pickup ZIP + Delivery ZIP. On blur of the second zip, call `POST /api/qualify`. Success shows
-      "✓ Great news, we service this route: CA → TX". Failure shows a friendly message and a click-to-call
-      button, and every later field stays disabled.
+   1. Pickup ZIP + Delivery ZIP. The ZIP lists are server-only, so call `POST /api/qualify` (pickup on blur, then
+      both). When the pickup ZIP resolves, show "Shipping West → East" (or East → West); the delivery ZIP then
+      accepts only the opposite region. Same-region and not-served failures use the copy in
+      `src/config/routes.ts`, and a not-served failure adds the click-to-call button. Every later field stays
+      disabled until the route resolves.
    2. Year, Make, and Model as dependent dropdowns (`GET /api/vehicles/makes?year=`,
       `/api/vehicles/models?year=&make=`), with type-to-search on the long lists. Once all three are set,
-      show the size class chip. If the vehicle isn't classified, show size radio cards.
+      show the size class chip. If the vehicle isn't classified, show class cards with the example vehicles, and
+      the booking gets `needsReview: true`. The server re-classifies and never accepts a cheaper class.
+      A large vehicle swaps the price button for a "Request a personalized quote" form (name, phone, email,
+      ZIPs, vehicle, operable/modified, notes) that stores a lead: no deposit, no spot hold.
    3. "Is the vehicle operable?" (Yes, it runs and drives / No) and "Has it been modified in any way?"
       (Yes / No, factory stock), as radio pills.
+   3b. "Standard or Top Deck Load (+$150)?" radio, with the two benefits from `topDeck.benefits` shown with the
+      option.
    4. "Any personal items in the vehicle?" (Yes / No). Yes reveals the amber callout:
       **"100 lbs included. Anything over 100 lbs is at the driver's discretion."**
-   5. "Estimated pickup week · CA → TX". Load from `GET /api/availability?route=`. Each week row shows a
+   5. "Estimated pickup week · West → East". Load from `GET /api/availability?route=`. Each week row shows a
       fill bar and "N spots left". Full or closed weeks are struck through, red, `aria-disabled`, labeled
       "FULL 12/12", and cannot be selected.
    6. A checkbox, "I agree to the Terms and Conditions", where the link opens `/terms` in a new tab.
@@ -241,7 +262,7 @@ while they pay.
    week is full, return 409 with `nextAvailableWeek`, and the UI tells the customer the week just filled and
    offers the next one. Otherwise create a Stripe Checkout Session with `ui_mode: 'embedded'`,
    `redirect_on_completion: 'never'`, `mode: 'payment'`, one line item ("Transport deposit: 2021 Toyota
-   RAV4, CA → TX, week of Oct 19") for `depositCents`, `expires_at` set to the hold expiry (Stripe's minimum
+   RAV4, West → East, week of Oct 19") for `depositCents`, `expires_at` set to the hold expiry (Stripe's minimum
    is 30 min), `metadata.bookingId`, and `customer_creation: 'if_required'`. Save `stripe_session_id` and
    return `clientSecret` + `bookingId` + `publicToken`.
 2. **Cart UI:** a vehicle summary card, then route, pickup week, personal items, transport total, balance
@@ -324,8 +345,8 @@ and a rate change shows up in the next quote.
 
 1. **Metadata:** title, description, canonical, Open Graph and Twitter tags, and an OG image generated with
    `next/og` in the brand style.
-2. **JSON-LD:** `MovingCompany` (or `LocalBusiness`) with name, address, phone, `areaServed` from the serviced
-   states, and `url`. Add an `FAQPage` only if a FAQ section exists.
+2. **JSON-LD:** `MovingCompany` (or `LocalBusiness`) with name, address, phone, `areaServed` from the covered
+   states in `coverage.json`, and `url`. Add an `FAQPage` only if a FAQ section exists.
 3. `sitemap.ts` and `robots.ts`, with /admin and /booking disallowed.
 4. Vercel Analytics, plus GA4 through `@next/third-parties` if `NEXT_PUBLIC_GA_ID` is set, with the funnel
    events from Phase 5 and a `deposit_paid` conversion fired once from the confirmation state.

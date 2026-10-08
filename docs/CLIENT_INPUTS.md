@@ -11,10 +11,15 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] Approval to publish the photos, including the blurred license plates.
 
 ## Business details
-- [ ] Final list of serviced states and route corridors (and direction rules).
-- [ ] Base rates per size class, inoperable and modified surcharges, and whether modified vehicles are a surcharge or manual review.
-- [ ] Deposit amount or percentage (placeholder: 25%).
-- [ ] Weekly capacity per route (placeholder: 12).
+- [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks and leaves out the Atlanta area (300-303), Charlotte (280-282), Birmingham (350-352), and all of Florida and the Northeast above Delaware.
+- [x] Base rates per size class, received.
+- [ ] Do the inoperable (+$150) and modified (+$100) surcharges still apply, or are modified vehicles manual review?
+- [ ] Is the deposit still 25%?
+- [ ] Can inoperable vehicles go on the top deck?
+- [ ] Is there a limit on top-deck spots per truck?
+- [ ] Confirm the sedan and SUV class lists and the pickup year cutoffs (Ranger 2013-2018 is unclassified: those years were not sold in the U.S., so the customer picks).
+- [ ] Should full-size vans (Transit, Sprinter, Express, Savana, ProMaster) be quote-required? Savana was added as the Express twin.
+- [ ] Weekly capacity per route (placeholder: 12 per direction).
 - [ ] Public contact email and street address.
 - [ ] Years in operation, insurance amount, and confirmation of the trust stats (0 crashes in 24 months, $750K insurance).
 
