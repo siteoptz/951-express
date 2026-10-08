@@ -49,9 +49,6 @@ export function Gallery() {
             </button>
           </li>
         ))}
-        <li className="flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed border-black/20 bg-soft p-4 text-center text-muted">
-          {g.placeholder}
-        </li>
       </ul>
 
       <dialog

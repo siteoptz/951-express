@@ -65,8 +65,31 @@ export const landing = {
         height: 1500,
         alt: 'A black-and-white photo of a 951 Express truck hauling eight vehicles.',
       },
+      {
+        src: '/images/gallery/red-cascadia-daylight.webp',
+        width: 1600,
+        height: 1200,
+        alt: 'A red 951 Express Cascadia hauling a loaded car carrier under a clear blue sky.',
+      },
+      {
+        src: '/images/gallery/white-cascadia-daylight.webp',
+        width: 1600,
+        height: 1200,
+        alt: 'A white 951 Express Cascadia with a full load of cars at a truck stop.',
+      },
+      {
+        src: '/images/gallery/loaded-hauler-i20.webp',
+        width: 1600,
+        height: 1200,
+        alt: 'A 951 Express hauler loaded with SUVs and sedans pulled over beside the Interstate 20 West sign.',
+      },
+      {
+        src: '/images/gallery/loaded-hauler-night.webp',
+        width: 1600,
+        height: 1200,
+        alt: 'A 951 Express car hauler fully loaded with SUVs and sedans, lit up in a parking lot at night.',
+      },
     ],
-    placeholder: 'More photos coming soon.',
   },
   trustLogos: {
     heading: 'Credentials & partners',
