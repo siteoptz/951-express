@@ -17,4 +17,5 @@ export function regionOfZip(zip: string): Region | null {
 export const resolveRouteForZips = (pickupZip: unknown, deliveryZip: unknown): RouteResult =>
   resolveRoute(regionOfZip, pickupZip, deliveryZip);
 
-export const resolvePickupZip = (pickupZip: unknown): PickupResult => resolvePickup(regionOfZip, pickupZip);
+export const resolvePickupZip = (pickupZip: unknown): PickupResult =>
+  resolvePickup(regionOfZip, pickupZip);

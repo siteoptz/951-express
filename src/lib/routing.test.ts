@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import west from '@/data/zips/west.json';
 import east from '@/data/zips/east.json';
-import { resolvePickup, resolveRoute, routeErrorMessage, shippingLabel, type RouteFailure } from '@/lib/routing';
+import {
+  resolvePickup,
+  resolveRoute,
+  routeErrorMessage,
+  shippingLabel,
+  type RouteFailure,
+} from '@/lib/routing';
 import { regionOfZip, resolvePickupZip, resolveRouteForZips } from '@/lib/routing.server';
 
 // Los Angeles/Corona (west list) and Baltimore/Raleigh (east list).
@@ -36,14 +42,30 @@ describe('resolveRouteForZips', () => {
     expect(r.ok && r.route.id).toBe('east-to-west');
   });
   it('rejects West → West', () => {
-    expect(resolveRouteForZips(WEST, WEST2)).toEqual({ ok: false, reason: 'same_region', region: 'west' });
+    expect(resolveRouteForZips(WEST, WEST2)).toEqual({
+      ok: false,
+      reason: 'same_region',
+      region: 'west',
+    });
   });
   it('rejects East → East', () => {
-    expect(resolveRouteForZips(EAST, EAST2)).toEqual({ ok: false, reason: 'same_region', region: 'east' });
+    expect(resolveRouteForZips(EAST, EAST2)).toEqual({
+      ok: false,
+      reason: 'same_region',
+      region: 'east',
+    });
   });
   it('rejects unknown ZIPs by side', () => {
-    expect(resolveRouteForZips('99999', EAST)).toEqual({ ok: false, reason: 'pickup_not_served', zip: '99999' });
-    expect(resolveRouteForZips(WEST, '99999')).toEqual({ ok: false, reason: 'delivery_not_served', zip: '99999' });
+    expect(resolveRouteForZips('99999', EAST)).toEqual({
+      ok: false,
+      reason: 'pickup_not_served',
+      zip: '99999',
+    });
+    expect(resolveRouteForZips(WEST, '99999')).toEqual({
+      ok: false,
+      reason: 'delivery_not_served',
+      zip: '99999',
+    });
   });
   it('rejects malformed ZIPs', () => {
     expect(resolveRouteForZips('9288', EAST)).toEqual({ ok: false, reason: 'invalid_zip' });
@@ -51,7 +73,11 @@ describe('resolveRouteForZips', () => {
     expect(resolveRouteForZips(undefined, undefined)).toEqual({ ok: false, reason: 'invalid_zip' });
   });
   it('treats leading-zero ZIPs as strings: valid format, not served, and a 4-digit form is invalid', () => {
-    expect(resolveRouteForZips('02108', EAST)).toEqual({ ok: false, reason: 'pickup_not_served', zip: '02108' });
+    expect(resolveRouteForZips('02108', EAST)).toEqual({
+      ok: false,
+      reason: 'pickup_not_served',
+      zip: '02108',
+    });
     expect(resolveRouteForZips('2108', EAST)).toEqual({ ok: false, reason: 'invalid_zip' });
   });
   it('accepts ZIP+4', () => {
@@ -61,15 +87,30 @@ describe('resolveRouteForZips', () => {
 
 describe('resolvePickup', () => {
   it('returns the opposite region for delivery', () => {
-    expect(resolvePickupZip(WEST)).toMatchObject({ ok: true, pickupRegion: 'west', deliveryRegion: 'east' });
-    expect(resolvePickupZip(EAST)).toMatchObject({ ok: true, pickupRegion: 'east', deliveryRegion: 'west' });
+    expect(resolvePickupZip(WEST)).toMatchObject({
+      ok: true,
+      pickupRegion: 'west',
+      deliveryRegion: 'east',
+    });
+    expect(resolvePickupZip(EAST)).toMatchObject({
+      ok: true,
+      pickupRegion: 'east',
+      deliveryRegion: 'west',
+    });
   });
   it('fails for invalid and unserved ZIPs', () => {
     expect(resolvePickupZip('x')).toEqual({ ok: false, reason: 'invalid_zip' });
-    expect(resolvePickupZip('99999')).toEqual({ ok: false, reason: 'pickup_not_served', zip: '99999' });
+    expect(resolvePickupZip('99999')).toEqual({
+      ok: false,
+      reason: 'pickup_not_served',
+      zip: '99999',
+    });
   });
   it('works with an injected lookup', () => {
-    expect(resolvePickup(() => 'east', '11111')).toMatchObject({ ok: true, route: { id: 'east-to-west' } });
+    expect(resolvePickup(() => 'east', '11111')).toMatchObject({
+      ok: true,
+      route: { id: 'east-to-west' },
+    });
   });
   it('throws if the route table lacks the region', () => {
     expect(() => resolvePickup(() => 'north' as never, '11111')).toThrow(/No route configured/);

@@ -11,8 +11,7 @@ export type RouteFailure =
   | { ok: false; reason: 'same_region'; region: Region };
 
 export type RouteResult =
-  | { ok: true; route: RouteConfig; pickupRegion: Region; deliveryRegion: Region }
-  | RouteFailure;
+  { ok: true; route: RouteConfig; pickupRegion: Region; deliveryRegion: Region } | RouteFailure;
 
 export type PickupResult =
   | { ok: true; pickupRegion: Region; deliveryRegion: Region; route: RouteConfig }
@@ -33,17 +32,27 @@ export function resolvePickup(regionOf: RegionLookup, pickupZip: unknown): Picku
   if (!zip) return { ok: false, reason: 'invalid_zip' };
   const pickupRegion = regionOf(zip);
   if (!pickupRegion) return { ok: false, reason: 'pickup_not_served', zip };
-  return { ok: true, pickupRegion, deliveryRegion: opposite(pickupRegion), route: routeFor(pickupRegion) };
+  return {
+    ok: true,
+    pickupRegion,
+    deliveryRegion: opposite(pickupRegion),
+    route: routeFor(pickupRegion),
+  };
 }
 
-export function resolveRoute(regionOf: RegionLookup, pickupZip: unknown, deliveryZip: unknown): RouteResult {
+export function resolveRoute(
+  regionOf: RegionLookup,
+  pickupZip: unknown,
+  deliveryZip: unknown,
+): RouteResult {
   const delivery = normalizeZip(deliveryZip);
   const pickup = resolvePickup(regionOf, pickupZip);
   if (!pickup.ok) return pickup;
   if (!delivery) return { ok: false, reason: 'invalid_zip' };
   const deliveryRegion = regionOf(delivery);
   if (!deliveryRegion) return { ok: false, reason: 'delivery_not_served', zip: delivery };
-  if (deliveryRegion === pickup.pickupRegion) return { ok: false, reason: 'same_region', region: deliveryRegion };
+  if (deliveryRegion === pickup.pickupRegion)
+    return { ok: false, reason: 'same_region', region: deliveryRegion };
   return { ok: true, route: pickup.route, pickupRegion: pickup.pickupRegion, deliveryRegion };
 }
 

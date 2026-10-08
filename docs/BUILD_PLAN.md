@@ -147,23 +147,24 @@ performance and accessibility; there are no layout shifts from images.
 
 ## Phase 3B: Remaining business logic
 
-1. **`vehicles.ts`:** helpers for NHTSA vPIC:
-   - makes: `GetMakesForVehicleType/car` and `/truck` (merged and de-duplicated)
-   - models: `GetModelsForMakeYear/make/{make}/modelyear/{year}/vehicletype/{type}`
-   Cache with `fetch(..., { next: { revalidate: 86400 } })`. Verify these endpoints against the live API
-   before relying on them.
+**Status:** done.
+
+1. **`vehicles.ts`:** NHTSA vPIC helpers, endpoints verified against the live API. SUVs and minivans are filed
+   under vehicle type `mpv`, not `car` or `truck`, so makes and models merge all three types and de-duplicate
+   (settings in `src/config/vehicles.ts`).
+   - makes: `GetMakesForVehicleType/{car|truck|mpv}`
+   - models: `GetModelsForMakeYear/make/{make}/modelyear/{year}/vehicletype/{car|truck|mpv}`
+   Cached with `fetch(..., { next: { revalidate: 86400 } })`. An unknown make or year returns an empty list.
 2. **`weeks.ts`:** `bookableWeeks(now)` returns the next `weeksShown` Monday-start weeks in
-   America/Los_Angeles, skipping any week that starts within `leadDays`. Use `date-fns` + `@date-fns/tz`.
-   Labels look like "Oct 19 – 25" and "Oct 26 – Nov 1".
-3. **`schemas.ts`:** add the zod schemas for the Step 1 payload (including `topDeck` and the optional selected
-   class), the Step 3 payload, and admin actions. Shared by client and server.
-4. **Tests** cover every branch, including the 100 lb notice flag, weeks crossing a month or year boundary, and
-   DST changes. Keep `src/lib` at 95% coverage or better.
-
-**Done when:** `npm test` passes with at least 95% coverage on `src/lib/`.
-
-> **Prompt:** Do Phase 3B of docs/BUILD_PLAN.md. Write the vPIC helpers, the weeks logic, and the shared
-> schemas with tests.
+   America/Los_Angeles, skipping any week that starts less than `leadDays` calendar days from now (exactly
+   `leadDays` away is allowed). Labels look like "Oct 19 – 25", "Oct 26 – Nov 1", and "Dec 28 – Jan 3".
+   `findBookableWeek` is the server check for a week sent by the browser, and `weekNumber(weekStart)` is the
+   integer key for the Phase 4 advisory lock. Built on `date-fns` + `@date-fns/tz`.
+3. **`schemas.ts`:** `step1Schema` (includes `topDeck`, the optional `selectedClass`, and terms), `step3Schema`,
+   `quoteRequestSchema` (the large-vehicle lead, with `topDeck`), and `adminActionSchema`. Shared by client and
+   server. Prices and totals are never accepted from the browser.
+4. **Tests** cover DST (spring forward and fall back), month and year boundaries, the lead-day edge, and the
+   Los Angeles calendar versus UTC. `src/lib` stays above the 95% coverage gate.
 
 ---
 

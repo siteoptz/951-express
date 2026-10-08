@@ -29,13 +29,19 @@ describe('base prices', () => {
 
 describe('quote required', () => {
   it('has no online price for large vehicles, even with options', () => {
-    expect(calculateQuote({ sizeClass: 'large', operable: true, modified: false })).toEqual({ quoteRequired: true });
-    expect(calculateQuote({ sizeClass: 'large', operable: false, modified: true, topDeck: true })).toEqual({
+    expect(calculateQuote({ sizeClass: 'large', operable: true, modified: false })).toEqual({
+      quoteRequired: true,
+    });
+    expect(
+      calculateQuote({ sizeClass: 'large', operable: false, modified: true, topDeck: true }),
+    ).toEqual({
       quoteRequired: true,
     });
   });
   it('throws on an unknown class', () => {
-    expect(() => calculateQuote({ sizeClass: 'nope' as never, operable: true, modified: false })).toThrow(/Unknown size class/);
+    expect(() =>
+      calculateQuote({ sizeClass: 'nope' as never, operable: true, modified: false }),
+    ).toThrow(/Unknown size class/);
   });
 });
 
@@ -58,7 +64,9 @@ describe('surcharges', () => {
     expect(r.depositCents + r.balanceCents).toBe(r.totalCents);
   });
   it('modified policy "review" adds no surcharge and flags review', () => {
-    const r = q(calculateQuote({ ...base, modified: true }, { ...pricing, modifiedPolicy: 'review' }));
+    const r = q(
+      calculateQuote({ ...base, modified: true }, { ...pricing, modifiedPolicy: 'review' }),
+    );
     expect(r.totalCents).toBe(140000);
     expect(r.needsReview).toBe(true);
   });
@@ -77,7 +85,12 @@ describe('deposit rounding', () => {
         expect(r.depositCents + r.balanceCents).toBe(r.totalCents);
       }
     }
-    const r = q(calculateQuote({ sizeClass: 'small-sedan', operable: true, modified: false }, { ...pricing, deposit: { type: 'percent', value: 33.333 } }));
+    const r = q(
+      calculateQuote(
+        { sizeClass: 'small-sedan', operable: true, modified: false },
+        { ...pricing, deposit: { type: 'percent', value: 33.333 } },
+      ),
+    );
     expect(r.depositCents).toBe(46666);
   });
 });

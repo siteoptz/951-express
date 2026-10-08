@@ -55,13 +55,33 @@ describe('model lists', () => {
   ])('%s %s → %s', (mk, md, want) => expect(c(2020, mk, md)).toBe(want));
 
   it.each([
-    ['Ford', 'F-150'], ['Ford', 'F-250 Super Duty'], ['Ford', 'F150 Lightning'], ['Ford', 'Expedition'],
-    ['Ford', 'Transit'], ['Chevrolet', 'Silverado 1500'], ['Chevrolet', 'Silverado 2500HD'],
-    ['GMC', 'Sierra 1500'], ['Ram', '1500'], ['RAM', 'ProMaster'], ['Dodge', 'Ram 1500'],
-    ['Toyota', 'Tundra'], ['Toyota', 'Sequoia'], ['Toyota', 'Land Cruiser'], ['Nissan', 'Titan'],
-    ['Nissan', 'Armada'], ['Infiniti', 'QX80'], ['Lexus', 'LX 600'], ['Chevrolet', 'Tahoe'],
-    ['Chevrolet', 'Suburban'], ['GMC', 'Yukon XL'], ['Cadillac', 'Escalade'], ['Lincoln', 'Navigator'],
-    ['Jeep', 'Grand Wagoneer'], ['Jeep', 'Wagoneer'], ['Mercedes-Benz', 'Sprinter'], ['Chevrolet', 'Express'],
+    ['Ford', 'F-150'],
+    ['Ford', 'F-250 Super Duty'],
+    ['Ford', 'F150 Lightning'],
+    ['Ford', 'Expedition'],
+    ['Ford', 'Transit'],
+    ['Chevrolet', 'Silverado 1500'],
+    ['Chevrolet', 'Silverado 2500HD'],
+    ['GMC', 'Sierra 1500'],
+    ['Ram', '1500'],
+    ['RAM', 'ProMaster'],
+    ['Dodge', 'Ram 1500'],
+    ['Toyota', 'Tundra'],
+    ['Toyota', 'Sequoia'],
+    ['Toyota', 'Land Cruiser'],
+    ['Nissan', 'Titan'],
+    ['Nissan', 'Armada'],
+    ['Infiniti', 'QX80'],
+    ['Lexus', 'LX 600'],
+    ['Chevrolet', 'Tahoe'],
+    ['Chevrolet', 'Suburban'],
+    ['GMC', 'Yukon XL'],
+    ['Cadillac', 'Escalade'],
+    ['Lincoln', 'Navigator'],
+    ['Jeep', 'Grand Wagoneer'],
+    ['Jeep', 'Wagoneer'],
+    ['Mercedes-Benz', 'Sprinter'],
+    ['Chevrolet', 'Express'],
   ])('%s %s → large', (mk, md) => expect(c(2021, mk, md)).toBe('large'));
 });
 
@@ -86,12 +106,28 @@ describe('resolveSizeClass (server decision)', () => {
   const unknown = { year: 2020, make: 'Zzz', model: 'Thing' };
   it('ignores a cheaper class chosen for a known vehicle', () => {
     const tahoe = { year: 2020, make: 'Chevrolet', model: 'Tahoe' };
-    expect(resolveSizeClass(tahoe, 'small-sedan')).toEqual({ ok: true, sizeClass: 'large', needsReview: false });
-    expect(resolveSizeClass(civic, 'minivan')).toEqual({ ok: true, sizeClass: 'small-sedan', needsReview: false });
+    expect(resolveSizeClass(tahoe, 'small-sedan')).toEqual({
+      ok: true,
+      sizeClass: 'large',
+      needsReview: false,
+    });
+    expect(resolveSizeClass(civic, 'minivan')).toEqual({
+      ok: true,
+      sizeClass: 'small-sedan',
+      needsReview: false,
+    });
   });
   it('uses the selected class for unknown vehicles and flags review', () => {
-    expect(resolveSizeClass(unknown, 'small-suv')).toEqual({ ok: true, sizeClass: 'small-suv', needsReview: true });
-    expect(resolveSizeClass(unknown, 'large')).toEqual({ ok: true, sizeClass: 'large', needsReview: true });
+    expect(resolveSizeClass(unknown, 'small-suv')).toEqual({
+      ok: true,
+      sizeClass: 'small-suv',
+      needsReview: true,
+    });
+    expect(resolveSizeClass(unknown, 'large')).toEqual({
+      ok: true,
+      sizeClass: 'large',
+      needsReview: true,
+    });
   });
   it('requires a valid class for unknown vehicles', () => {
     expect(resolveSizeClass(unknown)).toEqual({ ok: false, reason: 'class_required' });
