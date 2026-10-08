@@ -62,6 +62,11 @@ const eastText = readFileSync(`${rawDir}east_zip_codes.txt`, 'utf8');
 const west = normalize(parseTokens(westTexts));
 const east = normalize(parseTokens([eastText]));
 
+// Real ZIPs per state in the zipcodes package, used to tint partly covered states on the map.
+const packageTotals = {};
+for (const info of Object.values(zipcodes.codes)) packageTotals[info.state] = (packageTotals[info.state] ?? 0) + 1;
+const totalsFor = (byState) => Object.fromEntries(Object.keys(byState).map((s) => [s, packageTotals[s]]));
+
 function lookup(zips) {
   const byState = {};
   const unknown = [];
@@ -120,9 +125,11 @@ writeFileSync(`${outDir}east.json`, JSON.stringify(east.zips) + '\n');
 writeFileSync(
   `${outDir}coverage.json`,
   JSON.stringify({
+    // stateTotals = all real ZIPs the zipcodes package has for that state (the tint denominator).
+    // total = ZIPs in the client list; states = ZIPs the zipcodes package recognizes; total = sum(states) + unrecognized.
     // points are [lat, lng, zipCount] per 0.25° cell
-    west: { total: west.zips.length, states: w.byState, points: grid(w.points) },
-    east: { total: east.zips.length, states: e.byState, points: grid(e.points) },
+    west: { total: west.zips.length, unrecognized: w.unknown.length, states: w.byState, stateTotals: totalsFor(w.byState), points: grid(w.points) },
+    east: { total: east.zips.length, unrecognized: e.unknown.length, states: e.byState, stateTotals: totalsFor(e.byState), points: grid(e.points) },
   }) + '\n',
 );
 console.log(`\nWrote west.json (${west.zips.length}), east.json (${east.zips.length}), coverage.json to src/data/zips/`);

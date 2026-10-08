@@ -46,8 +46,21 @@ export const landing = {
   },
   serviceArea: {
     heading: 'Where we haul',
-    body: 'We run weekly routes out of Corona, CA. Enter your ZIP codes in the quote tool to confirm your route.',
-    placeholder: 'Interactive service-area map coming soon.',
+    body: 'Weekly runs out of Corona, CA. We pick up in Southern California, Phoenix, Tucson, and El Paso and deliver across the Southeast and Mid-Atlantic (AL, GA, SC, NC, VA, MD, DE, DC), and we run it the other way too.',
+    zipBox: {
+      heading: 'Check your ZIP',
+      label: 'ZIP code',
+      button: 'Check',
+      checking: 'Checking…',
+      served: '✓ We serve {place} in our {region} region. We ship from here to anywhere in our {opposite} region.',
+      servedNoCity: '✓ We serve {zip} in our {region} region. We ship from here to anywhere in our {opposite} region.',
+      notServed: "We don't currently serve {zip}.",
+      invalid: 'Enter a valid 5-digit ZIP code.',
+      error: "We couldn't check that ZIP right now. Please try again or call us.",
+      rateLimited: 'Too many checks in a row. Please wait a minute or call us.',
+      cta: 'Get My Instant Quote',
+      call: 'Call {phone}',
+    },
   },
   gallery: {
     heading: 'On the road',

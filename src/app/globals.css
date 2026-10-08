@@ -39,3 +39,12 @@ body {
 dialog::backdrop {
   background: rgba(14, 26, 43, 0.7);
 }
+
+.map-state:focus-visible {
+  outline: none;
+  stroke: var(--color-navy);
+  stroke-width: 3;
+}
+.map-state:hover {
+  filter: brightness(0.95);
+}

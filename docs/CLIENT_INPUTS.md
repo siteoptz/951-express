@@ -32,3 +32,6 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] Domain, purchased by the client, plus DNS access.
 - [ ] Email sending domain access for SPF/DKIM verification (Resend).
 - [ ] Google Analytics 4 measurement ID, if they want GA.
+
+## Added after the ZIP review
+- [ ] The East list doesn't include Atlanta, Charlotte, or Birmingham metro ZIPs, or anything in Florida. Is that intentional?

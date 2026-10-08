@@ -13,7 +13,7 @@ const display = Barlow_Condensed({
 export const metadata: Metadata = {
   title: '951 Express | Licensed & Insured Auto Transport',
   description:
-    'Licensed and insured auto transport from Corona, CA. Get an instant quote and reserve your spot online.',
+    'Licensed and insured auto transport from Corona, CA. Weekly runs between Southern California, Phoenix, Tucson, and El Paso and the Southeast and Mid-Atlantic. Get an instant quote online.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

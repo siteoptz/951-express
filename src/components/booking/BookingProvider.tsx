@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { company } from '@/config/company';
 
-type BookingContextValue = { openBooking: () => void };
+export type BookingOptions = { pickupZip?: string };
+type BookingContextValue = { openBooking: (options?: BookingOptions) => void; prefill: BookingOptions };
 
 const BookingContext = createContext<BookingContextValue | null>(null);
 
@@ -18,7 +19,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const openBooking = useCallback(() => setOpen(true), []);
+  const [prefill, setPrefill] = useState<BookingOptions>({});
+
+  const openBooking = useCallback((options?: BookingOptions) => {
+    setPrefill(options ?? {});
+    setOpen(true);
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -28,7 +34,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   }, [open]);
 
   return (
-    <BookingContext.Provider value={{ openBooking }}>
+    <BookingContext.Provider value={{ openBooking, prefill }}>
       {children}
       <dialog
         ref={dialogRef}
@@ -53,6 +59,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         <div className="px-6 py-10 text-center text-muted">
+          {prefill.pickupZip && <p className="mb-2 font-semibold text-ink">Pickup ZIP: {prefill.pickupZip}</p>}
           <p>Online booking is coming soon.</p>
           <p className="mt-2">
             Call us at{' '}

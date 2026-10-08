@@ -14,7 +14,7 @@ export function QuoteButton({
 }) {
   const { openBooking } = useBooking();
   return (
-    <Button variant={variant} className={className} onClick={openBooking}>
+    <Button variant={variant} className={className} onClick={() => openBooking()}>
       {children}
     </Button>
   );

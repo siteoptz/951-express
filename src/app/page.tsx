@@ -2,7 +2,7 @@ import { About } from '@/components/landing/About';
 import { ContactSection } from '@/components/landing/ContactSection';
 import { Gallery } from '@/components/landing/Gallery';
 import { Hero } from '@/components/landing/Hero';
-import { ServiceAreaPlaceholder } from '@/components/landing/ServiceAreaPlaceholder';
+import { ServiceAreaMap } from '@/components/landing/ServiceAreaMap';
 import { Services } from '@/components/landing/Services';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
@@ -18,7 +18,7 @@ export default function Home() {
         <TrustBar />
         <About />
         <Services />
-        <ServiceAreaPlaceholder />
+        <ServiceAreaMap />
         <Gallery />
         <TrustLogos />
         <ContactSection />
