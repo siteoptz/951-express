@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookableWeeks, findBookableWeek, isMondayIso, weekNumber } from '@/lib/weeks';
+import { bookableWeeks, findBookableWeek, isMondayIso, weekLabel, weekNumber } from '@/lib/weeks';
 
 // Times are given as UTC instants. Los Angeles is UTC-7 in summer (PDT) and UTC-8 in winter (PST).
 const at = (iso: string) => new Date(iso);
@@ -124,5 +124,16 @@ describe('isMondayIso / weekNumber', () => {
   });
   it('throws for a non-Monday', () => {
     expect(() => weekNumber('2026-10-13')).toThrow(/Not a Monday/);
+  });
+});
+
+describe('weekLabel', () => {
+  it('labels a Monday date string, across months and years', () => {
+    expect(weekLabel('2026-10-19')).toBe('Oct 19 – 25');
+    expect(weekLabel('2026-10-26')).toBe('Oct 26 – Nov 1');
+    expect(weekLabel('2026-12-28')).toBe('Dec 28 – Jan 3');
+  });
+  it('throws for a non-Monday', () => {
+    expect(() => weekLabel('2026-10-20')).toThrow(/Not a Monday/);
   });
 });

@@ -264,6 +264,31 @@ a full week can't be picked, and the modal passes axe checks.
 
 ## Phase 6: Step 2 (cart + Stripe deposit)
 
+**Status:** built, awaiting approval. Notes from the build:
+- The current Stripe API (the SDK's default) renamed `ui_mode: 'embedded'` to `'embedded_page'`. Same inline checkout.
+- Stripe requires a session to live at least 30 minutes, so the session expires 30:10 out and the hold is extended
+  to match (`sessionExpiry` in `src/lib/checkout-session.ts`).
+- **Tall-modal payment stall (cap kept).** In our modal, Pay can silently stall: no error, no `payment_methods`
+  request, booking stays `held`. It is deterministic by geometry: with a 1000px-high window, a 820px modal pays and a
+  835px modal stalls; with a 900px window, 835px pays; with a 1200px window, 820px stalls. In practice it tracks where
+  the bottom edge of Stripe's iframe sits in the window (about 830px from the top and below stalls). At the stall, Stripe
+  asks its invisible hCaptcha for a challenge (`getcaptcha`) that never resolves, the captcha's frames sit offscreen
+  (y about -9153), and Stripe's overlay frame stays hidden. The payment step is therefore capped at 700px high
+  (`BookingModal.tsx`), and `npm run e2e:stripe` pays at 390x844, 390x932, and 1280x1000 to guard it.
+  Ruled out, each with a test (30-minute investigation, Oct 10):
+  - Native modal top layer, the inert backdrop, and our focus handling: a non-modal dialog stalls identically.
+  - Our dialog painting over Stripe's body-level helper frames: stacking the dialog beneath them still stalls.
+  - Scroll lock, the sticky header, `scroll-behavior: smooth`, scroll padding, focus outlines: toggling each changes nothing.
+  - The Pay button being clipped, covered, or scrolled out of view: it is fully visible and the hit test lands on Stripe's iframe.
+  - `@stripe/react-stripe-js`: mounting with the raw `createEmbeddedCheckoutPage` stalls identically.
+  - Automation signals: human-like mouse movement changes nothing.
+  - A dialog, a scrolling box with a sticky header, a long page behind it, and a cart above the form, rebuilt on a bare page
+    with the same geometry (iframe bottom at 860 to 912px): all pay. So the cause is something else on our page, not
+    yet found. Next step: pay on real phones (Phase 10), and if it shows up there, send Stripe support the repro.
+- `npm run e2e:stripe` runs real Stripe test-mode payments with `stripe listen` forwarding webhooks.
+- Link's "Save my information" is ticked by default and then asks for a phone number. Consider turning Link off in
+  the Stripe Dashboard payment methods if the client prefers a shorter form.
+
 **Goal:** proposal Figure 6 (left). The customer pays the deposit inside the modal, and the spot is held
 while they pay.
 
@@ -378,7 +403,7 @@ Google's Rich Results Test.
    inoperable and modified pricing, personal-items notice, full week, a hold expiring mid-checkout, a declined
    card, closing the modal after payment and finishing from the email link, and the admin
    close-week/cancel/rate-change actions.
-2. Manual check on a real iPhone and Android device, plus Safari, Chrome, and Firefox on desktop.
+2. Manual check on a real iPhone and Android device (pay a real test-mode deposit on each: the Stripe checkout stalled in tall automated windows, see Phase 6, so confirm it never happens on a phone), plus Safari, Chrome, and Firefox on desktop.
 3. **Launch checklist** (record each item in `docs/LAUNCH.md`):
    - [ ] The client purchases the domain (not included in the fee) and it's added to Vercel with DNS verified
    - [ ] Resend sending domain verified (SPF/DKIM), `EMAIL_FROM` updated, test email lands in the inbox, not spam

@@ -27,7 +27,8 @@ password-protected /admin.
 - Next.js (App Router) + TypeScript + Tailwind CSS, deployed on Vercel (Git-connected).
 - Postgres: Neon via the Vercel Marketplace. Drizzle ORM with the `neon-serverless` (Pool) driver, which
   we need for transactions.
-- Stripe Embedded Checkout (`ui_mode: 'embedded'`, `redirect_on_completion: 'never'`) + webhooks.
+- Stripe API version is pinned to `2026-09-30.endive` in `src/config/stripe.ts` (the version we tested). Change it only on purpose, and pin Dashboard webhook endpoints to the same version.
+- Stripe Embedded Checkout (`ui_mode: 'embedded_page'`, which is what the newest API calls `embedded`; `redirect_on_completion: 'never'`) + webhooks.
 - Resend + React Email for transactional email.
 - NHTSA vPIC API for vehicle makes and models (free, no key).
 - Map: `d3-geo` + `us-atlas` + `topojson-client`, rendered as an SVG React component (no map-library dependency).

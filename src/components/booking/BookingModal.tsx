@@ -26,11 +26,12 @@ import { track } from '@/lib/analytics';
 import { routeErrorMessage, shippingLabel } from '@/lib/routing';
 import { Combobox, type Option } from './Combobox';
 import { RadioPills } from './RadioPills';
-import { SummaryStep, type QuoteResponse } from './SummaryStep';
+import { PaymentStep, type CheckoutInfo } from './PaymentStep';
+import { SummaryStep, type NextWeek, type QuoteResponse } from './SummaryStep';
 import { useZipCheck, type ZipStatus } from './useZipCheck';
 import { WeekPicker, type WeekRow } from './WeekPicker';
 
-type Step = 'form' | 'summary' | 'lead_done';
+type Step = 'form' | 'summary' | 'payment' | 'paid' | 'lead_done';
 type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; data: T };
 
 const storage = () => (typeof window === 'undefined' ? null : window.sessionStorage);
@@ -92,6 +93,8 @@ export default function BookingModal({
   const [step, setStep] = useState<Step>('form');
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [checkout, setCheckout] = useState<CheckoutInfo | null>(null);
+  const [weekFull, setWeekFull] = useState<{ next: NextWeek } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touchedPickup, setTouchedPickup] = useState(false);
@@ -117,12 +120,23 @@ export default function BookingModal({
   useEffect(() => saveForm(form, storage()), [form]);
 
   const requestClose = useCallback(() => {
-    if (step === 'form' && isDirty(form)) setConfirmClose(true);
+    if (step === 'payment' || (step === 'form' && isDirty(form))) setConfirmClose(true);
     else onClose();
   }, [form, onClose, step]);
 
+  /** Frees the held spot right away (best effort; the hold also expires on its own). */
+  const releaseHold = useCallback(() => {
+    if (!checkout) return;
+    fetch(`/api/bookings/${checkout.publicToken}/release`, {
+      method: 'POST',
+      keepalive: true,
+    }).catch(() => undefined);
+    setCheckout(null);
+  }, [checkout]);
+
   const finishAndClose = () => {
-    if (step === 'lead_done') {
+    if (step === 'payment') releaseHold();
+    if (step === 'lead_done' || step === 'paid') {
       dispatch({ type: 'reset' });
       clearForm(storage());
       setStep('form');
@@ -200,7 +214,8 @@ export default function BookingModal({
   const payload = step1Payload(form);
   const lead = leadPayload(form);
 
-  async function submitQuote() {
+  async function submitQuote(override: Partial<FormState> = {}) {
+    const payload = step1Payload({ ...form, ...override });
     if (!payload) return;
     setBusy(true);
     setError(null);
@@ -224,8 +239,39 @@ export default function BookingModal({
         return;
       }
       setQuote(body as QuoteResponse);
+      setWeekFull(null);
       setStep('summary');
       track('quote_viewed', { route: body.route.id });
+    } catch {
+      setError(t.genericError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Holds the spot and opens the Stripe session for the deposit. */
+  async function startCheckout() {
+    const payload = step1Payload(form);
+    if (!payload) return;
+    setBusy(true);
+    setError(null);
+    setWeekFull(null);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...payload, replacePublicToken: checkout?.publicToken }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 409) return setWeekFull({ next: body.nextAvailableWeek ?? null });
+      if (!res.ok) return setError(body.error ?? t.genericError);
+      setCheckout({
+        clientSecret: body.clientSecret,
+        publicToken: body.publicToken,
+        holdExpiresAt: body.holdExpiresAt,
+        bookingId: body.bookingId,
+      });
+      setStep('payment');
     } catch {
       setError(t.genericError);
     } finally {
@@ -254,7 +300,7 @@ export default function BookingModal({
     }
   }
 
-  const activeStep = step === 'form' ? 0 : 1;
+  const activeStep = step === 'form' || step === 'lead_done' ? 0 : step === 'paid' ? 2 : 1;
   const inputClass =
     'mt-1 w-full rounded-lg border-2 border-black/15 px-4 py-3 text-base focus:border-navy';
 
@@ -271,7 +317,14 @@ export default function BookingModal({
       onClick={(e) => {
         if (e.target === dialogRef.current) requestClose();
       }}
-      className="m-auto h-full max-h-none w-full max-w-none scroll-pt-32 overflow-y-auto bg-white p-0 sm:h-auto sm:max-h-[90vh] sm:w-[520px] sm:rounded-2xl"
+      className={`m-auto w-full max-w-none scroll-pt-32 overflow-y-auto bg-white p-0 sm:h-auto sm:max-h-[90vh] sm:w-[520px] sm:rounded-2xl ${
+        // Full-screen on phones, except while paying. Stripe's embedded checkout silently stalls (Pay just sits
+        // there) when the modal is tall: it stalled at about 800px and above, on phones and big monitors alike, and
+        // paid fine at 760px and below. The payment step is capped at 700px high for margin (it scrolls inside).
+        step === 'payment'
+          ? 'h-auto max-h-[min(90dvh,700px)] rounded-t-2xl sm:max-h-[min(90vh,700px)]'
+          : 'h-full max-h-none'
+      }`}
     >
       <div className="sticky top-0 z-30 border-b border-black/10 bg-white">
         <div className="flex items-center justify-between px-5 py-3 sm:px-6">
@@ -315,7 +368,7 @@ export default function BookingModal({
               {t.confirmClose.title}
             </p>
             <p id="confirm-body" className="mt-1 text-sm">
-              {t.confirmClose.body}
+              {step === 'payment' ? t.confirmClose.paymentBody : t.confirmClose.body}
             </p>
             <div className="mt-3 flex gap-2">
               <Button autoFocus onClick={() => setConfirmClose(false)}>
@@ -339,7 +392,54 @@ export default function BookingModal({
         )}
 
         {step === 'summary' && quote && (
-          <SummaryStep quote={quote} onBack={() => setStep('form')} />
+          <SummaryStep
+            quote={quote}
+            busy={busy}
+            error={error}
+            weekFull={weekFull}
+            onBack={() => {
+              setError(null);
+              setWeekFull(null);
+              setStep('form');
+            }}
+            onContinue={() => void startCheckout()}
+            onUseNextWeek={(w) => {
+              set('weekStart', w.start);
+              void submitQuote({ weekStart: w.start });
+            }}
+          />
+        )}
+
+        {step === 'payment' && quote && checkout && (
+          <PaymentStep
+            quote={quote}
+            checkout={checkout}
+            onEdit={() => {
+              releaseHold();
+              setStep('form');
+            }}
+            onPaid={() => {
+              clearForm(storage());
+              setStep('paid');
+            }}
+            onHoldAgain={() => {
+              releaseHold();
+              setStep('summary');
+            }}
+          />
+        )}
+
+        {step === 'paid' && quote && (
+          <div role="status" className="py-2">
+            <p className="rounded-lg bg-success-dark px-4 py-3 font-bold text-white">
+              {t.paid.banner.replace('{week}', quote.week.label)}
+            </p>
+            <p className="mt-5 font-display text-2xl font-extrabold uppercase">{t.paid.next}</p>
+            <p className="mt-2 text-muted">{t.paid.nextBody}</p>
+            <Button className="mt-6" onClick={finishAndClose}>
+              {t.paid.done}
+            </Button>
+          </div>
         )}
 
         {step === 'form' && (

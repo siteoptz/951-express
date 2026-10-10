@@ -35,3 +35,9 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 
 ## Added after the ZIP review
 - [ ] The East list doesn't include Atlanta, Charlotte, or Birmingham metro ZIPs, or anything in Florida. Is that intentional?
+
+## Stripe go-live (Phase 6)
+- [ ] Live keys in Vercel Production only. Preview and Development keep test keys.
+- [ ] A webhook endpoint per environment (`/api/stripe/webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`), each with its own `STRIPE_WEBHOOK_SECRET` in Vercel. Until then the deployed app can take payments but cannot verify webhooks; the status check still marks bookings paid.
+- [ ] Decide whether to keep Link ("Save my information for faster checkout") and the extra payment methods Stripe shows (Bank, Klarna). They are Dashboard settings.
+- [ ] `RESEND_API_KEY` and `EMAIL_FROM` for the "deposit received" email.

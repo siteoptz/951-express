@@ -25,7 +25,26 @@ export const money = (cents: number) =>
     minimumFractionDigits: cents % 100 ? 2 : 0,
   }).format(cents / 100);
 
-export function SummaryStep({ quote, onBack }: { quote: QuoteResponse; onBack: () => void }) {
+export type NextWeek = { start: string; label: string } | null;
+
+export function SummaryStep({
+  quote,
+  onBack,
+  onContinue,
+  busy,
+  error,
+  weekFull,
+  onUseNextWeek,
+}: {
+  quote: QuoteResponse;
+  onBack: () => void;
+  onContinue: () => void;
+  busy: boolean;
+  error: string | null;
+  /** Set when the week filled between the quote and the hold: next is the next open week, or null. */
+  weekFull: { next: NextWeek } | null;
+  onUseNextWeek: (week: { start: string; label: string }) => void;
+}) {
   const c = bookingCopy.summary;
   const v = quote.vehicle;
   return (
@@ -76,8 +95,32 @@ export function SummaryStep({ quote, onBack }: { quote: QuoteResponse; onBack: (
       )}
       {quote.needsReview && <p className="mt-3 text-sm text-muted">{c.review}</p>}
 
-      <Button className="mt-5 w-full" disabled>
-        {c.continue}
+      {weekFull && (
+        <div role="alert" className="mt-4 rounded-lg border-2 border-danger p-4">
+          <p className="font-bold text-danger">{c.weekFull}</p>
+          {weekFull.next ? (
+            <>
+              <p className="mt-1 text-sm">{c.nextWeek.replace('{label}', weekFull.next.label)}</p>
+              <Button className="mt-3 w-full" onClick={() => onUseNextWeek(weekFull.next!)}>
+                {c.useNextWeek.replace('{label}', weekFull.next.label)}
+              </Button>
+            </>
+          ) : (
+            <p className="mt-1 text-sm">{c.noNextWeek}</p>
+          )}
+        </div>
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg bg-danger/10 px-4 py-3 font-semibold text-danger"
+        >
+          {error}
+        </p>
+      )}
+
+      <Button className="mt-5 w-full" onClick={onContinue} disabled={busy || !!weekFull}>
+        {busy ? c.continuing : c.continue}
       </Button>
       <p className="mt-2 text-center text-sm text-muted">{c.continueNote}</p>
       <button

@@ -78,3 +78,11 @@ export function weekNumber(weekStart: string): number {
     (Date.parse(`${weekStart}T00:00:00Z`) - Date.parse('1970-01-05T00:00:00Z')) / (7 * 86_400_000),
   );
 }
+
+/** "Oct 19 – 25" for a Monday date string, with no time zone involved. */
+export function weekLabel(weekStart: string): string {
+  if (!isMondayIso(weekStart)) throw new Error(`Not a Monday date: ${weekStart}`);
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const start = new TZDate(y, m - 1, d, 'UTC');
+  return labelFor(start, addDays(start, 6));
+}

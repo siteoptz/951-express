@@ -6,6 +6,8 @@ export const bookingCopy = {
   confirmClose: {
     title: 'Close this quote?',
     body: 'Your answers are saved on this device until you close the tab.',
+    paymentBody:
+      'Your spot is only held while you finish paying. If you close now, it is released.',
     keep: 'Keep editing',
     leave: 'Close',
   },
@@ -97,6 +99,34 @@ export const bookingCopy = {
     review: 'We will confirm a few details with you before pickup.',
     back: '← Edit my answers',
     continue: 'Continue to secure payment',
-    continueNote: 'Secure online payment is coming soon. Call us to book now.',
+    continuing: 'Holding your spot…',
+    continueNote: 'We hold your spot for 30 minutes while you pay the deposit.',
+    weekFull: 'That pickup week just filled up.',
+    nextWeek: 'The next available week is {label}.',
+    useNextWeek: 'Use {label}',
+    noNextWeek: 'No other weeks are open right now. Please call us.',
+  },
+  payment: {
+    heading: 'Pay your deposit',
+    personalItems: 'Personal items',
+    yes: 'Yes, up to 100 lbs',
+    no: 'None',
+    secure: 'Secure checkout · processed by Stripe',
+    hold: 'Your spot is held for {time}',
+    holdExpired: 'Your hold has expired',
+    holdExpiredBody: 'Your spot was released. Hold it again to finish paying.',
+    holdAgain: 'Hold my spot again',
+    confirming: 'Confirming your payment…',
+    confirmingSlow:
+      'Your payment went through, but we are still confirming it. We will email you a link to finish your details. You can also call us.',
+    noKey: 'Online payment is not available right now. Please call us to book.',
+    back: '← Edit my answers',
+  },
+  paid: {
+    banner: '✓ Deposit received. Your spot for {week} is reserved.',
+    next: 'Next: your pickup and delivery details.',
+    nextBody:
+      'The details form arrives in the next release. We also emailed you a link to finish your booking, so you can close this window.',
+    done: 'Close',
   },
 } as const;

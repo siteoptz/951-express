@@ -167,7 +167,7 @@ test('West → East happy path ends on the Step 2 summary', async ({ page }) => 
   await expect(lines).toContainText('$1,400');
   await expect(d.getByText('Deposit due today').locator('..')).toContainText('$350');
   await expect(d.getByText('Balance due at delivery').locator('..')).toContainText('$1,050');
-  await expect(d.getByRole('button', { name: 'Continue to secure payment' })).toBeDisabled();
+  await expect(d.getByRole('button', { name: 'Continue to secure payment' })).toBeEnabled(); // pays in the Stripe tests (npm run e2e:stripe)
   await axeClean(page, 'step 2 summary');
 });
 
@@ -252,6 +252,16 @@ test('a large vehicle replaces the form with a personalized quote request and st
   await weekSelect.selectOption(weeks[0].start);
   await d.getByLabel('Notes (optional)').fill('Lifted, 35 inch tires');
   await axeClean(page, 'personalized quote form');
+  const weekBookings = async () => {
+    const [r] = await db.select().from(routes).where(eq(routes.slug, 'west-to-east'));
+    return (
+      await db
+        .select()
+        .from(bookings)
+        .where(and(eq(bookings.routeId, r.id), eq(bookings.weekStart, weeks[0].start)))
+    ).length;
+  };
+  const before = await weekBookings();
   await d.getByRole('button', { name: 'Request my quote' }).click();
   await expect(d.getByText('Thank you!')).toBeVisible();
   await axeClean(page, 'lead thank-you');
@@ -271,13 +281,8 @@ test('a large vehicle replaces the form with a personalized quote request and st
   });
   expect(rows[0].vehicle).toEqual({ year: 2021, make: 'Chevrolet', model: 'Tahoe' });
   expect(rows[0].preferredWeekStart).toBe(weeks[0].start);
-  // A lead never holds a spot.
-  const [route] = await db.select().from(routes).where(eq(routes.slug, 'west-to-east'));
-  const held = await db
-    .select()
-    .from(bookings)
-    .where(and(eq(bookings.routeId, route.id), eq(bookings.weekStart, weeks[0].start)));
-  expect(held).toHaveLength(0);
+  // A lead never holds a spot: no booking appeared for that week while the lead was being submitted.
+  expect(await weekBookings()).toBe(before);
 });
 
 test('a full week is struck through and cannot be selected', async ({ page }) => {
