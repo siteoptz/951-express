@@ -112,5 +112,4 @@ export const landing = {
     body: 'Email us or start a quote. We reply fast.',
     emailCta: 'Email us',
   },
-  footer: { cta: 'Get My Instant Quote' },
 } as const;
