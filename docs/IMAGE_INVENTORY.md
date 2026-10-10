@@ -14,7 +14,7 @@ Source: `pictures/` (also zipped as `pictures.zip`). Each image was opened and v
 
 - **Hero resolution:** #1 (originally proposed hero) is only 1600px wide, so it fails the 2000px hero rule; #3 (2048px) is the hero instead. A higher-resolution hero from the client would still help.
 - **Hero alternate:** #3 is the highest-resolution image, but its lower half is empty gravel, so it needs a crop or a `object-position: top` treatment.
-- **No logo, trust badges, or interior or office photos** were supplied. `logos/` will stay empty until the client sends a logo. The wordmark "951 EXPRESS" is the fallback.
+- **Logo:** supplied later as `originals/951-express-logo.JPG` (a JPEG on a black background). `scripts/optimize-images.mjs` cuts the black out and writes the sizes in `public/images/logos/` and the icons in `src/app/`. **No trust badges or interior or office photos** were supplied.
 - **Trucks vary:** two red trucks (#1, #3) and three white (#2, #4, #5). Mixed fleet colors are fine in a gallery, but the hero and About pairing should be intentional.
 - **Visible identifiers:** license plates in #1, #2 and #5 are now blurred (approved). USDOT/MC numbers on the doors are left readable.
 - **#5 is black and white** and will not match the brand palette. It works best as a gallery accent.

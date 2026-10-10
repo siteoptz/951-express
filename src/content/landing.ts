@@ -9,11 +9,12 @@ export const landing = {
   ],
   headerCta: 'Get My Quote',
   hero: {
-    kicker: 'Licensed & Insured Auto Transport',
+    kicker: 'Licensed & Bonded Auto Transport',
     title: 'Your vehicle, delivered safely and on schedule.',
     subhead:
       'Enclosed-quality care on an open carrier built for volume. Check your route, see your price, and reserve your spot in minutes.',
     cta: 'Get My Instant Quote',
+    emailCta: 'Email us',
     imageAlt:
       'A red 951 Express car hauler loaded with six vehicles, parked on a gravel lot under a blue sky.',
   },
@@ -52,14 +53,16 @@ export const landing = {
       label: 'ZIP code',
       button: 'Check',
       checking: 'Checking…',
-      served: '✓ We serve {place} in our {region} region. We ship from here to anywhere in our {opposite} region.',
-      servedNoCity: '✓ We serve {zip} in our {region} region. We ship from here to anywhere in our {opposite} region.',
+      served:
+        '✓ We serve {place} in our {region} region. We ship from here to anywhere in our {opposite} region.',
+      servedNoCity:
+        '✓ We serve {zip} in our {region} region. We ship from here to anywhere in our {opposite} region.',
       notServed: "We don't currently serve {zip}.",
       invalid: 'Enter a valid 5-digit ZIP code.',
-      error: "We couldn't check that ZIP right now. Please try again or call us.",
-      rateLimited: 'Too many checks in a row. Please wait a minute or call us.',
+      error: "We couldn't check that ZIP right now. Please try again or email us.",
+      rateLimited: 'Too many checks in a row. Please wait a minute or email us.',
       cta: 'Get My Instant Quote',
-      call: 'Call {phone}',
+      email: 'Email {email}',
     },
   },
   gallery: {
@@ -104,13 +107,10 @@ export const landing = {
       },
     ],
   },
-  trustLogos: {
-    heading: 'Credentials & partners',
-    placeholder: 'Logos and badges will appear here once supplied.',
-  },
   contact: {
     heading: 'Questions? Talk to a person.',
-    body: 'Call us or start a quote. We reply fast.',
+    body: 'Email us or start a quote. We reply fast.',
+    emailCta: 'Email us',
   },
   footer: { cta: 'Get My Instant Quote' },
 } as const;

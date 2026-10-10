@@ -4,22 +4,22 @@ import { useState } from 'react';
 import { landing } from '@/content/landing';
 import { QuoteButton } from '@/components/booking/QuoteButton';
 import { Container } from '@/components/ui/Container';
-import { Wordmark } from './Wordmark';
+import { Logo } from './Logo';
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 bg-navy text-white shadow-md">
-      <Container className="flex h-16 items-center justify-between">
+      <Container className="flex h-[72px] items-center justify-between md:h-24">
         <a href="#top" aria-label="951 Express home">
-          <Wordmark />
+          <Logo size="header" priority />
         </a>
         <nav aria-label="Main" className="hidden items-center gap-7 md:flex">
           {landing.nav.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-sm font-medium text-white/85 hover:text-amber"
+              className="text-sm font-medium text-white/85 hover:text-accent"
             >
               {l.label}
             </a>

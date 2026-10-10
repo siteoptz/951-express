@@ -89,7 +89,7 @@ export function SummaryStep({
       </div>
 
       {quote.personalItemsNotice && (
-        <p className="mt-3 rounded-lg bg-amber/20 px-4 py-3 text-sm font-semibold">
+        <p className="mt-3 rounded-lg bg-accent/20 px-4 py-3 text-sm font-semibold">
           {quote.personalItemsNotice}
         </p>
       )}

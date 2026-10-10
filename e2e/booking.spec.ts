@@ -194,13 +194,15 @@ test('same-region ZIPs are rejected with the agreed copy', async ({ page }) => {
   await axeClean(page, 'same-region error');
 });
 
-test('an unserved ZIP shows the message and the call button', async ({ page }) => {
+test('an unserved ZIP shows the message and an email link', async ({ page }) => {
   const d = dialog(page);
   await d.getByLabel('Pickup ZIP').fill('10001');
   await expect(d.getByRole('alert')).toContainText(
     "We don't currently pick up or deliver in 10001.",
   );
-  await expect(d.getByRole('link', { name: /Call \(951\)/ })).toBeVisible();
+  const mail = d.getByRole('link', { name: 'Email 951.dispatcher@gmail.com' });
+  await expect(mail).toBeVisible();
+  await expect(mail).toHaveAttribute('href', 'mailto:951.dispatcher@gmail.com');
   await expect(d.getByLabel('Delivery ZIP')).toBeDisabled();
   await axeClean(page, 'unserved ZIP');
   // And the delivery side, with a served pickup.

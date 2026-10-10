@@ -1,5 +1,5 @@
 import { Link, Text } from '@react-email/components';
-import { company } from '@/config/company';
+import { company, contactMailto } from '@/config/company';
 import { emailCopy } from '@/content/emails';
 import { money } from '@/lib/format';
 import type { BookingEmailData } from '@/lib/email-data';
@@ -58,8 +58,8 @@ export function CustomerConfirmationEmail({ d }: { d: BookingEmailData }) {
 
       <Paragraph>
         {c.questions}{' '}
-        <Link href={company.phoneHref} style={{ color: colors.navy, fontWeight: 700 }}>
-          {company.phone}
+        <Link href={contactMailto} style={{ color: colors.navy, fontWeight: 700 }}>
+          {company.contactEmail}
         </Link>
       </Paragraph>
     </EmailLayout>

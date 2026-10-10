@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const limited = limiter.check(clientIp(request.headers));
   if (!limited.ok) {
     return Response.json(
-      { error: 'Too many requests. Please wait a minute or call us.' },
+      { error: 'Too many requests. Please wait a minute or email us.' },
       { status: 429, headers: { 'Retry-After': String(limited.retryAfterSeconds) } },
     );
   }

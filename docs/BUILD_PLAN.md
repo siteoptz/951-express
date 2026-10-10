@@ -40,8 +40,8 @@ to start it.
    the hero.
 4. **Add tooling:** `zod`, `vitest`, `@playwright/test`, Prettier, and the scripts `typecheck`, `test`, `e2e`.
 5. **Create the config skeleton** in `src/config/` (values from the proposal, each marked `// TODO(client)`):
-   - `company.ts`: name, phone (951) 427-9763, email, address, USDOT 4020917, MC 1516594, insurance $750K,
-     years in operation, stats.
+   - `company.ts`: name, contact email (no phone), address, USDOT 4020917, MC-1516594, insurance wording,
+     and only client-confirmed stats (`confirmedStats`).
    - `service-area.ts`: serviced states (placeholder: CA, NV, AZ, OR, WA, UT, ID, NM, CO, TX) and the home
      terminal (Corona, CA, lat 33.8753, lng -117.5664).
    - `routes.ts`: route corridors, each with `id`, `name`, `originStates[]`, `destStates[]`,
@@ -72,20 +72,20 @@ to start it.
 
 1. **Tailwind theme tokens** for the brand colors in CLAUDE.md. Load fonts with `next/font` (Inter for UI;
    a bold display weight for headlines).
-2. **Components** in `src/components/ui/`: `Button` (primary amber, ghost), `Container`, `Section`,
+2. **Components** in `src/components/ui/`: `Button` (primary accent orange, ghost), `Container`, `Section`,
    `SectionHeading`, `Card`, `Stat`.
 3. **Sections** in `src/components/landing/`, composed in `src/app/page.tsx`:
-   - `SiteHeader`: wordmark or logo; anchor links (About, Services, Service Area, Gallery, Contact); a
+   - `SiteHeader`: the logo; anchor links (About, Services, Service Area, Gallery, Contact); a
      "Get My Quote" button. Sticky, with a mobile menu.
    - `Hero`: kicker "Licensed & Insured Auto Transport", the headline, a subhead, the primary CTA, and a call
      link. Uses the best hero photo with a navy gradient overlay, `priority` on the image.
-   - `TrustBar`: USDOT, $750K insurance, 0 crashes in 24 months, years in operation, deposit-secured booking.
+   - `TrustBar`: USDOT, MC number, and the confirmed licensing and cargo limit (only client-confirmed facts).
      Values come from `company.ts`.
    - `About`: company story and a fleet photo.
    - `Services`: open transport, dealer moves, personal vehicles, and any specialty services.
    - `ServiceAreaPlaceholder`: an anchor `#service-area`; the map arrives in Phase 2.
    - `Gallery`: responsive grid with a lightbox (keyboard accessible, Esc closes).
-   - `TrustLogos`, `ContactSection`, and `SiteFooter` (address, phone, email, /terms link, repeat CTA,
+   - `ContactSection` and `SiteFooter` (address, email, /terms link, repeat CTA,
      copyright).
 4. Every "Get My Quote" button calls a single `openBooking()` from a `BookingProvider` context. For now it
    opens an empty modal shell.
@@ -231,7 +231,7 @@ The Step 2 summary is a placeholder: its payment button stays disabled until Pha
    1. Pickup ZIP + Delivery ZIP. The ZIP lists are server-only, so call `POST /api/qualify` (pickup on blur, then
       both). When the pickup ZIP resolves, show "Shipping West → East" (or East → West); the delivery ZIP then
       accepts only the opposite region. Same-region and not-served failures use the copy in
-      `src/config/routes.ts`, and a not-served failure adds the click-to-call button. Every later field stays
+      `src/config/routes.ts`, and a not-served failure adds an email link (no phone number anywhere). Every later field stays
       disabled until the route resolves.
    2. Year, Make, and Model as dependent dropdowns (`GET /api/vehicles/makes?year=`,
       `/api/vehicles/models?year=&make=`), with type-to-search on the long lists. Once all three are set,
@@ -243,7 +243,7 @@ The Step 2 summary is a placeholder: its payment button stays disabled until Pha
       (Yes / No, factory stock), as radio pills.
    3b. "Standard or Top Deck Load (+$150)?" radio, with the two benefits from `topDeck.benefits` shown with the
       option.
-   4. "Any personal items in the vehicle?" (Yes / No). Yes reveals the amber callout:
+   4. "Any personal items in the vehicle?" (Yes / No). Yes reveals the accent-tinted callout:
       **"100 lbs included. Anything over 100 lbs is at the driver's discretion."**
    5. "Estimated pickup week · West → East". Load from `GET /api/availability?route=`. Each week row shows a
       fill bar and "N spots left". Full or closed weeks are struck through, red, `aria-disabled`, labeled
@@ -374,7 +374,7 @@ dashboard; submitting details twice is rejected; the fallback link works.
 
 ## Phase 8: Terms page + admin view
 
-1. **`/terms`:** a clean, readable legal page rendered from `src/content/terms.md`. Until the client sends
+1. **`/terms`:** a clean, readable legal page rendered from `src/content/terms.ts` (done; see the content update). Until the client sends
    final text, use a clearly marked placeholder. Show the terms version and "Last updated" date; the version
    is stored with every booking.
 2. **`/admin`:** protected by middleware HTTP Basic Auth (`ADMIN_PASSWORD`) and set to `noindex`.
@@ -403,7 +403,7 @@ and a rate change shows up in the next quote.
 3. `sitemap.ts` and `robots.ts`, with /admin and /booking disallowed.
 4. Vercel Analytics, plus GA4 through `@next/third-parties` if `NEXT_PUBLIC_GA_ID` is set, with the funnel
    events from Phase 5 and a `deposit_paid` conversion fired once from the confirmation state.
-5. Run an axe audit and fix everything: color contrast (amber buttons use dark text), focus rings, labels,
+5. Run an axe audit and fix everything: color contrast (accent buttons use navy text, never white), focus rings, labels,
    error messages linked with `aria-describedby`, reduced-motion support.
 6. Performance: hero LCP under 2.5s on mobile 4G, and the booking modal JS loaded with `next/dynamic` only
    when opened.

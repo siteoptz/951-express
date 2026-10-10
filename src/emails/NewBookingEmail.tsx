@@ -28,11 +28,7 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
 
       <Block title="Customer">
         <Field label="Name">{d.customer.name}</Field>
-        <Field label="Phone">
-          <Link href={`tel:${d.customer.phone}`} style={{ color: colors.navy }}>
-            {d.customer.phone}
-          </Link>
-        </Field>
+        <Field label="Phone">{d.customer.phone}</Field>
         <Field label="Email">
           <Link href={`mailto:${d.customer.email}`} style={{ color: colors.navy }}>
             {d.customer.email}
@@ -75,8 +71,8 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
           {d.topDeck ? (
             <span
               style={{
-                backgroundColor: '#FFF4DC',
-                color: '#8A5A00',
+                backgroundColor: '#FDE8D9',
+                color: '#9A3412',
                 padding: '2px 8px',
                 borderRadius: 4,
                 fontWeight: 800,

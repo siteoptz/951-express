@@ -4,7 +4,15 @@ import Stripe from 'stripe';
 import { createDb } from '../src/db';
 import { bookings, routes, weekOverrides } from '../src/db/schema';
 import { bookableWeeks } from '../src/lib/weeks';
-import { asNewVisitor, dialog, fillDetails, mockVpic, openModal, reachSummary } from './helpers';
+import {
+  asNewVisitor,
+  dialog,
+  expectAccessible,
+  fillDetails,
+  mockVpic,
+  openModal,
+  reachSummary,
+} from './helpers';
 
 // Real Stripe test mode, with `stripe listen` forwarding webhooks to the app. Run: npm run e2e:stripe
 // Uses the DATABASE_URL in .env.local: a Neon dev branch only.
@@ -107,6 +115,7 @@ test('the cart shows the vehicle, totals, deposit, hold countdown, and embedded 
   expect(m * 60 + s).toBeGreaterThan(29 * 60); // 30:10 at the start, minus a few seconds
   expect(m * 60 + s).toBeLessThanOrEqual(30 * 60 + 11); // session expiry is 30:10 out, shown rounded up
 
+  await expectAccessible(page, 'payment step (cart and countdown)', 'dialog[open]');
   const b = await latestBooking(week.start);
   expect(b).toMatchObject({ status: 'held', depositCents: 35000 });
   const session = await stripe.checkout.sessions.retrieve(b.stripeSessionId!);
@@ -303,10 +312,12 @@ test('after paying, Step 3 finishes the booking inside the modal @stripe', async
   await expect(d.getByRole('group', { name: 'Pickup address' }).getByLabel('ZIP')).toHaveValue(
     '90001',
   );
+  await expectAccessible(page, 'step 3 in the modal', 'dialog[open]');
   await fillDetails(d);
   await d.getByRole('button', { name: 'Finish my booking' }).click();
   await expect(d.getByText("✓ You're booked!")).toBeVisible();
   await expect(d.getByText('2020 Honda Civic')).toBeVisible();
+  await expectAccessible(page, 'booked confirmation in the modal', 'dialog[open]');
   const done = await waitForStatus(week.start, 'completed');
   expect(done.customer).toMatchObject({ firstName: 'Pat', email: 'e2e-buyer@example.com' });
   expect(done.notes).toBe('Gate code 1234');

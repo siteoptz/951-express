@@ -3,7 +3,7 @@
 import { useId, useState } from 'react';
 import { useBooking } from '@/components/booking/BookingProvider';
 import { Button, ButtonLink } from '@/components/ui/Button';
-import { company } from '@/config/company';
+import { company, contactMailto } from '@/config/company';
 import { regionLabels, type Region } from '@/config/routes';
 import { landing } from '@/content/landing';
 
@@ -63,8 +63,8 @@ export function ZipCheckBox() {
   }
 
   const call = (
-    <ButtonLink variant="ghostDark" href={company.phoneHref} className="mt-3 w-full">
-      {t.call.replace('{phone}', company.phone)}
+    <ButtonLink variant="ghostDark" href={contactMailto} className="mt-3 w-full">
+      {t.email.replace('{email}', company.contactEmail)}
     </ButtonLink>
   );
 

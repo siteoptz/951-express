@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { company } from '@/config/company';
+import { contactMailto } from '@/config/company';
 import { landing } from '@/content/landing';
 import { QuoteButton } from '@/components/booking/QuoteButton';
 import { ButtonLink } from '@/components/ui/Button';
@@ -26,15 +26,15 @@ export function Hero() {
         />
       </div>
       <Container className="relative -mt-12 pb-12 sm:mt-0 sm:pb-16 sm:pt-96">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-amber">{h.kicker}</p>
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent">{h.kicker}</p>
         <h1 className="mt-3 max-w-3xl font-display text-5xl font-extrabold uppercase leading-[0.95] sm:text-7xl">
           {h.title}
         </h1>
         <p className="mt-5 max-w-xl text-lg text-white/85">{h.subhead}</p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <QuoteButton className="!py-4 text-lg">{h.cta}</QuoteButton>
-          <ButtonLink variant="ghost" href={company.phoneHref} className="!py-4 text-lg">
-            Call {company.phone}
+          <ButtonLink variant="ghost" href={contactMailto} className="!py-4 text-lg">
+            {h.emailCta}
           </ButtonLink>
         </div>
       </Container>

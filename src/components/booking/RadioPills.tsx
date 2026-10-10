@@ -32,7 +32,7 @@ export function RadioPills<T extends string>({
               onChange={() => onChange(o.value)}
               className="peer sr-only"
             />
-            <span className="block rounded-lg border-2 border-black/15 px-4 py-3 font-semibold peer-checked:border-navy peer-checked:bg-navy peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-amber">
+            <span className="block rounded-lg border-2 border-black/15 px-4 py-3 font-semibold peer-checked:border-navy peer-checked:bg-navy peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
               {o.label}
             </span>
             {o.extra}

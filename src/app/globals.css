@@ -4,8 +4,10 @@
   --color-navy: #0e1a2b;
   --color-blue-deep: #17304f;
   --color-blue-mid: #1d3b60;
-  --color-amber: #f5a524;
-  --color-amber-dark: #d98c0c;
+  /* The logo orange. Fills carry navy text (5.65:1); never white text on orange. */
+  --color-accent: #f06a1a;
+  --color-accent-dark: #db5f14; /* hover fill; navy text 4.71:1 */
+  --color-accent-text: #c2410c; /* orange as TEXT or a focus ring on white or light surfaces: 5.18:1 on white, 4.74:1 on #f3f5f8 */
   --color-success: #1f9d55;
   --color-success-dark: #17803f;
   --color-danger: #c8343b;
@@ -33,8 +35,19 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-amber);
+  outline: 3px solid var(--color-accent-text);
   outline-offset: 2px;
+}
+/* On the navy areas the logo orange is the stronger ring (5.65:1); white cards and the dialog switch back. */
+header :focus-visible,
+footer :focus-visible,
+.bg-navy :focus-visible,
+.bg-blue-deep :focus-visible {
+  outline-color: var(--color-accent);
+}
+.bg-white :focus-visible,
+dialog :focus-visible {
+  outline-color: var(--color-accent-text);
 }
 
 dialog::backdrop {

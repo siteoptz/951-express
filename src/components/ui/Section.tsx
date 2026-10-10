@@ -17,7 +17,7 @@ export function Section({
     navy: 'bg-navy text-white',
   };
   return (
-    <section id={id} className={`scroll-mt-20 py-16 sm:py-24 ${tones[tone]} ${className}`}>
+    <section id={id} className={`scroll-mt-28 py-16 sm:py-24 ${tones[tone]} ${className}`}>
       <Container>{children}</Container>
     </section>
   );

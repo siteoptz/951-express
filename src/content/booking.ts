@@ -19,8 +19,8 @@ export const bookingCopy = {
     deliveryHintWest: 'Delivery must be in our East region.',
     deliveryHintEast: 'Delivery must be in our West region.',
     checking: 'Checking…',
-    lookupError: "We couldn't check that ZIP right now. Please try again or call us.",
-    call: 'Call {phone}',
+    lookupError: "We couldn't check that ZIP right now. Please try again or email us.",
+    email: 'Email {email}',
     qualified: '✓ Great news, we service this route.',
   },
   vehicle: {
@@ -56,7 +56,7 @@ export const bookingCopy = {
   weeks: {
     heading: 'Estimated pickup week · {route}',
     loading: 'Loading available weeks…',
-    error: "We couldn't load pickup weeks. Please try again or call us.",
+    error: "We couldn't load pickup weeks. Please try again or email us.",
     retry: 'Try again',
     spotsLeft: '{n} spots left',
     oneSpotLeft: '1 spot left',
@@ -70,7 +70,7 @@ export const bookingCopy = {
   },
   submit: 'See My Price & Deposit →',
   submitting: 'Calculating…',
-  genericError: 'Something went wrong. Please try again or call us.',
+  genericError: 'Something went wrong. Please try again or email us.',
   lead: {
     heading: 'Request a personalized quote',
     intro:
@@ -106,7 +106,7 @@ export const bookingCopy = {
     weekFull: 'That pickup week just filled up.',
     nextWeek: 'The next available week is {label}.',
     useNextWeek: 'Use {label}',
-    noNextWeek: 'No other weeks are open right now. Please call us.',
+    noNextWeek: 'No other weeks are open right now. Please email us.',
   },
   payment: {
     heading: 'Pay your deposit',
@@ -120,8 +120,8 @@ export const bookingCopy = {
     holdAgain: 'Hold my spot again',
     confirming: 'Confirming your payment…',
     confirmingSlow:
-      'Your payment went through, but we are still confirming it. We will email you a link to finish your details. You can also call us.',
-    noKey: 'Online payment is not available right now. Please call us to book.',
+      'Your payment went through, but we are still confirming it. We will email you a link to finish your details. You can also email us.',
+    noKey: 'Online payment is not available right now. Please email us to book.',
     back: '← Edit my answers',
   },
   details: {
@@ -181,9 +181,9 @@ export const bookingCopy = {
     title: 'Finish your booking',
     unpaidHeading: "We haven't received your deposit yet",
     unpaidBody:
-      'This booking does not have a paid deposit. Start a new quote to reserve a spot, or call us.',
+      'This booking does not have a paid deposit. Start a new quote to reserve a spot, or email us.',
     startQuote: 'Get My Instant Quote',
     notFoundHeading: 'Booking not found',
-    notFoundBody: 'This link is not valid. Use the link in your deposit email, or call us.',
+    notFoundBody: 'This link is not valid. Use the link in your deposit email, or email us.',
   },
 } as const;

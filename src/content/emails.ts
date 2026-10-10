@@ -14,7 +14,7 @@ export const emailCopy = {
     balanceNote: 'The balance is due at delivery.',
     personalItemsHeading: 'Personal items',
     topDeckHeading: 'Why Top Deck Load',
-    questions: 'Questions? Call or reply to this email.',
+    questions: 'Questions? Reply to this email or write to',
   },
   team: {
     subject: 'New Booking: {vehicle} · {route} · Week of {week} · Deposit Paid',

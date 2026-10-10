@@ -1,9 +1,9 @@
-import { company } from '@/config/company';
+import { company, contactMailto } from '@/config/company';
 import { landing } from '@/content/landing';
 import { QuoteButton } from '@/components/booking/QuoteButton';
 import { Container } from '@/components/ui/Container';
 import { CopyrightYear } from './CopyrightYear';
-import { Wordmark } from './Wordmark';
+import { Logo } from './Logo';
 
 export function SiteFooter() {
   const a = company.address;
@@ -13,30 +13,25 @@ export function SiteFooter() {
       <Container>
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div>
-            <Wordmark className="text-white" />
+            <Logo size="footer" />
             <address className="mt-3 not-italic">
               <p>{street}</p>
               <p>
-                <a className="hover:text-amber" href={company.phoneHref}>
-                  {company.phone}
+                <a className="hover:text-accent" href={contactMailto}>
+                  {company.contactEmail}
                 </a>
               </p>
-              {company.email && (
-                <p>
-                  <a className="hover:text-amber" href={`mailto:${company.email}`}>
-                    {company.email}
-                  </a>
-                </p>
-              )}
+              <p className="mt-2 max-w-md text-sm text-white/70">{company.insurance}</p>
             </address>
           </div>
           <QuoteButton>{landing.footer.cta}</QuoteButton>
         </div>
         <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-sm sm:flex-row sm:justify-between">
           <p>
-            © <CopyrightYear /> {company.name}. USDOT {company.usdot} · MC {company.mc}
+            © <CopyrightYear /> {company.name}. USDOT {company.usdot} ·{' '}
+            <span className="whitespace-nowrap">{company.mc}</span>
           </p>
-          <a href="/terms" className="hover:text-amber">
+          <a href="/terms" className="hover:text-accent">
             Terms &amp; Conditions
           </a>
         </div>

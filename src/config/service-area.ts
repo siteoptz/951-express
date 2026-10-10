@@ -86,9 +86,9 @@ export const regionStyle: Record<
   },
   east: {
     label: 'East region (pickup & delivery)',
-    dot: '#F5A524',
-    tint: '#F8CE80',
-    text: '#8A5A00',
+    dot: '#F06A1A', // the logo orange
+    tint: '#F9C9A8', // full tint; navy text on it is 11.6:1
+    text: '#C2410C', // the mobile EAST label, on white with a halo: 5.18:1
   },
 };
 

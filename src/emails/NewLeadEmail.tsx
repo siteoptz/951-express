@@ -19,11 +19,7 @@ export function NewLeadEmail({ d }: { d: ReturnType<typeof buildLeadEmailData> }
 
       <Block title="Contact">
         <Field label="Name">{d.name}</Field>
-        <Field label="Phone">
-          <Link href={`tel:${d.phone}`} style={{ color: colors.navy }}>
-            {d.phone}
-          </Link>
-        </Field>
+        <Field label="Phone">{d.phone}</Field>
         <Field label="Email">
           <Link href={`mailto:${d.email}`} style={{ color: colors.navy }}>
             {d.email}

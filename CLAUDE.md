@@ -54,9 +54,19 @@ password-protected /admin.
 - American English in all copy and code comments.
 
 ## Brand (from the approved proposal mockups)
-- Navy `#0E1A2B` (nav and hero), deep blue `#17304F` to `#1D3B60` (hero gradient), amber `#F5A524`
-  (primary buttons and accents), success `#1F9D55`, full/unavailable `#C8343B`, soft background `#F3F5F8`.
-- Wordmark "951 **EXPRESS**", with EXPRESS in amber, until the client supplies a logo file.
+- Navy `#0E1A2B` (nav and hero), deep blue `#17304F` to `#1D3B60` (hero gradient), success `#1F9D55` (text on white:
+  `#17803F`), full/unavailable `#C8343B`, soft background `#F3F5F8`.
+- **Accent: the logo orange `#F06A1A`** (approved; it replaced the old amber `#F5A524`). Tokens in `src/app/globals.css`:
+  `accent` `#F06A1A`, `accent-dark` `#DB5F14` (hover fill), `accent-text` `#C2410C` (orange as text or a focus ring on
+  white or light surfaces).
+  - Fills (buttons, bars, callout tints) use the accent with **navy text `#0E1A2B`** (5.65:1; `accent-dark` hover is 4.71:1).
+    **Never white text on orange** (3.1:1, fails AA).
+  - Orange as text on a light background uses `accent-text` (5.18:1 on white, 4.74:1 on `#F3F5F8`). Orange text on the navy
+    areas can use the accent itself (5.65:1 on navy; large text only on `#17304F`, 4.31:1).
+  - The map's East region, the terminal pin, email accents, and the focus ring follow the same rules.
+- Logo: `public/images/logos/` (made from `originals/951-express-logo.*` by `scripts/optimize-images.mjs`); alt text "951 Express Inc. logo".
+- No phone number anywhere on the site or in emails. Contact is email only: `company.contactEmail` in `src/config/company.ts`.
+- Only client-confirmed facts in the trust bar: USDOT 4020917, MC-1516594, "Fully licensed and bonded with a cargo limit of $250,000 per occurrence".
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 
 ## Commands

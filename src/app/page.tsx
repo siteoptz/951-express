@@ -7,7 +7,6 @@ import { Services } from '@/components/landing/Services';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { TrustBar } from '@/components/landing/TrustBar';
-import { TrustLogos } from '@/components/landing/TrustLogos';
 
 export default function Home() {
   return (
@@ -20,7 +19,6 @@ export default function Home() {
         <Services />
         <ServiceAreaMap />
         <Gallery />
-        <TrustLogos />
         <ContactSection />
       </main>
       <SiteFooter />

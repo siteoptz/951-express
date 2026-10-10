@@ -26,10 +26,11 @@ WHAT HAPPENS NEXT
 PERSONAL ITEMS
 100 lbs included. Anything over 100 lbs is at the driver's discretion.
 
-Questions? Call or reply to this email. (951) 427-9763
+Questions? Reply to this email or write to 951.dispatcher@gmail.com
 
-951 Express Inc · USDOT 4020917 · MC 1516594
-(951) 427-9763"
+951 Express Inc · USDOT 4020917 · MC-1516594
+Fully licensed and bonded with a cargo limit of $250,000 per occurrence
+951.dispatcher@gmail.com"
 `;
 
 exports[`NewBookingEmail > lists customer, shipment, and payment (snapshot) 1`] = `
@@ -65,8 +66,9 @@ Stripe: https://dashboard.stripe.com/test/payments/pi_123
 
 Times are Pacific.
 
-951 Express Inc · USDOT 4020917 · MC 1516594
-(951) 427-9763"
+951 Express Inc · USDOT 4020917 · MC-1516594
+Fully licensed and bonded with a cargo limit of $250,000 per occurrence
+951.dispatcher@gmail.com"
 `;
 
 exports[`NewLeadEmail > asks the team to quote (snapshot) 1`] = `
@@ -92,6 +94,7 @@ Notes: Lifted
 
 Received Oct 10, 2026, 1:05 PM PDT (Pacific).
 
-951 Express Inc · USDOT 4020917 · MC 1516594
-(951) 427-9763"
+951 Express Inc · USDOT 4020917 · MC-1516594
+Fully licensed and bonded with a cargo limit of $250,000 per occurrence
+951.dispatcher@gmail.com"
 `;

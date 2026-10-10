@@ -145,7 +145,8 @@ describe('CustomerConfirmationEmail', () => {
         "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
       );
       expect(out).toContain('Balance due at delivery');
-      expect(out).toContain('(951) 427-9763');
+      expect(out).toContain('951.dispatcher@gmail.com');
+      expect(out).not.toMatch(/\(951\) 427/);
     }
   });
 });

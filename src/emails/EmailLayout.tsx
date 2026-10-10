@@ -5,6 +5,7 @@ import {
   Head,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Row,
@@ -12,10 +13,11 @@ import {
   Text,
 } from '@react-email/components';
 import type { ReactNode } from 'react';
-import { company } from '@/config/company';
+import { company, contactMailto } from '@/config/company';
+import { siteUrl } from '@/config/site';
 
 const navy = '#0E1A2B';
-const amber = '#F5A524';
+const accent = '#F06A1A';
 const muted = '#55627A';
 const line = '#E3E7EE';
 const font = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -43,28 +45,27 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
             overflow: 'hidden',
           }}
         >
-          <Section style={{ backgroundColor: navy, padding: '20px 28px' }}>
-            <Text
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 800,
-                letterSpacing: 1,
-                color: '#FFFFFF',
-              }}
-            >
-              951 <span style={{ color: amber }}>EXPRESS</span>
-            </Text>
+          <Section style={{ backgroundColor: navy, padding: '16px 28px' }}>
+            {/* An absolute URL on our own site: email clients cannot load a relative path. */}
+            <Img
+              src={`${siteUrl()}${company.logo.email.path}`}
+              alt={company.logo.alt}
+              width={company.logo.email.width}
+              height={company.logo.email.height}
+              style={{ display: 'block', border: 0 }}
+            />
           </Section>
           <Section style={{ padding: '24px 28px 8px' }}>{children}</Section>
           <Hr style={{ borderColor: line, margin: '16px 28px 0' }} />
           <Section style={{ padding: '16px 28px 24px' }}>
             <Text style={{ margin: 0, fontSize: 12, lineHeight: '18px', color: muted }}>
-              {company.name} · USDOT {company.usdot} · MC {company.mc}
+              {company.name} · USDOT {company.usdot} · {company.mc}
+              <br />
+              {company.insurance}
               <br />
               {company.address.city}, {company.address.state} ·{' '}
-              <Link href={company.phoneHref} style={{ color: muted }}>
-                {company.phone}
+              <Link href={contactMailto} style={{ color: muted }}>
+                {company.contactEmail}
               </Link>
             </Text>
           </Section>
@@ -168,7 +169,7 @@ export function Banner({
   const colors = {
     warn: ['#FDECEC', '#C8343B'],
     good: ['#E6F4EC', '#17803F'],
-    info: ['#FFF4DC', '#8A5A00'],
+    info: ['#FDE8D9', '#F06A1A'],
   }[tone];
   return (
     <Section
@@ -185,4 +186,4 @@ export function Banner({
   );
 }
 
-export const colors = { navy, amber, muted, line, danger: '#C8343B', success: '#17803F' };
+export const colors = { navy, accent, muted, line, danger: '#C8343B', success: '#17803F' };

@@ -100,7 +100,7 @@ export async function createCheckout(
       };
     return {
       status: 503,
-      error: 'Booking is unavailable right now. Please call us.',
+      error: 'Booking is unavailable right now. Please email us.',
       reason: 'route_unavailable',
     };
   }
@@ -139,7 +139,7 @@ export async function createCheckout(
     await cancelHold(db, hold.bookingId); // do not keep a spot for a payment that cannot happen
     return {
       status: 502,
-      error: 'We could not start secure checkout. Please try again or call us.',
+      error: 'We could not start secure checkout. Please try again or email us.',
       reason: 'stripe_unavailable',
     };
   }

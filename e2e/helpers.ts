@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 // vPIC answers are mocked at our own /api/vehicles boundary, so tests never depend on NHTSA.
@@ -92,4 +93,21 @@ export async function fillDetails(root: Page | Locator, opts: { email?: string }
     .getByLabel('Street address')
     .fill('9 Pier Rd');
   await root.getByLabel('Notes for the driver (optional)').fill('Gate code 1234');
+}
+
+/**
+ * WCAG 2.1 A and AA (including color contrast) on the page, or only inside `scope`. Stripe's own iframe is excluded:
+ * it is a third-party document axe cannot see into.
+ */
+export async function expectAccessible(page: Page, label: string, scope?: string) {
+  let builder = new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .exclude('iframe');
+  if (scope) builder = builder.include(scope);
+  const results = await builder.analyze();
+  const found = results.violations.map(
+    (v) =>
+      `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(' ')} ${n.any[0]?.message ?? ''}`).join(' | ')}`,
+  );
+  expect(found, `axe violations (${label})`).toEqual([]);
 }

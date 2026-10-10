@@ -105,8 +105,8 @@ describe('state tint', () => {
   const byAbbr = Object.fromEntries(buildMap().states.map((s) => [s.abbr, s]));
   it('is gray for uncovered states and the full tint at 60% coverage or more', () => {
     expect(tintFor(null, 0)).toBe('#E4E8EE');
-    expect(tintFor('east', 0.6)).toBe('#F8CE80');
-    expect(tintFor('east', 1)).toBe('#F8CE80');
+    expect(tintFor('east', 0.6)).toBe('#F9C9A8');
+    expect(tintFor('east', 1)).toBe('#F9C9A8');
     expect(tintFor('west', 0.6)).toBe('#9FB5D1');
   });
   it('keeps a minimum tint so a covered state is never gray', () => {

@@ -3,9 +3,9 @@
 Check items off as they arrive. Every placeholder in code is marked `TODO(client)`.
 
 ## Brand and photography
-- [ ] Logo files (SVG or high-res PNG, light and dark versions). Until then, the "951 EXPRESS" text wordmark is used.
+- [x] Logo received (JPEG on a black background; the black was cut out to make a transparent version). A clean transparent PNG or SVG from the client would be sharper: drop it at `originals/951-express-logo.png` and run `node scripts/optimize-images.mjs`.
+- [x] Accent color: the logo orange #F06A1A (approved), with navy text on it.
 - [ ] **Hero:** only one supplied photo is at least 2000px wide (the red truck profile on gravel). Ask for a higher-resolution, carrier-in-frame hero shot if they want a stronger option.
-- [ ] **Trust badges / partner logos:** none supplied. The `TrustLogos` section stays a labeled placeholder.
 - [ ] **Team / office / terminal photos:** none supplied. The About section uses the fleet photo only.
 - [ ] More gallery photos (we have 2). Original files, not screenshots or messaging-app copies.
 - [ ] Approval to publish the photos, including the blurred license plates.
@@ -20,11 +20,11 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] Confirm the sedan and SUV class lists and the pickup year cutoffs (Ranger 2013-2018 is unclassified: those years were not sold in the U.S., so the customer picks).
 - [ ] Should full-size vans (Transit, Sprinter, Express, Savana, ProMaster) be quote-required? Savana was added as the Express twin.
 - [ ] Weekly capacity per route (placeholder: 12 per direction).
-- [ ] Public contact email and street address.
-- [ ] Years in operation, insurance amount, and confirmation of the trust stats (0 crashes in 24 months, $750K insurance).
+- [x] Public contact email: 951.dispatcher@gmail.com (the site shows no phone number). [ ] Street address.
+- [x] USDOT 4020917, MC-1516594, and the insurance wording (fully licensed and bonded, cargo limit of $250,000 per occurrence) are confirmed and shown. Nothing else is claimed: no crash record, no years in operation. Add a stat to `company.confirmedStats` only after the client confirms it.
 
 ## Legal
-- [ ] Final Terms and Conditions text.
+- [ ] Terms are a standard draft. Cal should confirm the `TODO(client)` items in `src/content/terms.ts` (cancellation window, refund timing, accepted payment methods at delivery, claim deadline, packing rules, surcharges, governing venue) and have the terms reviewed by an attorney before taking live deposits.
 
 ## Accounts and infrastructure
 - [ ] Stripe account activated in the client's name (test keys now, live keys at launch).

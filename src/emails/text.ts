@@ -7,7 +7,7 @@ import { money } from '@/lib/format';
 const line = (label: string, value: string) => `${label}: ${value}`;
 const section = (title: string, rows: string[]) => `${title.toUpperCase()}\n${rows.join('\n')}`;
 const yn = (v: boolean) => (v ? 'Yes' : 'No');
-const footer = `${company.name} · USDOT ${company.usdot} · MC ${company.mc}\n${company.phone}`;
+const footer = `${company.name} · USDOT ${company.usdot} · ${company.mc}\n${company.insurance}\n${company.contactEmail}`;
 
 export function teamText(d: BookingEmailData): string {
   const parts: string[] = [];
@@ -89,7 +89,7 @@ export function customerText(d: BookingEmailData): string {
           ),
         ]
       : []),
-    `${c.questions} ${company.phone}`,
+    `${c.questions} ${company.contactEmail}`,
     footer,
   ];
   return parts.join('\n\n');

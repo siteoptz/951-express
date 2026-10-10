@@ -95,8 +95,8 @@ export function depositEmailContent(i: DepositEmailInput) {
   const car = `${i.vehicle.year} ${i.vehicle.make} ${i.vehicle.model}`;
   const week = weekLabel(i.weekStart);
   const subject = 'Deposit received. Finish your booking details';
-  const text = `Thanks, we received your deposit and your spot is reserved.\n\nVehicle: ${car}\nPickup week: ${week}\n\nFinish your booking details here:\n${link}\n\nQuestions? Call ${company.phone}.\n${company.name}`;
-  const html = `<p>Thanks, we received your deposit and your spot is reserved.</p><p><strong>Vehicle:</strong> ${esc(car)}<br><strong>Pickup week:</strong> ${esc(week)}</p><p><a href="${esc(link)}">Finish your booking details</a></p><p>Questions? Call ${esc(company.phone)}.<br>${esc(company.name)}</p>`;
+  const text = `Thanks, we received your deposit and your spot is reserved.\n\nVehicle: ${car}\nPickup week: ${week}\n\nFinish your booking details here:\n${link}\n\nQuestions? Reply to this email or write to ${company.contactEmail}.\n${company.name}`;
+  const html = `<p>Thanks, we received your deposit and your spot is reserved.</p><p><strong>Vehicle:</strong> ${esc(car)}<br><strong>Pickup week:</strong> ${esc(week)}</p><p><a href="${esc(link)}">Finish your booking details</a></p><p>Questions? Reply to this email or write to ${esc(company.contactEmail)}.<br>${esc(company.name)}</p>`;
   return { subject, text, html, link };
 }
 

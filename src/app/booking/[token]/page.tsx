@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { ButtonLink } from '@/components/ui/Button';
 import { BookingFlow } from '@/components/booking/BookingFlow';
-import { Wordmark } from '@/components/landing/Wordmark';
+import { Logo } from '@/components/landing/Logo';
 import { getDb } from '@/db';
 import { bookingCopy as t } from '@/content/booking';
 import { getBookingView } from '@/server/booking-view';
@@ -38,9 +38,9 @@ export default function BookingPage({ params }: PageProps<'/booking/[token]'>) {
   return (
     <div className="min-h-screen bg-soft">
       <header className="bg-navy text-white">
-        <div className="mx-auto flex h-16 max-w-xl items-center px-5">
+        <div className="mx-auto flex h-[72px] max-w-xl items-center px-5 md:h-24">
           <Link href="/" aria-label="951 Express home">
-            <Wordmark />
+            <Logo size="header" />
           </Link>
         </div>
       </header>

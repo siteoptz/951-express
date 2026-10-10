@@ -151,7 +151,7 @@ export function ServiceAreaMap() {
                 <g transform={`translate(${map.terminal.x} ${map.terminal.y})`}>
                   <path
                     d="M0 0C-11-14-13-22-13-27a13 13 0 0 1 26 0C13-22 11-14 0 0z"
-                    fill="#F5A524"
+                    fill="#F06A1A"
                     stroke="#0E1A2B"
                     strokeWidth="2.5"
                   />
@@ -176,7 +176,7 @@ export function ServiceAreaMap() {
               <svg aria-hidden="true" width="14" height="20" viewBox="-14 -30 28 32">
                 <path
                   d="M0 0C-11-14-13-22-13-27a13 13 0 0 1 26 0C13-22 11-14 0 0z"
-                  fill="#F5A524"
+                  fill="#F06A1A"
                   stroke="#0E1A2B"
                   strokeWidth="3"
                 />

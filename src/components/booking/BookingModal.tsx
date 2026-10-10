@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/Button';
-import { company } from '@/config/company';
+import { company, contactMailto } from '@/config/company';
 import { booking } from '@/config/booking';
 import { largeVehicle, sizeClasses, topDeck } from '@/config/pricing';
 import { routes, routingCopy, type Region } from '@/config/routes';
@@ -39,8 +39,8 @@ type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; dat
 
 const storage = () => (typeof window === 'undefined' ? null : window.sessionStorage);
 const callButton = (
-  <ButtonLink variant="ghostDark" href={company.phoneHref} className="mt-2 w-full">
-    {t.route.call.replace('{phone}', company.phone)}
+  <ButtonLink variant="ghostDark" href={contactMailto} className="mt-2 w-full">
+    {t.route.email.replace('{email}', company.contactEmail)}
   </ButtonLink>
 );
 
@@ -351,7 +351,7 @@ export default function BookingModal({
           {t.steps.map((label, i) => (
             <li key={label} aria-current={i === activeStep ? 'step' : undefined} className="flex-1">
               <div
-                className={`h-1.5 rounded-full ${i <= activeStep ? 'bg-amber' : 'bg-black/10'}`}
+                className={`h-1.5 rounded-full ${i <= activeStep ? 'bg-accent' : 'bg-black/10'}`}
               />
               <span
                 className={`mt-1 block text-xs ${i === activeStep ? 'font-bold text-ink' : 'text-muted'}`}
@@ -369,7 +369,7 @@ export default function BookingModal({
             role="alertdialog"
             aria-labelledby="confirm-title"
             aria-describedby="confirm-body"
-            className="mb-5 rounded-lg border-2 border-amber bg-amber/10 p-4"
+            className="mb-5 rounded-lg border-2 border-accent bg-accent/10 p-4"
           >
             <p id="confirm-title" className="font-bold">
               {t.confirmClose.title}
@@ -626,7 +626,7 @@ export default function BookingModal({
                             onChange={() => set('selectedClass', c.id)}
                             className="peer sr-only"
                           />
-                          <span className="block h-full rounded-lg border-2 border-black/15 px-3 py-2 peer-checked:border-navy peer-checked:bg-navy/5 peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-amber">
+                          <span className="block h-full rounded-lg border-2 border-black/15 px-3 py-2 peer-checked:border-navy peer-checked:bg-navy/5 peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-accent">
                             <span className="block font-bold">{c.label}</span>
                             <span className="block text-sm text-muted">
                               {t.vehicle.cardExample.replace('{example}', c.example)}
@@ -698,7 +698,7 @@ export default function BookingModal({
                       {form.personalItems && (
                         <p
                           role="note"
-                          className="mt-3 rounded-lg bg-amber/20 px-4 py-3 text-sm font-semibold"
+                          className="mt-3 rounded-lg bg-accent/20 px-4 py-3 text-sm font-semibold"
                         >
                           {booking.personalItemsNotice}
                         </p>
