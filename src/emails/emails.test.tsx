@@ -1,0 +1,196 @@
+import { render } from '@react-email/render';
+import { describe, expect, it } from 'vitest';
+import { CustomerConfirmationEmail } from '@/emails/CustomerConfirmationEmail';
+import { NewBookingEmail } from '@/emails/NewBookingEmail';
+import { NewLeadEmail } from '@/emails/NewLeadEmail';
+import { customerText, leadText, teamText } from '@/emails/text';
+import { buildBookingEmailData, buildLeadEmailData, type BookingForEmail } from '@/lib/email-data';
+
+// Fixed data, so the snapshots only change when the emails do.
+const addr = { street: '1 Main St', city: 'Corona', state: 'CA', zip: '92881' };
+const booking: BookingForEmail = {
+  id: '3f2b6c1e-8a7d-4f43-9d0a-2b1c5e6f7a8b',
+  vehicle: { year: 2021, make: 'Toyota', model: 'RAV4' },
+  customer: {
+    firstName: 'Pat',
+    lastName: 'Driver',
+    phone: '951-555-0100',
+    email: 'pat@example.com',
+    address: addr,
+  },
+  pickupAddress: { ...addr, zip: '92882' },
+  deliveryAddress: {
+    street: '9 Pier Rd',
+    street2: 'Unit 2',
+    city: 'Baltimore',
+    state: 'MD',
+    zip: '21201',
+  },
+  pickupZip: '92881',
+  deliveryZip: '21201',
+  weekStart: '2026-10-19',
+  sizeClass: 'small-suv',
+  sizeClassSource: 'table',
+  operable: true,
+  modified: false,
+  topDeck: false,
+  personalItems: true,
+  totalCents: 150000,
+  depositCents: 37500,
+  balanceCents: 112500,
+  needsReview: false,
+  termsVersion: '0.0-placeholder',
+  termsAcceptedAt: new Date('2026-10-10T20:05:00Z'),
+  paidAt: new Date('2026-10-10T20:09:30Z'),
+  stripePaymentIntent: 'pi_123',
+  notes: 'Gate code 1234',
+};
+const ctx = {
+  routeName: 'West → East',
+  sizeClassLabel: 'Small SUV',
+  spot: { n: 3, of: 12 },
+  stripeTestMode: true,
+};
+const text = (el: React.ReactElement) => render(el, { plainText: true });
+const html = (el: React.ReactElement) => render(el);
+
+describe('NewBookingEmail', () => {
+  const d = buildBookingEmailData(booking, ctx);
+  it('lists customer, shipment, and payment (snapshot)', async () => {
+    expect(teamText(d)).toMatchSnapshot();
+  });
+  it('shows the details the team needs, in Pacific time', async () => {
+    const out = await text(<NewBookingEmail d={d} />);
+    for (const s of [
+      '2021 Toyota RAV4',
+      'West → East',
+      'Oct 19 – 25 (spot 3 of 12)',
+      'Small SUV',
+      'from our size table',
+      '$1,500',
+      '$375',
+      '$1,125',
+      'Oct 10, 2026, 1:05 PM PDT',
+      'Version 0.0-placeholder',
+      'Gate code 1234',
+      '(quoted for ZIP 92881)',
+    ]) {
+      expect(out).toContain(s);
+    }
+    expect(out).not.toMatch(/Review needed/);
+    expect(out).not.toMatch(/TOP DECK/);
+  });
+  it('the plain-text version carries the same facts', () => {
+    const t = teamText(d);
+    for (const s of [
+      'Pickup week: Oct 19 – 25 (spot 3 of 12)',
+      'Deposit paid: $375',
+      'Balance due at delivery: $1,125',
+      'Terms accepted: Version 0.0-placeholder, Oct 10, 2026, 1:05 PM PDT',
+    ])
+      expect(t).toContain(s);
+    expect(t).not.toContain('REVIEW NEEDED');
+    const flagged = teamText(
+      buildBookingEmailData(
+        {
+          ...booking,
+          topDeck: true,
+          sizeClassSource: 'customer',
+          needsReview: true,
+          customer: { ...booking.customer, address: undefined },
+          notes: null,
+        },
+        ctx,
+      ),
+    );
+    expect(flagged).toMatch(/^REVIEW NEEDED/);
+    expect(flagged).toContain('Load type: TOP DECK LOAD');
+    expect(flagged).not.toContain('Home address');
+  });
+  it('flags review and Top Deck Load', async () => {
+    const flagged = buildBookingEmailData(
+      { ...booking, topDeck: true, sizeClassSource: 'customer', needsReview: true },
+      ctx,
+    );
+    const out = await text(<NewBookingEmail d={flagged} />);
+    expect(out).toMatch(/Review needed/);
+    expect(out).toContain('chosen by the customer');
+    expect(out).toContain('TOP DECK LOAD');
+    expect(await html(<NewBookingEmail d={flagged} />)).toContain('#C8343B');
+  });
+  it('escapes customer-supplied text', async () => {
+    const hostile = buildBookingEmailData({ ...booking, notes: '<script>alert(1)</script>' }, ctx);
+    const out = await html(<NewBookingEmail d={hostile} />);
+    expect(out).not.toContain('<script>alert(1)</script>');
+    expect(out).toContain('&lt;script&gt;');
+  });
+});
+
+describe('CustomerConfirmationEmail', () => {
+  it('is a receipt with next steps and the 100 lb policy (snapshot)', async () => {
+    expect(customerText(buildBookingEmailData(booking, ctx))).toMatchSnapshot();
+  });
+  it('includes the Top Deck benefits only when chosen', async () => {
+    const without = await text(
+      <CustomerConfirmationEmail d={buildBookingEmailData(booking, ctx)} />,
+    );
+    const withTop = await text(
+      <CustomerConfirmationEmail d={buildBookingEmailData({ ...booking, topDeck: true }, ctx)} />,
+    );
+    expect(without).not.toContain('oil leaks');
+    expect(withTop).toContain('Eliminates the possibility of oil leaks from other vehicles');
+    expect(withTop).toContain('Protects the vehicle from road debris');
+    for (const out of [without, withTop]) {
+      expect(out).toContain(
+        "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+      );
+      expect(out).toContain('Balance due at delivery');
+      expect(out).toContain('(951) 427-9763');
+    }
+  });
+});
+
+describe('NewLeadEmail', () => {
+  const lead = buildLeadEmailData(
+    {
+      id: booking.id,
+      createdAt: new Date('2026-10-10T20:05:00Z'),
+      name: 'Lee Large',
+      phone: '555-0100',
+      email: 'lee@example.com',
+      vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' },
+      pickupZip: '90001',
+      deliveryZip: '21201',
+      operable: true,
+      modified: false,
+      topDeck: false,
+      preferredWeekStart: '2026-10-26',
+      notes: 'Lifted',
+    },
+    'West → East',
+  );
+  it('asks the team to quote (snapshot)', async () => {
+    expect(leadText(lead)).toMatchSnapshot();
+  });
+  it('plain text without a preference, notes, or top deck, and with them', () => {
+    expect(leadText({ ...lead, preferredWeek: null, notes: null })).toContain(
+      'Preferred pickup week: No preference',
+    );
+    expect(leadText({ ...lead, topDeck: true })).toContain('Load type: Top Deck Load');
+    expect(leadText(lead)).toContain('Notes: Lifted');
+  });
+  it('customer plain text includes Top Deck benefits only when chosen', () => {
+    expect(customerText(buildBookingEmailData(booking, ctx))).not.toContain('oil leaks');
+    expect(customerText(buildBookingEmailData({ ...booking, topDeck: true }, ctx))).toContain(
+      '- Eliminates the possibility of oil leaks from other vehicles',
+    );
+  });
+  it('says there is no preference when none was given', async () => {
+    const out = await text(
+      <NewLeadEmail d={{ ...lead, preferredWeek: null, notes: null, topDeck: true }} />,
+    );
+    expect(out).toContain('No preference');
+    expect(out).toContain('Top Deck Load');
+    expect(out).not.toContain('Lifted');
+  });
+});

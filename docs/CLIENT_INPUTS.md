@@ -41,3 +41,8 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] A webhook endpoint per environment (`/api/stripe/webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`), each with its own `STRIPE_WEBHOOK_SECRET` in Vercel. Until then the deployed app can take payments but cannot verify webhooks; the status check still marks bookings paid.
 - [ ] Decide whether to keep Link ("Save my information for faster checkout") and the extra payment methods Stripe shows (Bank, Klarna). They are Dashboard settings.
 - [ ] `RESEND_API_KEY` and `EMAIL_FROM` for the "deposit received" email.
+
+## Email (Phase 7)
+- [x] Sending domain `notify.951express.com` verified in Resend; `EMAIL_FROM` uses it. Customers now receive confirmations.
+- [ ] Review the wording of the customer confirmation ("What happens next") in `src/content/emails.ts`.
+- [x] Dispatcher inbox: 951.dispatcher@gmail.com (`BOOKINGS_EMAIL_TO`; also the Reply-To on customer emails). Add more addresses, comma separated, if the client wants them.

@@ -264,7 +264,7 @@ a full week can't be picked, and the modal passes axe checks.
 
 ## Phase 6: Step 2 (cart + Stripe deposit)
 
-**Status:** built, awaiting approval. Notes from the build:
+**Status:** approved and deployed. Notes from the build:
 - The current Stripe API (the SDK's default) renamed `ui_mode: 'embedded'` to `'embedded_page'`. Same inline checkout.
 - Stripe requires a session to live at least 30 minutes, so the session expires 30:10 out and the hold is extended
   to match (`sessionExpiry` in `src/lib/checkout-session.ts`).
@@ -285,6 +285,8 @@ a full week can't be picked, and the modal passes axe checks.
   - A dialog, a scrolling box with a sticky header, a long page behind it, and a cart above the form, rebuilt on a bare page
     with the same geometry (iframe bottom at 860 to 912px): all pay. So the cause is something else on our page, not
     yet found. Next step: pay on real phones (Phase 10), and if it shows up there, send Stripe support the repro.
+  The stall also shows up as an occasional flake in automated runs after many test payments from one machine (a few
+  failures in dozens of runs, never in the same test twice), so `npm run e2e:stripe` retries a failed test once.
 - `npm run e2e:stripe` runs real Stripe test-mode payments with `stripe listen` forwarding webhooks.
 - Link's "Save my information" is ticked by default and then asks for a phone number. Consider turning Link off in
   the Stripe Dashboard payment methods if the client prefers a shorter form.
@@ -321,6 +323,23 @@ hold; abandoning checkout frees the spot after expiry; replaying a webhook chang
 ---
 
 ## Phase 7: Step 3 details + Step 4 emails
+
+**Status:** approved. Notes from the build:
+- Step 3 is one shared form (`DetailsForm`) used in the modal and on `/booking/[token]`. Pickup and delivery ZIPs start
+  as the quoted ZIPs; the customer may refine them, but each must stay in the quoted region (checked live, and again on
+  the server). Editing a field clears its error.
+- `POST /api/bookings/{token}/details` completes a `paid` booking once: the status change itself is the guard, so two
+  simultaneous submits cannot both win.
+- Emails use React Email with hand-built plain-text versions. They are sent after the response (`after()`), one at a
+  time (Resend allows 2 requests a second), and the result is recorded on the row (`team_email_sent_at`,
+  `customer_email_sent_at`, `email_error`; leads have `email_sent_at`, `email_error`). A failed email never undoes a booking.
+- Sending domain: `notify.951express.com` is verified in Resend (`EMAIL_FROM=951 Express Bookings <bookings@notify.951express.com>`).
+  The dispatcher inbox is `BOOKINGS_EMAIL_TO` (951.dispatcher@gmail.com). Reply-To on the deposit email and the
+  booking confirmation is that inbox (`src/config/email.ts`), because the From address is not monitored.
+- `npm run e2e:email` sends the four real emails (deposit received, new booking, confirmation, new lead) and asks Resend
+  for each one's delivery status. Customer side is `E2E_EMAIL_CUSTOMER` in `.env.local` (not committed).
+- `/booking/*` is `noindex` in the page metadata and in an `X-Robots-Tag` header.
+- `npm run email:preview` renders the emails to `.email-preview/`. `npm run e2e:email` sends real emails (3 per run).
 
 **Goal:** proposal Figure 6 (right) and Figure 7.
 

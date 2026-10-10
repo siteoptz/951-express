@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { getDb } from '@/db';
 import { leads, routes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -5,6 +6,7 @@ import { clientIp, createRateLimiter } from '@/lib/rate-limit';
 import { routeErrorMessage } from '@/lib/routing';
 import { resolveRouteForZips } from '@/lib/routing.server';
 import { quoteRequestSchema } from '@/lib/schemas';
+import { sendLeadEmail } from '@/server/booking-emails';
 import { resolveSizeClass } from '@/lib/size-class';
 import { findBookableWeek } from '@/lib/weeks';
 
@@ -57,19 +59,24 @@ export async function POST(request: Request) {
     .where(eq(routes.slug, routed.route.id));
   if (!route) return Response.json({ error: 'Route unavailable.' }, { status: 503 });
 
-  await db.insert(leads).values({
-    routeId: route.id,
-    pickupZip: d.pickupZip,
-    deliveryZip: d.deliveryZip,
-    vehicle: d.vehicle,
-    operable: d.operable,
-    modified: d.modified,
-    topDeck: d.topDeck,
-    preferredWeekStart: d.preferredWeekStart ?? null,
-    name: d.name,
-    phone: d.phone,
-    email: d.email,
-    notes: d.notes || null,
-  });
+  const [lead] = await db
+    .insert(leads)
+    .values({
+      routeId: route.id,
+      pickupZip: d.pickupZip,
+      deliveryZip: d.deliveryZip,
+      vehicle: d.vehicle,
+      operable: d.operable,
+      modified: d.modified,
+      topDeck: d.topDeck,
+      preferredWeekStart: d.preferredWeekStart ?? null,
+      name: d.name,
+      phone: d.phone,
+      email: d.email,
+      notes: d.notes || null,
+    })
+    .returning({ id: leads.id });
+  // The team email goes out after the response; a failure is recorded on the lead and never undoes it.
+  after(() => sendLeadEmail(db, lead.id));
   return Response.json({ ok: true }, { status: 201 });
 }

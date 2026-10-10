@@ -47,7 +47,7 @@ export function PaymentStep({
   quote: QuoteResponse;
   checkout: CheckoutInfo;
   onEdit: () => void;
-  onPaid: () => void;
+  onPaid: (info: { payerEmail: string | null }) => void;
   onHoldAgain: () => void;
 }) {
   const left = useCountdown(checkout.holdExpiresAt);
@@ -62,7 +62,10 @@ export function PaymentStep({
         const res = await fetch(`/api/bookings/${checkout.publicToken}/status`, {
           cache: 'no-store',
         });
-        if (res.ok && (await res.json()).paid) return onPaid();
+        if (res.ok) {
+          const body = await res.json();
+          if (body.paid) return onPaid({ payerEmail: body.payerEmail ?? null });
+        }
       } catch {
         // keep trying
       }

@@ -15,6 +15,13 @@
       "when": 1791497231936,
       "tag": "0001_ambiguous_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791664302147,
+      "tag": "0002_panoramic_nemesis",
+      "breakpoints": true
     }
   ]
 }

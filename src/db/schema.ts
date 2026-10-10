@@ -51,13 +51,20 @@ export const weekOverrides = pgTable(
 );
 
 export type Vehicle = { year: number; make: string; model: string };
-export type Customer = { firstName: string; lastName: string; phone: string; email: string };
 export type Address = {
   street: string;
   street2?: string;
   city: string;
   state: string;
   zip: string;
+};
+/** The customer's own details from Step 3; `address` is their home address. */
+export type Customer = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  address?: Address;
 };
 
 export const bookings = pgTable(
@@ -99,6 +106,10 @@ export const bookings = pgTable(
     paidAt: timestamp('paid_at', { withTimezone: true }),
     detailsSubmittedAt: timestamp('details_submitted_at', { withTimezone: true }),
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    // Email bookkeeping. A failed email never fails the booking: the error is kept here instead.
+    teamEmailSentAt: timestamp('team_email_sent_at', { withTimezone: true }),
+    customerEmailSentAt: timestamp('customer_email_sent_at', { withTimezone: true }),
+    emailError: text('email_error'),
   },
   (t) => [
     index('bookings_route_week_status_idx').on(t.routeId, t.weekStart, t.status),
@@ -126,6 +137,8 @@ export const leads = pgTable('leads', {
   email: text('email').notNull(),
   notes: text('notes'),
   status: leadStatusEnum('status').notNull().default('new'),
+  emailSentAt: timestamp('email_sent_at', { withTimezone: true }),
+  emailError: text('email_error'),
 });
 
 /** Base price per size class. Seeded from src/config/pricing.ts; the admin edits these in Phase 8. */

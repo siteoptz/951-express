@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 // vPIC answers are mocked at our own /api/vehicles boundary, so tests never depend on NHTSA.
 // The real API is covered by the separate @live smoke test (e2e/vpic-live.spec.ts).
@@ -70,4 +70,26 @@ export async function reachSummary(page: Page, opts: { week?: string } = {}) {
   await d.getByRole('checkbox', { name: /I agree to the Terms/ }).check();
   await d.getByRole('button', { name: 'See My Price & Deposit →' }).click();
   await expect(d.getByRole('heading', { name: 'Your quote' })).toBeVisible();
+}
+
+/** Fills a valid Step 3 form (in the modal or on the /booking page). The email is whatever was prefilled unless given. */
+export async function fillDetails(root: Page | Locator, opts: { email?: string } = {}) {
+  await root.getByLabel('First name').fill('Pat');
+  await root.getByLabel('Last name').fill('Driver');
+  await root.getByLabel('Phone').fill('951-555-0100');
+  if (opts.email) await root.getByLabel('Email').fill(opts.email);
+  const home = root.getByRole('group', { name: 'Your address' });
+  await home.getByLabel('Street address').fill('1 Main St');
+  await home.getByLabel('City').fill('Corona');
+  await home.getByLabel('State').fill('CA');
+  await home.getByLabel('ZIP').fill('92881');
+  await root
+    .getByRole('group', { name: 'Pickup address' })
+    .getByLabel('Street address')
+    .fill('77 Sunset Blvd');
+  await root
+    .getByRole('group', { name: 'Delivery address' })
+    .getByLabel('Street address')
+    .fill('9 Pier Rd');
+  await root.getByLabel('Notes for the driver (optional)').fill('Gate code 1234');
 }

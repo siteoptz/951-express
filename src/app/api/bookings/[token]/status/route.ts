@@ -32,6 +32,8 @@ export async function GET(request: Request, ctx: RouteContext<'/api/bookings/[to
       status: booking.status,
       paid: booking.status === 'paid' || booking.status === 'completed',
       holdExpiresAt: booking.holdExpiresAt,
+      // Prefills the email field on Step 3 (the address Stripe collected). Only the holder of the token sees it.
+      payerEmail: booking.payerEmail,
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );

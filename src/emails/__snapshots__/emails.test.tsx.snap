@@ -1,0 +1,97 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CustomerConfirmationEmail > is a receipt with next steps and the 100 lb policy (snapshot) 1`] = `
+"You're booked!
+Thanks for choosing 951 Express. We received your deposit and your spot is reserved.
+
+YOUR RECEIPT
+Booking: 3F2B6C1E
+Vehicle: 2021 Toyota RAV4
+Route: West → East
+Pickup week: Oct 19 – 25
+Pickup: 1 Main St, Corona, CA 92882
+Delivery: 9 Pier Rd, Unit 2, Baltimore, MD 21201
+Load type: Standard
+Transport total: $1,500
+Deposit paid: $375
+Balance due at delivery: $1,125
+
+The balance is due at delivery.
+
+WHAT HAPPENS NEXT
+1. We review your details and contact you to confirm your pickup date within your reserved week.
+2. Your driver calls you before pickup and before delivery.
+3. You pay the remaining balance to the driver at delivery.
+
+PERSONAL ITEMS
+100 lbs included. Anything over 100 lbs is at the driver's discretion.
+
+Questions? Call or reply to this email. (951) 427-9763
+
+951 Express Inc · USDOT 4020917 · MC 1516594
+(951) 427-9763"
+`;
+
+exports[`NewBookingEmail > lists customer, shipment, and payment (snapshot) 1`] = `
+"2021 Toyota RAV4
+West → East · Week of Oct 19 – 25 · Booking 3F2B6C1E
+
+CUSTOMER
+Name: Pat Driver
+Phone: 951-555-0100
+Email: pat@example.com
+Home address: 1 Main St, Corona, CA 92881
+
+SHIPMENT
+Pickup: 1 Main St, Corona, CA 92882 (quoted for ZIP 92881)
+Delivery: 9 Pier Rd, Unit 2, Baltimore, MD 21201
+Route and direction: West → East
+Pickup week: Oct 19 – 25 (spot 3 of 12)
+Vehicle: 2021 Toyota RAV4
+Size class: Small SUV (from our size table)
+Operable: Yes
+Modified: No
+Load type: Standard
+Personal items: Yes (100 lbs included)
+Notes for the driver: Gate code 1234
+
+PAYMENT
+Transport total: $1,500
+Deposit paid: $375
+Balance due at delivery: $1,125
+Paid: Oct 10, 2026, 1:09 PM PDT
+Terms accepted: Version 0.0-placeholder, Oct 10, 2026, 1:05 PM PDT
+Stripe: https://dashboard.stripe.com/test/payments/pi_123
+
+Times are Pacific.
+
+951 Express Inc · USDOT 4020917 · MC 1516594
+(951) 427-9763"
+`;
+
+exports[`NewLeadEmail > asks the team to quote (snapshot) 1`] = `
+"New quote request
+2021 Chevrolet Tahoe · West → East · Request 3F2B6C1E
+
+Large vehicle: no online price. No deposit was taken and no spot is held.
+
+CONTACT
+Name: Lee Large
+Phone: 555-0100
+Email: lee@example.com
+
+SHIPMENT
+Vehicle: 2021 Chevrolet Tahoe
+Route: West → East
+Pickup ZIP: 90001
+Delivery ZIP: 21201
+Operable: Yes
+Modified: No
+Preferred pickup week: Oct 26 – Nov 1
+Notes: Lifted
+
+Received Oct 10, 2026, 1:05 PM PDT (Pacific).
+
+951 Express Inc · USDOT 4020917 · MC 1516594
+(951) 427-9763"
+`;

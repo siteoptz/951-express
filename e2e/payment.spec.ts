@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { createDb } from '../src/db';
 import { bookings, routes, weekOverrides } from '../src/db/schema';
 import { bookableWeeks } from '../src/lib/weeks';
-import { asNewVisitor, dialog, mockVpic, openModal, reachSummary } from './helpers';
+import { asNewVisitor, dialog, fillDetails, mockVpic, openModal, reachSummary } from './helpers';
 
 // Real Stripe test mode, with `stripe listen` forwarding webhooks to the app. Run: npm run e2e:stripe
 // Uses the DATABASE_URL in .env.local: a Neon dev branch only.
@@ -76,9 +76,9 @@ async function untickSaveMyInfo(f: FrameLocator) {
   }).toPass({ timeout: 20_000 });
 }
 
-async function payWith(page: Page, card: string) {
+async function payWith(page: Page, card: string, email = 'e2e-buyer@example.com') {
   const f = checkoutFrame(page);
-  await f.getByPlaceholder('email@example.com').fill('e2e-buyer@example.com');
+  await f.getByPlaceholder('email@example.com').fill(email);
   await f.getByPlaceholder('1234 1234 1234 1234').fill(card);
   await f.getByPlaceholder('MM / YY').fill('12 / 34');
   await f.getByPlaceholder('CVC').fill('123');
@@ -290,3 +290,54 @@ for (const size of [
     await waitForStatus(week.start, 'paid');
   });
 }
+
+test('after paying, Step 3 finishes the booking inside the modal @stripe', async ({ page }) => {
+  const week = weeks[2];
+  await startPayment(page, week.label);
+  await payWith(page, '4242424242424242');
+  const d = dialog(page);
+  await expect(
+    d.getByText(`✓ Deposit received. Your spot for ${week.label} is reserved.`),
+  ).toBeVisible({ timeout: 60_000 });
+  await expect(d.getByLabel('Email')).toHaveValue('e2e-buyer@example.com'); // prefilled from Stripe
+  await expect(d.getByRole('group', { name: 'Pickup address' }).getByLabel('ZIP')).toHaveValue(
+    '90001',
+  );
+  await fillDetails(d);
+  await d.getByRole('button', { name: 'Finish my booking' }).click();
+  await expect(d.getByText("✓ You're booked!")).toBeVisible();
+  await expect(d.getByText('2020 Honda Civic')).toBeVisible();
+  const done = await waitForStatus(week.start, 'completed');
+  expect(done.customer).toMatchObject({ firstName: 'Pat', email: 'e2e-buyer@example.com' });
+  expect(done.notes).toBe('Gate code 1234');
+  await d.getByRole('button', { name: 'Close', exact: true }).last().click();
+  await expect(d).toBeHidden();
+});
+
+test('closing the window after paying leaves a link that finishes the booking @stripe', async ({
+  page,
+}) => {
+  const week = weeks[3];
+  await startPayment(page, week.label);
+  await payWith(page, '4242424242424242');
+  const d = dialog(page);
+  await expect(d.getByText(/Deposit received/)).toBeVisible({ timeout: 60_000 });
+  const paid = await waitForStatus(week.start, 'paid');
+
+  await page.keyboard.press('Escape');
+  await expect(d.getByRole('alertdialog')).toContainText(
+    'Your deposit is paid and your spot is reserved',
+  );
+  await d.getByRole('button', { name: 'Close', exact: true }).last().click();
+  await expect(d).toBeHidden();
+  expect((await latestBooking(week.start)).status).toBe('paid'); // closing never gives the spot back
+
+  await page.goto(`/booking/${paid.publicToken}`);
+  await expect(
+    page.getByText(`✓ Deposit received. Your spot for ${week.label} is reserved.`),
+  ).toBeVisible();
+  await fillDetails(page);
+  await page.getByRole('button', { name: 'Finish my booking' }).click();
+  await expect(page.getByText("✓ You're booked!")).toBeVisible();
+  await waitForStatus(week.start, 'completed');
+});

@@ -23,15 +23,18 @@ import {
   type FormState,
 } from '@/lib/booking-form';
 import { track } from '@/lib/analytics';
+import type { BookingView } from '@/lib/booking-view';
 import { routeErrorMessage, shippingLabel } from '@/lib/routing';
 import { Combobox, type Option } from './Combobox';
 import { RadioPills } from './RadioPills';
+import { BookedView } from './BookedView';
+import { DetailsForm, type DetailsContext } from './DetailsForm';
 import { PaymentStep, type CheckoutInfo } from './PaymentStep';
 import { SummaryStep, type NextWeek, type QuoteResponse } from './SummaryStep';
 import { useZipCheck, type ZipStatus } from './useZipCheck';
 import { WeekPicker, type WeekRow } from './WeekPicker';
 
-type Step = 'form' | 'summary' | 'payment' | 'paid' | 'lead_done';
+type Step = 'form' | 'summary' | 'payment' | 'details' | 'booked' | 'lead_done';
 type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; data: T };
 
 const storage = () => (typeof window === 'undefined' ? null : window.sessionStorage);
@@ -94,6 +97,8 @@ export default function BookingModal({
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
   const [checkout, setCheckout] = useState<CheckoutInfo | null>(null);
+  const [detailsCtx, setDetailsCtx] = useState<DetailsContext | null>(null);
+  const [booked, setBooked] = useState<BookingView | null>(null);
   const [weekFull, setWeekFull] = useState<{ next: NextWeek } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +125,8 @@ export default function BookingModal({
   useEffect(() => saveForm(form, storage()), [form]);
 
   const requestClose = useCallback(() => {
-    if (step === 'payment' || (step === 'form' && isDirty(form))) setConfirmClose(true);
+    if (step === 'payment' || step === 'details' || (step === 'form' && isDirty(form)))
+      setConfirmClose(true);
     else onClose();
   }, [form, onClose, step]);
 
@@ -136,7 +142,7 @@ export default function BookingModal({
 
   const finishAndClose = () => {
     if (step === 'payment') releaseHold();
-    if (step === 'lead_done' || step === 'paid') {
+    if (step === 'lead_done' || step === 'booked' || step === 'details') {
       dispatch({ type: 'reset' });
       clearForm(storage());
       setStep('form');
@@ -300,7 +306,8 @@ export default function BookingModal({
     }
   }
 
-  const activeStep = step === 'form' || step === 'lead_done' ? 0 : step === 'paid' ? 2 : 1;
+  const activeStep =
+    step === 'form' || step === 'lead_done' ? 0 : step === 'details' || step === 'booked' ? 2 : 1;
   const inputClass =
     'mt-1 w-full rounded-lg border-2 border-black/15 px-4 py-3 text-base focus:border-navy';
 
@@ -368,7 +375,11 @@ export default function BookingModal({
               {t.confirmClose.title}
             </p>
             <p id="confirm-body" className="mt-1 text-sm">
-              {step === 'payment' ? t.confirmClose.paymentBody : t.confirmClose.body}
+              {step === 'payment'
+                ? t.confirmClose.paymentBody
+                : step === 'details'
+                  ? t.confirmClose.detailsBody
+                  : t.confirmClose.body}
             </p>
             <div className="mt-3 flex gap-2">
               <Button autoFocus onClick={() => setConfirmClose(false)}>
@@ -418,9 +429,19 @@ export default function BookingModal({
               releaseHold();
               setStep('form');
             }}
-            onPaid={() => {
+            onPaid={({ payerEmail }) => {
               clearForm(storage());
-              setStep('paid');
+              if (pickupRegion && deliveryRegion) {
+                setDetailsCtx({
+                  pickupZip: form.pickupZip,
+                  deliveryZip: form.deliveryZip,
+                  pickupRegion,
+                  deliveryRegion,
+                  payerEmail,
+                  weekLabel: quote.week.label,
+                });
+              }
+              setStep('details');
             }}
             onHoldAgain={() => {
               releaseHold();
@@ -429,17 +450,22 @@ export default function BookingModal({
           />
         )}
 
-        {step === 'paid' && quote && (
-          <div role="status" className="py-2">
-            <p className="rounded-lg bg-success-dark px-4 py-3 font-bold text-white">
-              {t.paid.banner.replace('{week}', quote.week.label)}
-            </p>
-            <p className="mt-5 font-display text-2xl font-extrabold uppercase">{t.paid.next}</p>
-            <p className="mt-2 text-muted">{t.paid.nextBody}</p>
-            <Button className="mt-6" onClick={finishAndClose}>
-              {t.paid.done}
-            </Button>
-          </div>
+        {step === 'details' && checkout && detailsCtx && (
+          <DetailsForm
+            token={checkout.publicToken}
+            ctx={detailsCtx}
+            onDone={(view) => {
+              setBooked(view);
+              setStep('booked');
+            }}
+          />
+        )}
+
+        {step === 'booked' && booked && (
+          <BookedView
+            view={booked}
+            actions={<Button onClick={finishAndClose}>{t.booked.done}</Button>}
+          />
         )}
 
         {step === 'form' && (

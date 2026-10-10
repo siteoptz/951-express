@@ -278,7 +278,11 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
     ).toEqual({ handled: 'paid', changed: true });
     expect(logs[0]).toMatch(/resend down/);
     const quiet = {
-      sendDepositEmail: async () => ({ sent: false as const, reason: 'not_configured' as const }),
+      sendDepositEmail: async () => ({
+        sent: false as const,
+        reason: 'not_configured' as const,
+        error: 'not configured',
+      }),
       log: (m: string) => logs.push(m),
     };
     const { r: r2 } = await checkout(weeks[4].start);
