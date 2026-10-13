@@ -99,6 +99,12 @@ export function leadText(d: ReturnType<typeof buildLeadEmailData>): string {
   return [
     `${emailCopy.lead.heading}\n${d.vehicle} · ${d.routeName} · Request ${d.ref}`,
     emailCopy.lead.note,
+    section(emailCopy.lead.reasonsHeading, [
+      line('Reasons', d.reasons.join(', ')),
+      ...(d.modificationDetails
+        ? [line(emailCopy.lead.modificationHeading, d.modificationDetails)]
+        : []),
+    ]),
     section('Contact', [line('Name', d.name), line('Phone', d.phone), line('Email', d.email)]),
     section('Shipment', [
       line('Vehicle', d.vehicle),
@@ -107,6 +113,7 @@ export function leadText(d: ReturnType<typeof buildLeadEmailData>): string {
       line('Delivery ZIP', d.deliveryZip),
       line('Operable', yn(d.operable)),
       line('Modified', yn(d.modified)),
+      line('Worth over $100,000', yn(d.highValue)),
       ...(d.topDeck ? [line('Load type', 'Top Deck Load')] : []),
       line('Preferred pickup week', d.preferredWeek ?? 'No preference'),
       ...(d.notes ? [line('Notes', d.notes)] : []),

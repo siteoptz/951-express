@@ -30,7 +30,12 @@ export async function POST(request: Request) {
       { status: 422 },
     );
   }
-  if (r.quoteRequired) return Response.json({ quoteRequired: true, route: r.route.id });
+  if (r.quoteRequired)
+    return Response.json({
+      quoteRequired: true,
+      quoteReasons: r.quoteReasons,
+      route: r.route.id,
+    });
 
   const weeks = await getAvailability(getDb(), r.route.id);
   const spot = weeks?.find((w) => w.start === r.week.start);
@@ -50,8 +55,6 @@ export async function POST(request: Request) {
     loadType: r.loadType,
     personalItems: parsed.data.personalItems,
     personalItemsNotice: parsed.data.personalItems ? booking.personalItemsNotice : null,
-    operable: parsed.data.operable,
-    modified: parsed.data.modified,
     lines: r.lines,
     totalCents: r.quote.totalCents,
     depositCents: r.quote.depositCents,

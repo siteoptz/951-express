@@ -7,12 +7,12 @@ import { routeErrorMessage } from '@/lib/routing';
 import { resolveRouteForZips } from '@/lib/routing.server';
 import { quoteRequestSchema } from '@/lib/schemas';
 import { sendLeadEmail } from '@/server/booking-emails';
-import { resolveSizeClass } from '@/lib/size-class';
+import { quoteReasons } from '@/lib/eligibility';
 import { findBookableWeek } from '@/lib/weeks';
 
 const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 
-// Stores a quote-required (large vehicle) request. No deposit and no spot hold. The email is wired in Phase 7.
+// Stores a quote-required request. No deposit and no spot hold. The server decides why a quote is needed.
 export async function POST(request: Request) {
   const limited = limiter.check(clientIp(request.headers));
   if (!limited.ok) {
@@ -33,9 +33,15 @@ export async function POST(request: Request) {
       { status: 422 },
     );
 
-  // The server decides what is "large"; a lead for a vehicle with an online price is refused.
-  const size = resolveSizeClass(d.vehicle, d.selectedClass);
-  if (!size.ok || size.sizeClass !== 'large') {
+  // The server decides the reasons; a lead for a vehicle with an online price is refused.
+  const reasons = quoteReasons({
+    vehicle: d.vehicle,
+    selectedClass: d.selectedClass,
+    operable: d.operable,
+    modified: d.modified,
+    highValue: d.highValue,
+  });
+  if (reasons.length === 0) {
     return Response.json(
       { error: 'This vehicle has an online price. Use the instant quote.' },
       { status: 422 },
@@ -68,7 +74,10 @@ export async function POST(request: Request) {
       vehicle: d.vehicle,
       operable: d.operable,
       modified: d.modified,
+      highValue: d.highValue,
       topDeck: d.topDeck,
+      quoteReasons: reasons,
+      modificationDetails: d.modified ? d.modificationDetails || null : null,
       preferredWeekStart: d.preferredWeekStart ?? null,
       name: d.name,
       phone: d.phone,

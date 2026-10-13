@@ -1,6 +1,8 @@
 // Pure state for the booking modal form: reducer, persistence, and the payload sent to the server.
+import { modificationDetailsMaxLength, type QuoteReason } from '@/config/eligibility';
 import { sizeClassIds } from '@/config/pricing';
 import { vehicleYears } from '@/config/vehicles';
+import { quoteReasons } from '@/lib/eligibility';
 import { classifyVehicle } from '@/lib/size-class';
 import type { VehicleClass } from '@/config/vehicle-classes';
 
@@ -13,6 +15,8 @@ export type FormState = {
   selectedClass: string;
   operable: boolean | null;
   modified: boolean | null;
+  highValue: boolean | null;
+  modificationDetails: string;
   topDeck: boolean;
   personalItems: boolean | null;
   weekStart: string;
@@ -33,6 +37,8 @@ export const initialForm: FormState = {
   selectedClass: '',
   operable: null,
   modified: null,
+  highValue: null,
+  modificationDetails: '',
   topDeck: false,
   personalItems: null,
   weekStart: '',
@@ -91,11 +97,28 @@ export function decidedClass(f: FormState): {
   return { classified: null, decided: ok ? (picked as VehicleClass) : null };
 }
 
-/** Body for POST /api/quote, or null while anything is missing. Prices are never included. */
+/**
+ * Why this vehicle needs a personalized quote, from the answers so far. An unanswered question never
+ * triggers. The server re-decides this on every request, so this only switches the form.
+ */
+export function formQuoteReasons(f: FormState): QuoteReason[] {
+  if (!f.year || !f.make.trim() || !f.model.trim()) return [];
+  return quoteReasons({
+    vehicle: { year: Number(f.year), make: f.make.trim(), model: f.model.trim() },
+    selectedClass: f.selectedClass || undefined,
+    operable: f.operable ?? true,
+    modified: f.modified ?? false,
+    highValue: f.highValue ?? false,
+  });
+}
+
+/** Body for POST /api/quote, or null while anything is missing or the vehicle needs a quote. */
 export function step1Payload(f: FormState) {
   const { decided } = decidedClass(f);
   if (!decided || decided === 'large') return null;
-  if (f.operable === null || f.modified === null || f.personalItems === null) return null;
+  if (formQuoteReasons(f).length > 0) return null;
+  if (f.operable === null || f.modified === null || f.highValue === null) return null;
+  if (f.personalItems === null) return null;
   if (!isZip(f.pickupZip) || !isZip(f.deliveryZip) || !f.weekStart || !f.terms) return null;
   return {
     pickupZip: f.pickupZip,
@@ -104,6 +127,7 @@ export function step1Payload(f: FormState) {
     selectedClass: f.selectedClass || undefined,
     operable: f.operable,
     modified: f.modified,
+    highValue: f.highValue,
     topDeck: f.topDeck,
     personalItems: f.personalItems,
     weekStart: f.weekStart,
@@ -111,13 +135,14 @@ export function step1Payload(f: FormState) {
   };
 }
 
-/** Body for POST /api/leads (large vehicles), or null while anything is missing. */
+/** Body for POST /api/leads, or null while anything is missing or the vehicle can be booked online. */
 export function leadPayload(f: FormState) {
-  const { decided } = decidedClass(f);
-  if (decided !== 'large') return null;
-  if (f.operable === null || f.modified === null) return null;
+  if (formQuoteReasons(f).length === 0) return null;
+  if (f.operable === null || f.modified === null || f.highValue === null) return null;
   if (!isZip(f.pickupZip) || !isZip(f.deliveryZip)) return null;
   if (!f.name.trim() || !f.phone.trim() || !f.email.trim()) return null;
+  const details = f.modificationDetails.trim().slice(0, modificationDetailsMaxLength);
+  if (f.modified && !details) return null;
   return {
     name: f.name.trim(),
     phone: f.phone.trim(),
@@ -128,12 +153,14 @@ export function leadPayload(f: FormState) {
     selectedClass: f.selectedClass || undefined,
     operable: f.operable,
     modified: f.modified,
+    highValue: f.highValue,
+    modificationDetails: f.modified ? details : undefined,
     preferredWeekStart: f.leadWeek || undefined,
     notes: f.notes.trim() || undefined,
   };
 }
 
-const KEY = 'booking-form-v1';
+const KEY = 'booking-form-v2';
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /** Terms acceptance is never saved: the customer agrees each time. */

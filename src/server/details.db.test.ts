@@ -376,7 +376,10 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
           deliveryZip: '21201',
           vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' },
           operable: true,
-          modified: false,
+          modified: true,
+          highValue: false,
+          quoteReasons: ['large_vehicle', 'modified'],
+          modificationDetails: '5-inch lift, 35-inch tires',
           name: 'Lee Large',
           phone: '555-0100',
           email: 'lee@example.com',
@@ -395,7 +398,7 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
       expect(await sendLeadEmail(db, l.id, { send: f.send, env })).toMatchObject({ sent: true });
       expect(f.sent[0]).toMatchObject({
         to: [TEAM, 'other@example.com'],
-        subject: 'New Quote Request: 2021 Chevrolet Tahoe · West → East · Lee Large',
+        subject: 'Quote request (large vehicle, modified): 2021 Chevrolet Tahoe · West → East',
         replyTo: 'lee@example.com',
       });
       expect(f.sent[0].text).toContain('Preferred pickup week:');

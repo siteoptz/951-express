@@ -10,6 +10,7 @@ const base: Step1 = {
   vehicle: { year: 2020, make: 'Honda', model: 'Civic' },
   operable: true,
   modified: false,
+  highValue: false,
   topDeck: false,
   personalItems: false,
   weekStart: '2026-10-19',
@@ -96,5 +97,39 @@ describe('evaluateStep1', () => {
       selectedClass: 'huge' as never,
     };
     expect(evaluateStep1(v, regionOf, now)).toEqual({ ok: false, error: 'invalid_class' });
+  });
+});
+
+describe('evaluateStep1 quote routing', () => {
+  it.each([
+    ['inoperable', { operable: false }],
+    ['modified', { modified: true }],
+    ['high_value', { highValue: true }],
+    ['exotic', { vehicle: { year: 2021, make: 'Lamborghini', model: 'Huracan' } }],
+    ['large_vehicle', { vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' } }],
+  ] as const)(
+    'returns %s as quote required, with no price, before looking at the week',
+    (reason, over) => {
+      const r = evaluateStep1(
+        { ...base, weekStart: '2020-01-06', ...over } as Step1,
+        regionOf,
+        now,
+      );
+      expect(r).toMatchObject({ ok: true, quoteRequired: true });
+      expect(r.ok && r.quoteRequired && r.quoteReasons).toContain(reason);
+      expect('quote' in r).toBe(false);
+    },
+  );
+  it('lets an exotic vehicle skip the size question', () => {
+    const v = { ...base, vehicle: { year: 2021, make: 'Bentley', model: 'Zzz' } };
+    expect(evaluateStep1(v, regionOf, now)).toMatchObject({ quoteRequired: true });
+  });
+  it('still checks the route first', () => {
+    expect(
+      evaluateStep1({ ...base, operable: false, deliveryZip: '90002' }, regionOf, now),
+    ).toMatchObject({
+      ok: false,
+      error: 'route',
+    });
   });
 });

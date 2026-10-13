@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type FrameLocator, type Locator, type Page } from '@playwright/test';
 
 // vPIC answers are mocked at our own /api/vehicles boundary, so tests never depend on NHTSA.
 // The real API is covered by the separate @live smoke test (e2e/vpic-live.spec.ts).
@@ -42,6 +42,14 @@ export async function openModal(page: Page) {
   await expect(dialog(page)).toBeVisible();
 }
 
+/** Answers "Is your vehicle worth more than $100,000?" */
+export async function answerHighValue(root: Page | Locator, answer: 'Yes' | 'No') {
+  await root
+    .getByRole('group', { name: 'Is your vehicle worth more than $100,000?' })
+    .getByText(answer, { exact: true })
+    .click();
+}
+
 /** Fills Step 1 for a West -> East 2020 Honda Civic quote and returns on the Step 2 summary. */
 export async function reachSummary(page: Page, opts: { week?: string } = {}) {
   const d = dialog(page);
@@ -57,6 +65,7 @@ export async function reachSummary(page: Page, opts: { week?: string } = {}) {
     await box.fill(text);
     await box.press('Tab');
   }
+  await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });
   await d.getByRole('radio', { name: 'Standard' }).check({ force: true });
@@ -110,4 +119,18 @@ export async function expectAccessible(page: Page, label: string, scope?: string
       `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(' ')} ${n.any[0]?.message ?? ''}`).join(' | ')}`,
   );
   expect(found, `axe violations (${label})`).toEqual([]);
+}
+
+/**
+ * Stripe's Link "save my information" checkbox is on by default and then asks for a phone number, so untick it.
+ * Matched by role and a name containing "Link", so wording changes on Stripe's side do not break the suite.
+ * Stripe can re-tick it while it looks up the email in Link, so retry until it sticks.
+ */
+export async function untickSaveWithLink(frame: FrameLocator) {
+  const box = frame.getByRole('checkbox', { name: /link/i, includeHidden: true });
+  await expect(async () => {
+    // A DOM click, because Stripe visually hides the real input behind its own styled box.
+    if (await box.isChecked()) await box.evaluate((el: HTMLInputElement) => el.click());
+    await expect(box).not.toBeChecked({ timeout: 1500 });
+  }).toPass({ timeout: 20_000 });
 }

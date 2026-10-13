@@ -12,6 +12,6 @@ export const booking = {
   stripeIntegrationIdentifier: '951-express-deposit-kxqfzmwd',
   personalItemsNotice: "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
   // Bumped whenever the terms text changes. It is saved with every booking. Date format: the day the text was published.
-  termsVersion: '2026-10-10',
-  termsLastUpdated: 'October 10, 2026',
+  termsVersion: '2026-10-13',
+  termsLastUpdated: 'October 13, 2026',
 } as const;

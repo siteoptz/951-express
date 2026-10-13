@@ -1,5 +1,6 @@
 // Seeds routes, rates, and settings from src/config. Idempotent: existing rows are left alone, so
 // re-running never overwrites a rate the admin has edited.
+import { inArray } from 'drizzle-orm';
 import { createDb } from '../src/db';
 import { rates, routes, settings } from '../src/db/schema';
 import { pricing, sizeClasses, topDeck } from '../src/config/pricing';
@@ -40,13 +41,20 @@ async function main() {
   await db
     .insert(settings)
     .values([
-      { key: 'inoperable_surcharge_cents', value: pricing.inoperableSurchargeCents },
-      { key: 'modified_surcharge_cents', value: pricing.modifiedSurchargeCents },
-      { key: 'modified_policy', value: pricing.modifiedPolicy },
       { key: 'top_deck_surcharge_cents', value: topDeck.surchargeCents },
       { key: 'deposit_percent', value: pricing.deposit.value },
     ])
     .onConflictDoNothing({ target: settings.key });
+  // Inoperable and modified vehicles now go to a personalized quote, so these online surcharges are retired.
+  await db
+    .delete(settings)
+    .where(
+      inArray(settings.key, [
+        'inoperable_surcharge_cents',
+        'modified_surcharge_cents',
+        'modified_policy',
+      ]),
+    );
 
   const [r, c, s] = await Promise.all([
     db.select().from(routes),

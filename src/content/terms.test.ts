@@ -41,7 +41,7 @@ describe('terms content', () => {
     termsSections.forEach((s, i) => expect(s.title.startsWith(`${i + 1}. `)).toBe(true));
   });
   it('has a version and a last-updated date', () => {
-    expect(booking.termsVersion).toBe('2026-10-10');
-    expect(booking.termsLastUpdated).toBe('October 10, 2026');
+    expect(booking.termsVersion).toBe('2026-10-13');
+    expect(booking.termsLastUpdated).toBe('October 13, 2026');
   });
 });

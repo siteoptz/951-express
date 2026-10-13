@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { company, contactMailto } from '@/config/company';
 import { booking } from '@/config/booking';
+import { modificationDetailsMaxLength, type QuoteReason } from '@/config/eligibility';
 import { largeVehicle, sizeClasses, topDeck } from '@/config/pricing';
 import { routes, routingCopy, type Region } from '@/config/routes';
 import { bookingCopy as t } from '@/content/booking';
@@ -11,6 +12,7 @@ import {
   clearForm,
   decidedClass,
   digitsOnly,
+  formQuoteReasons,
   formReducer,
   initialForm,
   isDirty,
@@ -106,6 +108,10 @@ export default function BookingModal({
   const [touchedPickup, setTouchedPickup] = useState(false);
   const [touchedDelivery, setTouchedDelivery] = useState(false);
   const [weeksReload, setWeeksReload] = useState(0);
+  // Set when the server says this vehicle needs a quote but the form had not switched (it re-decides every time).
+  const [serverQuote, setServerQuote] = useState<{ key: string; reasons: QuoteReason[] } | null>(
+    null,
+  );
   const set = useCallback(
     (field: keyof FormState, value: string | boolean | null) =>
       dispatch({ type: 'set', field, value }),
@@ -205,11 +211,29 @@ export default function BookingModal({
   );
   const { classified, decided } = decidedClass(form);
   const vehicleComplete = !!form.year && !!form.make.trim() && !!form.model.trim();
-  const needsClassPick = vehicleComplete && !classified;
-  const isLarge = decided === 'large';
+  // Anything that cannot be booked online switches the whole form to the personalized quote request.
+  const answersKey = JSON.stringify([
+    form.year,
+    form.make,
+    form.model,
+    form.selectedClass,
+    form.operable,
+    form.modified,
+    form.highValue,
+  ]);
+  const formReasons = formQuoteReasons(form);
+  const reasons =
+    formReasons.length > 0
+      ? formReasons
+      : serverQuote?.key === answersKey
+        ? serverQuote.reasons
+        : [];
+  const isQuote = reasons.length > 0;
+  // An exotic vehicle goes straight to the quote form, so there is no size to pick.
+  const needsClassPick = vehicleComplete && !classified && !reasons.includes('exotic');
 
   // Weeks.
-  const weeksUrl = route && decided ? `/api/availability?route=${route.id}` : null;
+  const weeksUrl = route && (decided || isQuote) ? `/api/availability?route=${route.id}` : null;
   const weeks = useJson<WeekRow[]>(weeksUrl, pickWeeks, weeksReload);
   useEffect(() => {
     if (weeks.status === 'ready' && form.weekStart) {
@@ -242,7 +266,7 @@ export default function BookingModal({
         return;
       }
       if (body.quoteRequired) {
-        set('selectedClass', 'large');
+        setServerQuote({ key: answersKey, reasons: body.quoteReasons ?? ['large_vehicle'] });
         return;
       }
       setQuote(body as QuoteResponse);
@@ -271,6 +295,11 @@ export default function BookingModal({
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 409) return setWeekFull({ next: body.nextAvailableWeek ?? null });
+      if (body.quoteRequired) {
+        setServerQuote({ key: answersKey, reasons: body.quoteReasons ?? ['large_vehicle'] });
+        setStep('form');
+        return;
+      }
       if (!res.ok) return setError(body.error ?? t.genericError);
       setCheckout({
         clientSecret: body.clientSecret,
@@ -475,7 +504,7 @@ export default function BookingModal({
             className="space-y-6"
             onSubmit={(e) => {
               e.preventDefault();
-              if (isLarge) void submitLead();
+              if (isQuote) void submitLead();
               else void submitQuote();
             }}
           >
@@ -641,8 +670,17 @@ export default function BookingModal({
               </section>
             )}
 
-            {routeOk && decided && (
+            {routeOk && vehicleComplete && (decided || isQuote) && (
               <section className="space-y-5">
+                <RadioPills
+                  legend={t.options.highValue}
+                  value={form.highValue === null ? null : form.highValue ? 'yes' : 'no'}
+                  onChange={(v) => set('highValue', v === 'yes')}
+                  options={[
+                    { value: 'yes', label: t.options.highValueYes },
+                    { value: 'no', label: t.options.highValueNo },
+                  ]}
+                />
                 <RadioPills
                   legend={t.options.operable}
                   value={form.operable === null ? null : form.operable ? 'yes' : 'no'}
@@ -662,7 +700,7 @@ export default function BookingModal({
                   ]}
                 />
 
-                {!isLarge && (
+                {!isQuote && (
                   <>
                     <RadioPills
                       stacked
@@ -744,7 +782,7 @@ export default function BookingModal({
                   </>
                 )}
 
-                {isLarge && (
+                {isQuote && (
                   <section
                     aria-labelledby="lead-h"
                     className="space-y-4 rounded-lg border-2 border-navy/20 p-4"
@@ -752,7 +790,39 @@ export default function BookingModal({
                     <h3 id="lead-h" className="font-display text-xl font-extrabold uppercase">
                       {t.lead.heading}
                     </h3>
-                    <p className="text-sm text-muted">{t.lead.intro}</p>
+                    <div className="space-y-2" data-testid="quote-reasons">
+                      {[...new Set(reasons.map((r) => t.lead.reasons[r]))].map((message) => (
+                        <p key={message} className="text-sm font-semibold text-ink">
+                          {message}
+                        </p>
+                      ))}
+                    </div>
+                    {form.modified && (
+                      <div>
+                        <label
+                          htmlFor="lead-modifications"
+                          className="block text-sm font-semibold text-muted"
+                        >
+                          {t.lead.modifications}
+                        </label>
+                        <textarea
+                          id="lead-modifications"
+                          rows={3}
+                          required
+                          maxLength={modificationDetailsMaxLength}
+                          placeholder={t.lead.modificationsPlaceholder}
+                          value={form.modificationDetails}
+                          onChange={(e) => set('modificationDetails', e.target.value)}
+                          aria-describedby="lead-modifications-count"
+                          className={inputClass}
+                        />
+                        <p id="lead-modifications-count" className="mt-1 text-sm text-muted">
+                          {t.lead.modificationsCount
+                            .replace('{n}', String(form.modificationDetails.length))
+                            .replace('{max}', String(modificationDetailsMaxLength))}
+                        </p>
+                      </div>
+                    )}
                     {(
                       [
                         ['name', t.lead.name, 'text', 'name'],
@@ -828,9 +898,9 @@ export default function BookingModal({
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={busy || (isLarge ? !lead : !payload)}
+                  disabled={busy || (isQuote ? !lead : !payload)}
                 >
-                  {isLarge
+                  {isQuote
                     ? busy
                       ? t.lead.submitting
                       : t.lead.submit

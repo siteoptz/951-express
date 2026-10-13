@@ -4,6 +4,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { createDb } from '../src/db';
 import { bookings, leads, routes } from '../src/db/schema';
 import { bookableWeeks } from '../src/lib/weeks';
+import { answerHighValue } from './helpers';
 
 // vPIC answers are mocked at our own /api/vehicles boundary, so these tests never depend on NHTSA.
 // The real API is covered by the separate @live smoke test (e2e/vpic-live.spec.ts).
@@ -120,6 +121,7 @@ async function chooseVehicle(page: Page, year: string, make: string, model: stri
 
 async function fillOptions(page: Page, opts: { topDeck?: boolean } = {}) {
   const d = dialog(page);
+  await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });
   if (opts.topDeck) await d.getByRole('radio', { name: /Top Deck Load/ }).check({ force: true });
@@ -242,6 +244,7 @@ test('a large vehicle replaces the form with a personalized quote request and st
   await expect(d.getByRole('heading', { name: 'Request a personalized quote' })).toBeVisible();
   await expect(d.getByText('Top Deck Load')).toHaveCount(0);
   await expect(d.getByRole('checkbox', { name: /Terms/ })).toHaveCount(0);
+  await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });
   await d.getByLabel('Full name').fill('E2E Lead');
@@ -278,6 +281,9 @@ test('a large vehicle replaces the form with a personalized quote request and st
     deliveryZip: EAST,
     operable: true,
     modified: false,
+    highValue: false,
+    quoteReasons: ['large_vehicle'],
+    modificationDetails: null,
     status: 'new',
     notes: 'Lifted, 35 inch tires',
   });

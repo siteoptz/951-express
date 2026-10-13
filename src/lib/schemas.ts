@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modificationDetailsMaxLength } from '@/config/eligibility';
 import { sizeClassIds } from '@/config/pricing';
 import { routeIds } from '@/config/routes';
 import { isMondayIso } from '@/lib/weeks';
@@ -14,6 +15,7 @@ const phone = z
   );
 const name = z.string().trim().min(1).max(80);
 const notes = z.string().trim().max(2000);
+const modificationDetails = z.string().trim().max(modificationDetailsMaxLength);
 
 export const vehicleSchema = z.object({
   year: z.number().int().min(1900).max(2100),
@@ -35,6 +37,9 @@ export const step1Schema = z.object({
   selectedClass: selectableClass.optional(),
   operable: z.boolean(),
   modified: z.boolean(),
+  /** "Is your vehicle worth more than $100,000?" Required: Yes sends the customer to the quote form. */
+  highValue: z.boolean(),
+  modificationDetails: modificationDetails.optional(),
   topDeck: z.boolean().default(false),
   personalItems: z.boolean(),
   weekStart: weekStartSchema,
@@ -42,23 +47,34 @@ export const step1Schema = z.object({
 });
 export type Step1 = z.infer<typeof step1Schema>;
 
-/** "Request a personalized quote" form for large vehicles. No deposit and no spot hold. */
-export const quoteRequestSchema = z.object({
-  name: name.max(120),
-  phone,
-  email: z.email().max(200),
-  pickupZip: zip,
-  deliveryZip: zip,
-  vehicle: vehicleSchema,
-  operable: z.boolean(),
-  modified: z.boolean(),
-  topDeck: z.boolean().default(false),
-  /** Only used when the vehicle is unknown and the customer picked "large". The server re-classifies. */
-  selectedClass: selectableClass.optional(),
-  /** Optional: a Monday the customer would like. Preference only, no spot is held. */
-  preferredWeekStart: weekStartSchema.optional(),
-  notes: notes.optional(),
-});
+/**
+ * "Request a personalized quote" form: vehicles that cannot be booked online (large, inoperable, modified, exotic,
+ * high value). No deposit and no spot hold. The server decides the reasons; it never trusts the browser.
+ */
+export const quoteRequestSchema = z
+  .object({
+    name: name.max(120),
+    phone,
+    email: z.email().max(200),
+    pickupZip: zip,
+    deliveryZip: zip,
+    vehicle: vehicleSchema,
+    operable: z.boolean(),
+    modified: z.boolean(),
+    highValue: z.boolean(),
+    /** Required when modified is Yes: what was changed. */
+    modificationDetails: modificationDetails.optional(),
+    topDeck: z.boolean().default(false),
+    /** Only used when the vehicle is unknown and the customer picked "large". The server re-classifies. */
+    selectedClass: selectableClass.optional(),
+    /** Optional: a Monday the customer would like. Preference only, no spot is held. */
+    preferredWeekStart: weekStartSchema.optional(),
+    notes: notes.optional(),
+  })
+  .refine((d) => !d.modified || !!d.modificationDetails, {
+    path: ['modificationDetails'],
+    message: 'Describe the modifications',
+  });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
 export const addressSchema = z.object({
@@ -99,8 +115,6 @@ export const adminActionSchema = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('update_rates'),
     baseCents: z.partialRecord(z.enum(sizeClassIds), cents).optional(),
-    inoperableSurchargeCents: cents.optional(),
-    modifiedSurchargeCents: cents.optional(),
     topDeckSurchargeCents: cents.optional(),
     depositPercent: z.number().min(1).max(100).optional(),
   }),

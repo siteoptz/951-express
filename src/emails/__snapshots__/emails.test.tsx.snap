@@ -75,7 +75,11 @@ exports[`NewLeadEmail > asks the team to quote (snapshot) 1`] = `
 "New quote request
 2021 Chevrolet Tahoe · West → East · Request 3F2B6C1E
 
-Large vehicle: no online price. No deposit was taken and no spot is held.
+This vehicle has no online price. No deposit was taken and no spot is held.
+
+WHY A QUOTE IS NEEDED
+Reasons: large vehicle, inoperable, modified
+Modifications: 5-inch lift, 35-inch tires
 
 CONTACT
 Name: Lee Large
@@ -87,8 +91,9 @@ Vehicle: 2021 Chevrolet Tahoe
 Route: West → East
 Pickup ZIP: 90001
 Delivery ZIP: 21201
-Operable: Yes
-Modified: No
+Operable: No
+Modified: Yes
+Worth over $100,000: No
 Preferred pickup week: Oct 26 – Nov 1
 Notes: Lifted
 

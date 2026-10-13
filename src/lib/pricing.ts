@@ -5,12 +5,10 @@ import {
   type SizeClassId,
 } from '@/config/pricing';
 
-export type Surcharge = { id: 'inoperable' | 'modified' | 'topDeck'; label: string; cents: number };
+export type Surcharge = { id: 'topDeck'; label: string; cents: number };
 
 export type QuoteInput = {
   sizeClass: SizeClassId | 'large';
-  operable: boolean;
-  modified: boolean;
   topDeck?: boolean;
   /** True when the customer picked the class because the vehicle was unknown. */
   needsReview?: boolean;
@@ -36,22 +34,6 @@ export function calculateQuote(
   if (!base) throw new Error(`Unknown size class: ${input.sizeClass}`);
 
   const surcharges: Surcharge[] = [];
-  let needsReview = input.needsReview ?? false;
-  if (!input.operable)
-    surcharges.push({
-      id: 'inoperable',
-      label: 'Inoperable vehicle',
-      cents: cfg.inoperableSurchargeCents,
-    });
-  if (input.modified) {
-    if (cfg.modifiedPolicy === 'review') needsReview = true;
-    else
-      surcharges.push({
-        id: 'modified',
-        label: 'Modified vehicle',
-        cents: cfg.modifiedSurchargeCents,
-      });
-  }
   if (input.topDeck)
     surcharges.push({ id: 'topDeck', label: topDeck.label, cents: topDeck.surchargeCents });
 
@@ -63,6 +45,6 @@ export function calculateQuote(
     totalCents,
     depositCents,
     balanceCents: totalCents - depositCents,
-    needsReview,
+    needsReview: input.needsReview ?? false,
   };
 }

@@ -38,9 +38,7 @@ export const termsSections: TermsSection[] = [
     body: [
       "Our online price depends on your vehicle's size class (small sedan, large sedan, small SUV, midsize SUV, small pickup, midsize pickup, or minivan) and the route direction you choose. We set the size class from the year, make, and model you enter. If we cannot match your vehicle, you pick the closest size and we confirm it before pickup.",
       `Top Deck Load is an optional upgrade for ${topDeckPrice}. It places your vehicle on the upper deck of the trailer, which keeps it away from oil and fluid leaks from other vehicles and shields it from road debris. Top deck space is limited and we confirm it when we schedule your pickup.`,
-      // TODO(client): confirm the inoperable and modified surcharges, and whether inoperable vehicles may ride on the top deck.
-      'Vehicles that do not run, and vehicles that have been modified, can cost more to transport. The price you see at checkout includes any charges that apply to the answers you gave.',
-      'Large SUVs, large pickups, heavy-duty trucks, and full-size vans do not have an online price. For these vehicles you can ask for a personalized quote. A quote request is not a booking: no deposit is taken and no space is held until you accept a quote from us.',
+      "Vehicles that don't run, modified vehicles, exotic or high-value vehicles (over $100,000), and large SUVs, pickups and vans require a personalized quote. You can ask for a personalized quote online. A quote request is not a booking: no deposit is taken and no space is held until you accept a quote from us.",
       'The price you accept at booking is the price you pay, as long as the information you gave us is accurate (see section 6).',
     ],
   },

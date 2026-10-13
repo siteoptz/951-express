@@ -9,7 +9,7 @@ import {
 
 const vehicle = { year: 2021, make: 'Chevrolet', model: 'Tahoe' };
 
-describe('quoteRequestSchema (large-vehicle lead)', () => {
+describe('quoteRequestSchema (personalized quote lead)', () => {
   const valid = {
     name: 'Pat Driver',
     phone: '(951) 555-0100',
@@ -19,6 +19,7 @@ describe('quoteRequestSchema (large-vehicle lead)', () => {
     vehicle,
     operable: true,
     modified: false,
+    highValue: false,
   };
   it('accepts a valid request and defaults topDeck to false', () => {
     const r = quoteRequestSchema.parse(valid);
@@ -26,6 +27,26 @@ describe('quoteRequestSchema (large-vehicle lead)', () => {
     expect(quoteRequestSchema.safeParse({ ...valid, topDeck: true, notes: 'Lifted' }).success).toBe(
       true,
     );
+  });
+  it('requires a description when the vehicle is modified, up to 500 characters', () => {
+    const modified = { ...valid, modified: true };
+    expect(quoteRequestSchema.safeParse(modified).success).toBe(false);
+    expect(quoteRequestSchema.safeParse({ ...modified, modificationDetails: '  ' }).success).toBe(
+      false,
+    );
+    expect(
+      quoteRequestSchema.safeParse({ ...modified, modificationDetails: '5-inch lift' }).success,
+    ).toBe(true);
+    expect(
+      quoteRequestSchema.safeParse({ ...modified, modificationDetails: 'x'.repeat(500) }).success,
+    ).toBe(true);
+    expect(
+      quoteRequestSchema.safeParse({ ...modified, modificationDetails: 'x'.repeat(501) }).success,
+    ).toBe(false);
+  });
+  it('requires the high-value answer', () => {
+    const without = { ...valid, highValue: undefined };
+    expect(quoteRequestSchema.safeParse(without).success).toBe(false);
   });
   it('rejects bad email, phone, ZIP, and year', () => {
     expect(quoteRequestSchema.safeParse({ ...valid, email: 'nope' }).success).toBe(false);
@@ -60,6 +81,7 @@ describe('step1Schema', () => {
     vehicle,
     operable: true,
     modified: false,
+    highValue: false,
     personalItems: true,
     weekStart: '2026-10-19',
     termsAccepted: true as const,
@@ -69,6 +91,11 @@ describe('step1Schema', () => {
     expect(step1Schema.parse({ ...valid, topDeck: true, selectedClass: 'small-suv' }).topDeck).toBe(
       true,
     );
+  });
+  it('requires the high-value answer', () => {
+    const without = { ...valid, highValue: undefined };
+    expect(step1Schema.safeParse(without).success).toBe(false);
+    expect(step1Schema.safeParse({ ...valid, highValue: 'no' }).success).toBe(false);
   });
   it('requires terms, a Monday week, and a known class', () => {
     expect(step1Schema.safeParse({ ...valid, termsAccepted: false }).success).toBe(false);

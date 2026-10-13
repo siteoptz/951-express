@@ -135,7 +135,7 @@ performance and accessibility; there are no layout shifts from images.
   West → East" label and restricts the delivery ZIP to the opposite list. Routes: `west-to-east`, `east-to-west`,
   12 per week each.
 - **Pricing** (`src/lib/pricing.ts`, `src/config/pricing.ts`): seven classes from $1,400 to $1,900; large vehicles
-  return `{ quoteRequired: true }`. Surcharges: inoperable +$150, modified +$100, Top Deck Load +$150. Deposit 25%.
+  return `{ quoteRequired: true }`. Top Deck Load +$150. Deposit 25%. (Changed 2026-10-13: inoperable and modified vehicles are no longer priced online; they go to a personalized quote.)
 - **Vehicle classes** (`src/lib/size-class.ts`, `src/config/vehicle-classes.ts`): longest-prefix model lists plus
   year rules for Ranger, Tacoma, and Frontier. Unknown returns `null`; `resolveSizeClass` is the server decision
   and never lets a customer pick a cheaper class than the table assigns.
@@ -357,7 +357,7 @@ hold; abandoning checkout frees the spot after expiry; replaying a webhook chang
      {date} · Deposit Paid". Sections: Customer, Shipment (pickup, delivery, week with "spot N of 12",
      vehicle, size, operable, modified, personal items), Payment (total, deposit paid, balance due, terms
      accepted with timestamp and version), and a link to the booking in /admin. If `needs_review` is set, add
-     a "Review needed: modified vehicle" banner.
+     a "Review needed" banner (unknown vehicle size, or a payment that arrived after the hold expired).
    - `CustomerConfirmationEmail`: receipt, what happens next, the balance due at delivery, the personal-items
      policy, and contact info.
 4. The `/booking/[token]` fallback page renders Step 3 outside the modal for customers coming from the email
@@ -383,8 +383,11 @@ dashboard; submitting details twice is rejected; the fallback link works.
    - **Capacity grid:** routes × the next 8 weeks, each cell showing taken/capacity. Actions: close or reopen
      a week, set a capacity override, and cancel a booking to release its spot. Cancelling does not refund in
      Stripe; refunds are done in the Stripe dashboard, as the proposal scopes it.
-   - **Rates:** edit base rates, surcharges, and the deposit setting, stored in the DB tables from Phase 4.
-     Quotes read from the DB, with config as the fallback.
+   - **Rates:** edit base rates, the Top Deck surcharge, and the deposit setting, stored in the DB tables from
+     Phase 4. Quotes read from the DB, with config as the fallback. There is no inoperable or modified surcharge
+     any more (those vehicles get a personalized quote), so the editor must not include them.
+   - **Leads:** a list of quote requests with their `quote_reasons` (large vehicle, inoperable, modified,
+     exotic, high value) and `modification_details`, filterable by reason, with the lead status.
    - Log every admin action (who/what/when) to an `admin_log` table.
 
 **Done when:** closing a week makes it show unavailable in the modal right away, cancelling frees the spot,

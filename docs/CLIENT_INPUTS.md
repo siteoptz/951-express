@@ -13,7 +13,7 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 ## Business details
 - [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks. Atlanta metro (30001–30400) was added on 2026-10-13 via `data/raw/east_additions.txt`. Charlotte (280-282), Birmingham (350-352), all of Florida, and the Northeast above Delaware are still outside the East list.
 - [x] Base rates per size class, received.
-- [ ] Do the inoperable (+$150) and modified (+$100) surcharges still apply, or are modified vehicles manual review?
+- [x] Inoperable and modified vehicles no longer get an online price: they go to a personalized quote (Cal, 2026-10-13). The old +$150 and +$100 surcharges are retired.
 - [ ] Is the deposit still 25%?
 - [ ] Can inoperable vehicles go on the top deck?
 - [ ] Is there a limit on top-deck spots per truck?
@@ -46,3 +46,9 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [x] Sending domain `notify.951express.com` verified in Resend; `EMAIL_FROM` uses it. Customers now receive confirmations.
 - [ ] Review the wording of the customer confirmation ("What happens next") in `src/content/emails.ts`.
 - [x] Dispatcher inbox: 951.dispatcher@gmail.com (`BOOKINGS_EMAIL_TO`; also the Reply-To on customer emails). Add more addresses, comma separated, if the client wants them.
+
+## Personalized quote routing (Cal's call, 2026-10-13)
+These go to the quote form instead of online booking. The defaults below are in `src/config/eligibility.ts`.
+- [ ] **Full-size vans** (Transit, Sprinter, Express, Savana, ProMaster): personalized quote (default) or a price?
+- [ ] **Exotic list:** Ferrari, Lamborghini, McLaren, Rolls-Royce, Bentley, Aston Martin, Bugatti, Pagani, Koenigsegg, Maserati, Lotus, and any Maybach model. Keep Maserati and Lotus?
+- [ ] **High value:** the "worth more than $100,000" threshold is `highValueThresholdUsd`. Is $100,000 right?

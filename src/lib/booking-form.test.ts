@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clearForm,
   decidedClass,
+  formQuoteReasons,
   digitsOnly,
   formReducer,
   initialForm,
@@ -32,6 +33,7 @@ const filled: FormState = {
   model: 'Civic',
   operable: true,
   modified: false,
+  highValue: false,
   personalItems: false,
   weekStart: '2026-10-19',
   terms: true,
@@ -158,16 +160,16 @@ describe('persistence', () => {
   it('survives missing, bad, or blocked storage', () => {
     expect(loadForm(null)).toEqual({});
     const bad = mem();
-    bad.setItem('booking-form-v1', '{nope');
+    bad.setItem('booking-form-v2', '{nope');
     expect(loadForm(bad)).toEqual({});
     const wrong = mem();
     wrong.setItem(
-      'booking-form-v1',
+      'booking-form-v2',
       JSON.stringify({ pickupZip: 5, operable: 'yes', topDeck: true, year: '2020' }),
     );
     expect(loadForm(wrong)).toEqual({ topDeck: true, year: '2020', terms: false });
     const nullable = mem();
-    nullable.setItem('booking-form-v1', JSON.stringify({ operable: null }));
+    nullable.setItem('booking-form-v2', JSON.stringify({ operable: null }));
     expect(loadForm(nullable).operable).toBeNull();
     const boom = {
       getItem: () => {
@@ -183,5 +185,70 @@ describe('persistence', () => {
     expect(loadForm(boom)).toEqual({});
     expect(() => saveForm(filled, boom)).not.toThrow();
     expect(() => clearForm(boom)).not.toThrow();
+  });
+});
+
+describe('personalized quote routing', () => {
+  const lead = { ...filled, name: 'Lee', phone: '555-010-0199', email: 'lee@example.com' };
+
+  it('books an ordinary vehicle online and offers no quote form', () => {
+    expect(formQuoteReasons(filled)).toEqual([]);
+    expect(step1Payload(filled)).not.toBeNull();
+    expect(leadPayload(lead)).toBeNull();
+  });
+  it.each([
+    ['operable = No', { operable: false }, 'inoperable'],
+    ['modified = Yes', { modified: true }, 'modified'],
+    ['worth over $100,000 = Yes', { highValue: true }, 'high_value'],
+    ['an exotic make', { make: 'Ferrari', model: 'Roma' }, 'exotic'],
+    ['a Maybach model', { make: 'Mercedes-Benz', model: 'S 680 Maybach' }, 'exotic'],
+    ['a large vehicle', { make: 'Chevrolet', model: 'Tahoe' }, 'large_vehicle'],
+  ] as const)('%s switches to the quote form and removes the booking payload', (_n, over, id) => {
+    const f = { ...lead, ...over, modificationDetails: '5-inch lift' };
+    expect(formQuoteReasons(f)).toContain(id);
+    expect(step1Payload(f)).toBeNull();
+    expect(leadPayload(f)).not.toBeNull();
+  });
+  it('restores the normal flow, with the other answers kept, when an answer is changed back', () => {
+    const quote = set(lead, 'operable', false);
+    expect(step1Payload(quote)).toBeNull();
+    const back = set(quote, 'operable', true);
+    expect(formQuoteReasons(back)).toEqual([]);
+    expect(step1Payload(back)).toMatchObject({ pickupZip: '90001', weekStart: '2026-10-19' });
+    expect(back).toMatchObject({ make: 'HONDA', weekStart: '2026-10-19', name: 'Lee' });
+  });
+  it('does not trigger on an unanswered question', () => {
+    expect(
+      formQuoteReasons({ ...filled, operable: null, modified: null, highValue: null }),
+    ).toEqual([]);
+    expect(step1Payload({ ...filled, highValue: null })).toBeNull();
+  });
+  it('needs the modification description when the vehicle is modified', () => {
+    const f = { ...lead, modified: true };
+    expect(leadPayload(f)).toBeNull();
+    expect(leadPayload({ ...f, modificationDetails: '   ' })).toBeNull();
+    expect(leadPayload({ ...f, modificationDetails: ' 5-inch lift ' })).toMatchObject({
+      modified: true,
+      modificationDetails: '5-inch lift',
+    });
+  });
+  it('caps the description at 500 characters and omits it when not modified', () => {
+    const long = { ...lead, modified: true, modificationDetails: 'x'.repeat(600) };
+    expect(leadPayload(long)?.modificationDetails).toHaveLength(500);
+    expect(
+      leadPayload({ ...lead, operable: false, modificationDetails: 'stale' })?.modificationDetails,
+    ).toBeUndefined();
+  });
+  it('needs the contact details and all three answers', () => {
+    const f = { ...lead, operable: false };
+    expect(leadPayload({ ...f, email: '' })).toBeNull();
+    expect(leadPayload({ ...f, highValue: null })).toBeNull();
+    expect(leadPayload({ ...f, modified: null })).toBeNull();
+  });
+  it('sends the high-value answer and never a price', () => {
+    expect(step1Payload(filled)).toMatchObject({ highValue: false });
+    expect(Object.keys(step1Payload(filled) ?? {}).some((k) => /cents|price|total/i.test(k))).toBe(
+      false,
+    );
   });
 });

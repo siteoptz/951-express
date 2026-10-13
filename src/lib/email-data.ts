@@ -1,6 +1,6 @@
 // Turns a booking row into the plain data the email templates show. Pure, so it is easy to test.
 import { booking as bookingConfig } from '@/config/booking';
-import { pricing, topDeck } from '@/config/pricing';
+import { topDeck } from '@/config/pricing';
 import { emailCopy } from '@/content/emails';
 import type { Address, Customer, Vehicle } from '@/db/schema';
 import { bookingRef, formatAddress, formatPacific } from '@/lib/format';
@@ -45,7 +45,7 @@ export const vehicleName = (v: Vehicle): string => `${v.year} ${v.make} ${v.mode
 
 /** Why a booking is flagged, in words the team can act on. */
 export function reviewReasons(
-  b: Pick<BookingForEmail, 'needsReview' | 'sizeClassSource' | 'modified'>,
+  b: Pick<BookingForEmail, 'needsReview' | 'sizeClassSource'>,
 ): string[] {
   if (!b.needsReview) return [];
   const reasons: string[] = [];
@@ -53,8 +53,6 @@ export function reviewReasons(
     reasons.push(
       'Vehicle size was chosen by the customer because the vehicle is not in our size table. Confirm the class and price.',
     );
-  if (b.modified && pricing.modifiedPolicy === 'review')
-    reasons.push('Modified vehicle: confirm what was changed and whether it affects the price.');
   if (reasons.length === 0)
     reasons.push(
       'This booking was flagged for review (for example, a payment that arrived after the hold had expired). Check the spot before confirming.',
@@ -134,6 +132,9 @@ export type LeadForEmail = {
   deliveryZip: string;
   operable: boolean;
   modified: boolean;
+  highValue: boolean;
+  quoteReasons: string[];
+  modificationDetails: string | null;
   topDeck: boolean;
   preferredWeekStart: string | null;
   notes: string | null;
@@ -152,16 +153,22 @@ export function buildLeadEmailData(l: LeadForEmail, routeName: string) {
     deliveryZip: l.deliveryZip,
     operable: l.operable,
     modified: l.modified,
+    highValue: l.highValue,
+    reasons: l.quoteReasons.map(reasonLabel),
+    modificationDetails: l.modificationDetails,
     topDeck: l.topDeck,
     preferredWeek: l.preferredWeekStart ? weekLabel(l.preferredWeekStart) : null,
     notes: l.notes,
   };
 }
 
+const reasonLabel = (id: string): string =>
+  (emailCopy.lead.reasonLabels as Record<string, string>)[id] ?? id.replace(/_/g, ' ');
+
 export const leadSubject = (
-  d: Pick<ReturnType<typeof buildLeadEmailData>, 'vehicle' | 'routeName' | 'name'>,
+  d: Pick<ReturnType<typeof buildLeadEmailData>, 'vehicle' | 'routeName' | 'reasons'>,
 ): string =>
   emailCopy.lead.subject
+    .replace('{reasons}', d.reasons.join(', '))
     .replace('{vehicle}', d.vehicle)
-    .replace('{route}', d.routeName)
-    .replace('{name}', d.name);
+    .replace('{route}', d.routeName);

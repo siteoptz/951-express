@@ -162,8 +162,11 @@ describe('NewLeadEmail', () => {
       vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' },
       pickupZip: '90001',
       deliveryZip: '21201',
-      operable: true,
-      modified: false,
+      operable: false,
+      modified: true,
+      highValue: false,
+      quoteReasons: ['large_vehicle', 'inoperable', 'modified'],
+      modificationDetails: '5-inch lift, 35-inch tires',
       topDeck: false,
       preferredWeekStart: '2026-10-26',
       notes: 'Lifted',
@@ -172,6 +175,12 @@ describe('NewLeadEmail', () => {
   );
   it('asks the team to quote (snapshot)', async () => {
     expect(leadText(lead)).toMatchSnapshot();
+  });
+  it('puts the reasons and modification details at the top of the body', () => {
+    const body = leadText(lead);
+    expect(body).toContain('Reasons: large vehicle, inoperable, modified');
+    expect(body).toContain('Modifications: 5-inch lift, 35-inch tires');
+    expect(body.indexOf('Reasons:')).toBeLessThan(body.indexOf('CONTACT'));
   });
   it('plain text without a preference, notes, or top deck, and with them', () => {
     expect(leadText({ ...lead, preferredWeek: null, notes: null })).toContain(

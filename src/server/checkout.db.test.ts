@@ -64,6 +64,7 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
     vehicle: { year: 2021, make: 'Toyota', model: 'RAV4' },
     operable: true,
     modified: false,
+    highValue: false,
     topDeck: false,
     personalItems: false,
     weekStart,
@@ -203,6 +204,33 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
       reason: 'week_unavailable',
     });
   });
+
+  it.each([
+    ['large_vehicle', { vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' } }],
+    ['inoperable', { operable: false }],
+    ['modified', { modified: true, modificationDetails: '5-inch lift' }],
+    ['exotic', { vehicle: { year: 2021, make: 'Ferrari', model: 'Roma' } }],
+    ['exotic', { vehicle: { year: 2021, make: 'Mercedes-Benz', model: 'S 680 Maybach' } }],
+    ['high_value', { highValue: true }],
+  ] as const)(
+    'never holds a spot or opens Stripe for a %s vehicle, however the request is forged',
+    async (reason, over) => {
+      // A pickup ZIP no other test uses, so concurrent test files cannot change this count.
+      const zip = { pickupZip: '85004' };
+      const count = async () =>
+        (await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.pickupZip, '85004')))
+          .length;
+      const before = await count();
+      const { r, f } = await checkout(weeks[4].start, fake(), {
+        ...zip,
+        ...over,
+      } as Partial<Step1>);
+      expect(r).toMatchObject({ status: 422, quoteRequired: true });
+      expect((r as { quoteReasons?: string[] }).quoteReasons).toContain(reason);
+      expect(f.calls.create).toHaveLength(0);
+      expect(await count()).toBe(before);
+    },
+  );
 
   it('marks paid once: a replayed webhook changes nothing and sends no second email', async () => {
     const { r } = await checkout(weeks[4].start);

@@ -12,6 +12,7 @@ import {
   mockVpic,
   openModal,
   reachSummary,
+  untickSaveWithLink,
 } from './helpers';
 
 // Real Stripe test mode, with `stripe listen` forwarding webhooks to the app. Run: npm run e2e:stripe
@@ -74,16 +75,6 @@ async function startPayment(page: Page, week: string) {
   await checkoutFrame(page).getByPlaceholder('1234 1234 1234 1234').waitFor({ timeout: 30_000 });
 }
 
-/** Link's "Save my information" is on by default and then asks for a phone number, so untick it (it can reset). */
-async function untickSaveMyInfo(f: FrameLocator) {
-  const box = f.locator('#enableStripePass');
-  // Stripe can re-tick it while it looks up the email in Link, so retry until it sticks.
-  await expect(async () => {
-    if (await box.isChecked()) await f.getByText('Save my information for faster checkout').click();
-    await expect(box).not.toBeChecked({ timeout: 1500 });
-  }).toPass({ timeout: 20_000 });
-}
-
 async function payWith(page: Page, card: string, email = 'e2e-buyer@example.com') {
   const f = checkoutFrame(page);
   await f.getByPlaceholder('email@example.com').fill(email);
@@ -92,7 +83,7 @@ async function payWith(page: Page, card: string, email = 'e2e-buyer@example.com'
   await f.getByPlaceholder('CVC').fill('123');
   await f.getByPlaceholder('Full name on card').fill('E2E Buyer');
   await f.getByPlaceholder('ZIP').fill('90001');
-  await untickSaveMyInfo(f);
+  await untickSaveWithLink(f);
   await f.getByTestId('hosted-payment-submit-button').click();
 }
 

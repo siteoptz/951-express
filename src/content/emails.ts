@@ -22,9 +22,18 @@ export const emailCopy = {
     reviewBanner: 'Review needed',
   },
   lead: {
-    subject: 'New Quote Request: {vehicle} · {route} · {name}',
+    subject: 'Quote request ({reasons}): {vehicle} · {route}',
     preview: 'A customer asked for a personalized quote. No deposit, no spot held.',
     heading: 'New quote request',
-    note: 'Large vehicle: no online price. No deposit was taken and no spot is held.',
+    note: 'This vehicle has no online price. No deposit was taken and no spot is held.',
+    reasonsHeading: 'Why a quote is needed',
+    modificationHeading: 'Modifications',
+    reasonLabels: {
+      large_vehicle: 'large vehicle',
+      inoperable: 'inoperable',
+      modified: 'modified',
+      exotic: 'exotic',
+      high_value: 'high value',
+    },
   },
 } as const;

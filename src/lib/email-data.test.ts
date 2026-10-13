@@ -131,17 +131,15 @@ describe('buildBookingEmailData', () => {
 
 describe('reviewReasons', () => {
   it('is empty when nothing needs review', () => {
-    expect(
-      reviewReasons({ needsReview: false, sizeClassSource: 'customer', modified: true }),
-    ).toEqual([]);
+    expect(reviewReasons({ needsReview: false, sizeClassSource: 'customer' })).toEqual([]);
   });
   it('explains why in plain words', () => {
-    expect(
-      reviewReasons({ needsReview: true, sizeClassSource: 'customer', modified: false })[0],
-    ).toMatch(/chosen by the customer/);
-    expect(
-      reviewReasons({ needsReview: true, sizeClassSource: 'table', modified: false })[0],
-    ).toMatch(/flagged for review/);
+    expect(reviewReasons({ needsReview: true, sizeClassSource: 'customer' })[0]).toMatch(
+      /chosen by the customer/,
+    );
+    expect(reviewReasons({ needsReview: true, sizeClassSource: 'table' })[0]).toMatch(
+      /flagged for review/,
+    );
   });
 });
 
@@ -166,7 +164,10 @@ describe('subjects', () => {
         pickupZip: '90001',
         deliveryZip: '21201',
         operable: true,
-        modified: false,
+        modified: true,
+        highValue: false,
+        quoteReasons: ['large_vehicle', 'modified'],
+        modificationDetails: '5-inch lift, 35-inch tires',
         topDeck: false,
         preferredWeekStart: '2026-10-26',
         notes: null,
@@ -179,7 +180,7 @@ describe('subjects', () => {
       ref: '3F2B6C1E',
     });
     expect(leadSubject(l)).toBe(
-      'New Quote Request: 2021 Chevrolet Tahoe · West → East · Lee Large',
+      'Quote request (large vehicle, modified): 2021 Chevrolet Tahoe · West → East',
     );
     expect(
       buildLeadEmailData(
@@ -195,6 +196,9 @@ describe('subjects', () => {
             deliveryZip: '2',
             operable: true,
             modified: true,
+            highValue: true,
+            quoteReasons: ['exotic', 'high_value'],
+            modificationDetails: null,
             topDeck: true,
             notes: 'n',
           },

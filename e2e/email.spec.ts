@@ -3,7 +3,16 @@ import { and, desc, eq, gte } from 'drizzle-orm';
 import { createDb } from '../src/db';
 import { bookings, leads, routes } from '../src/db/schema';
 import { bookableWeeks } from '../src/lib/weeks';
-import { asNewVisitor, dialog, fillDetails, mockVpic, openModal, reachSummary } from './helpers';
+import {
+  answerHighValue,
+  asNewVisitor,
+  dialog,
+  fillDetails,
+  mockVpic,
+  openModal,
+  reachSummary,
+  untickSaveWithLink,
+} from './helpers';
 
 // REAL emails. Run it on purpose:  npm run e2e:email   (sends 4: deposit received, new booking, confirmation, new lead)
 //   team side     -> BOOKINGS_EMAIL_TO (the dispatcher inbox)
@@ -52,12 +61,7 @@ async function pay(page: Page, email: string) {
   await frame.getByPlaceholder('CVC').fill('123');
   await frame.getByPlaceholder('Full name on card').fill('E2E Buyer');
   await frame.getByPlaceholder('ZIP').fill('90001');
-  const box = frame.locator('#enableStripePass');
-  await expect(async () => {
-    if (await box.isChecked())
-      await frame.getByText('Save my information for faster checkout').click();
-    await expect(box).not.toBeChecked({ timeout: 1500 });
-  }).toPass({ timeout: 20_000 });
+  await untickSaveWithLink(frame);
   await frame.getByTestId('hosted-payment-submit-button').click();
 }
 
@@ -113,6 +117,7 @@ test('a personalized-quote request emails the team @email', async ({ page }) => 
     await box.fill(text);
     await box.press('Tab');
   }
+  await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });
   await d.getByLabel('Full name').fill(LEAD_NAME);
@@ -148,7 +153,11 @@ test('Resend accepted all four emails and shows their delivery status @email', a
       subject: /^Your 951 Express booking is confirmed/,
       to: CUSTOMER,
     },
-    { name: 'New lead (team)', subject: /^New Quote Request: 2021 Chevrolet Tahoe/, to: TEAM },
+    {
+      name: 'New lead (team)',
+      subject: /^Quote request \(large vehicle\): 2021 Chevrolet Tahoe/,
+      to: TEAM,
+    },
   ];
   type Row = { id: string; created_at: string; subject: string; to: string[]; last_event: string };
   const find = (rows: Row[], w: (typeof wanted)[number]) =>

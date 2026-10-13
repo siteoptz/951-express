@@ -22,7 +22,7 @@ export type CheckoutResult =
       weekLabel: string;
     }
   | { status: 409; error: string; reason: 'week_full'; nextAvailableWeek: Week | null }
-  | { status: 422; error: string; reason: string; quoteRequired?: true }
+  | { status: 422; error: string; reason: string; quoteRequired?: true; quoteReasons?: string[] }
   | { status: 502 | 503; error: string; reason: string };
 
 /**
@@ -55,6 +55,7 @@ export async function createCheckout(
       error: 'This vehicle needs a personalized quote.',
       reason: 'quote_required',
       quoteRequired: true,
+      quoteReasons: r.quoteReasons,
     };
   }
 
@@ -68,8 +69,9 @@ export async function createCheckout(
       pickupRegion: r.pickupRegion,
       deliveryRegion: r.deliveryRegion,
       vehicle: input.vehicle,
-      operable: input.operable,
-      modified: input.modified,
+      // Only fully eligible vehicles reach here (running, factory stock), so these are fixed.
+      operable: true,
+      modified: false,
       topDeck: input.topDeck,
       personalItems: input.personalItems,
       sizeClass: r.sizeClass,

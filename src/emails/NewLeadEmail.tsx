@@ -17,6 +17,13 @@ export function NewLeadEmail({ d }: { d: ReturnType<typeof buildLeadEmailData> }
         <Paragraph>{c.note}</Paragraph>
       </Banner>
 
+      <Block title={c.reasonsHeading}>
+        <Field label="Reasons">{d.reasons.join(', ')}</Field>
+        {d.modificationDetails && (
+          <Field label={c.modificationHeading}>{d.modificationDetails}</Field>
+        )}
+      </Block>
+
       <Block title="Contact">
         <Field label="Name">{d.name}</Field>
         <Field label="Phone">{d.phone}</Field>
@@ -34,6 +41,7 @@ export function NewLeadEmail({ d }: { d: ReturnType<typeof buildLeadEmailData> }
         <Field label="Delivery ZIP">{d.deliveryZip}</Field>
         <Field label="Operable">{yn(d.operable)}</Field>
         <Field label="Modified">{yn(d.modified)}</Field>
+        <Field label="Worth over $100,000">{yn(d.highValue)}</Field>
         {d.topDeck && <Field label="Load type">Top Deck Load</Field>}
         <Field label="Preferred pickup week">{d.preferredWeek ?? 'No preference'}</Field>
         {d.notes && <Field label="Notes">{d.notes}</Field>}

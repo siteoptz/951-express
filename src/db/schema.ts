@@ -117,7 +117,7 @@ export const bookings = pgTable(
   ],
 );
 
-/** Quote-required requests (large vehicles). No deposit and no spot hold. */
+/** Quote-required requests (large, inoperable, modified, exotic or high-value vehicles). No deposit and no spot hold. */
 export const leads = pgTable('leads', {
   id: uuid('id').primaryKey().defaultRandom(),
   createdAt: createdAt(),
@@ -130,6 +130,12 @@ export const leads = pgTable('leads', {
   operable: boolean('operable').notNull(),
   modified: boolean('modified').notNull(),
   topDeck: boolean('top_deck').notNull().default(false),
+  /** Why this vehicle needs a personalized quote: large_vehicle, inoperable, modified, exotic, high_value. */
+  quoteReasons: jsonb('quote_reasons').$type<string[]>().notNull().default([]),
+  /** What was changed, required when the vehicle is modified. */
+  modificationDetails: text('modification_details'),
+  /** The customer's answer to "worth more than $100,000?". */
+  highValue: boolean('high_value').notNull().default(false),
   /** Optional preference only: a lead never holds a spot. */
   preferredWeekStart: date('preferred_week_start', { mode: 'string' }),
   name: text('name').notNull(),

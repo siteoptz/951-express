@@ -40,6 +40,9 @@ export const bookingCopy = {
     largeLabel: 'Large SUV or pickup',
   },
   options: {
+    highValue: 'Is your vehicle worth more than $100,000?',
+    highValueYes: 'Yes',
+    highValueNo: 'No',
     operable: 'Is the vehicle operable?',
     operableYes: 'Yes, it runs and drives',
     operableNo: 'No',
@@ -73,8 +76,22 @@ export const bookingCopy = {
   genericError: 'Something went wrong. Please try again or email us.',
   lead: {
     heading: 'Request a personalized quote',
-    intro:
-      'Large vehicles are priced individually. Tell us how to reach you and we will send a quote.',
+    // Shown above the form, one line per reason (high value and exotic share a message).
+    reasons: {
+      large_vehicle:
+        'Large vehicles are priced individually. Tell us how to reach you and we will send a quote.',
+      inoperable:
+        "Vehicles that don't run need a personalized quote. Send us the details and we'll get back to you with a price.",
+      modified:
+        'Modified vehicles need a personalized quote so we can confirm it fits our trailer.',
+      exotic:
+        'High-value and exotic vehicles need a personalized quote so we can arrange the right coverage.',
+      high_value:
+        'High-value and exotic vehicles need a personalized quote so we can arrange the right coverage.',
+    },
+    modifications: 'Describe the modifications',
+    modificationsPlaceholder: 'e.g. 5-inch lift, 35-inch tires, lowered 2 inches, roof rack',
+    modificationsCount: '{n} of {max} characters',
     name: 'Full name',
     phone: 'Phone',
     email: 'Email',
