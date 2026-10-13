@@ -6,10 +6,12 @@ Built by SiteOptz (Antonio Mendoza) for 951 Express Inc, a licensed auto transpo
 Work through it one phase at a time. Do not start a phase until the previous phase's checks pass.
 
 ## What we are building
+
 One landing page with a booking modal:
+
 1. **Qualify & Quote:** pickup/delivery ZIPs checked against two regions, WEST and EAST, defined only by the
    client's ZIP lists (`data/raw/`, built into `src/data/zips/`). A shipment must cross regions; same-region
-   moves are rejected. The two routes, `west-to-east` and `east-to-west`, each have 12 spots per week. Once the
+   moves are rejected. The two routes, `west-to-east` and `east-to-west`, each have 6 spots per week (the route's `weekly_capacity`, never a hard-coded number). Once the
    pickup ZIP resolves, the UI shows "Shipping West → East" (or East → West) and the delivery ZIP accepts only the
    opposite list. Vehicle year/make/model sets a size class (7 priced classes); unknown vehicles let the
    customer pick a class and the booking gets `needsReview`. Large SUVs, pickups and vans, inoperable and modified
@@ -18,13 +20,23 @@ One landing page with a booking modal:
    `src/lib/eligibility.ts`). Options: high-value, operable and modified radios, a Standard / Top Deck Load (+$150) radio, personal items radio (Yes shows "100 lbs included.
    Anything over 100 lbs is at the driver's discretion."), a pickup-week calendar limited to 6 spots per route
    per week (Top Deck Load also has its own per-week limit), and a required Terms & Conditions checkbox linked to /terms.
-2. **Cart & Deposit:** price breakdown plus deposit paid through Stripe Embedded Checkout.
-3. **Customer details** (only after payment): name, phone, email, address, pickup and delivery addresses, notes.
-4. **Email:** full booking record to the 951 Express team, plus a confirmation to the customer.
-Also: service-area map (from `src/data/zips/coverage.json`), company sections with real photography, /terms page,
-password-protected /admin.
+2. **Cart & Deposit:** price breakdown plus a flat $100 deposit (every booking, every class, with or without Top Deck)
+   paid through Stripe Embedded Checkout. The balance is due at delivery by Cash, Cashier's Check, or Zelle only (no credit
+   cards); the cart, confirmation, emails, dispatch sheet and Terms all say so from `src/config/booking.ts`. Standard delivery is
+   an estimate of 7–10 days after pickup, not a guarantee.
+3. **Customer details** (only after payment): name, phone, email, home/pickup/delivery addresses, notes, and optional vehicle
+   color, VIN (17 characters, no I/O/Q) and pickup/delivery contacts. The state is derived from the ZIP on the server and shown
+   read-only; the city autofills and is checked against the ZIP (a mismatch needs "Yes, this is correct", which sets
+   `needsReview` with the reason "city/ZIP mismatch" and stores `address_flags`). Pickup and delivery ZIPs must stay in the
+   quoted regions, rechecked on the server.
+4. **Email:** full booking record to the 951 Express team with the one-page dispatch sheet PDF attached
+   (`src/pdf/DispatchSheet.tsx`, 951 Express branding only; if it cannot be made the email still goes out), plus a
+   confirmation to the customer.
+   Also: service-area map (from `src/data/zips/coverage.json`), company sections with real photography, /terms page,
+   password-protected /admin.
 
 ## Stack
+
 - Next.js (App Router) + TypeScript + Tailwind CSS, deployed on Vercel (Git-connected).
 - Postgres: Neon via the Vercel Marketplace. Drizzle ORM with the `neon-serverless` (Pool) driver, which
   we need for transactions.
@@ -40,6 +52,7 @@ password-protected /admin.
 - ZIP data: `node scripts/build-zip-data.mjs` regenerates `src/data/zips/*` from `data/raw/`; the `zipcodes` package validates it.
 
 ## Rules that must never be broken
+
 - **The server is the only source of truth for price and capacity.** Never trust a total, deposit, route,
   or availability sent from the browser. Recompute everything server-side before creating a hold or a
   Stripe session.
@@ -47,7 +60,9 @@ password-protected /admin.
   (`*.server.ts`, with `import 'server-only'`). Client code may use `coverage.json` only.
 - **Capacity must be race-safe.** Check and insert holds inside one DB transaction guarded by
   `pg_advisory_xact_lock(route_id, week_number)`. A concurrency test (7 simultaneous holds, exactly 6
-  succeed) must stay green.
+  succeed) must stay green, and so must the Top Deck one (5 simultaneous SUV top-deck holds,
+  exactly 3 succeed; a top-deck booking uses one of the 6 spots **and** one top-deck slot). The DB test files run one at a
+  time (`fileParallelism: false`) because they share one dev branch.
 - A booking is only "paid" when Stripe says so (webhook, or `checkout.sessions.retrieve` with
   `payment_status === 'paid'`). The client `onComplete` callback is UX only.
 - Webhook handlers are idempotent and verify the Stripe signature against the raw request body.
@@ -58,6 +73,7 @@ password-protected /admin.
 - American English in all copy and code comments.
 
 ## Brand (from the approved proposal mockups)
+
 - Navy `#0E1A2B` (nav and hero), deep blue `#17304F` to `#1D3B60` (hero gradient), success `#1F9D55` (text on white:
   `#17803F`), full/unavailable `#C8343B`, soft background `#F3F5F8`.
 - **Accent: the logo orange `#F06A1A`** (approved; it replaced the old amber `#F5A524`). Tokens in `src/app/globals.css`:
@@ -68,17 +84,22 @@ password-protected /admin.
   - Orange as text on a light background uses `accent-text` (5.18:1 on white, 4.74:1 on `#F3F5F8`). Orange text on the navy
     areas can use the accent itself (5.65:1 on navy; large text only on `#17304F`, 4.31:1).
   - The map's East region, the terminal pin, email accents, and the focus ring follow the same rules.
+- Photos: the hero is the black-and-white truck (`public/images/hero/hauler-black-white.webp`, exported from a 1500px original
+  by `scripts/optimize-images.mjs`; the crop and overlay are tuned in `Hero.tsx` so the hero copy keeps AA contrast). The red
+  Cascadia profile is gallery item 2. Plates are blurred in the exports.
 - Logo: `public/images/logos/` (made from `originals/951-express-logo.*` by `scripts/optimize-images.mjs`); alt text "951 Express Inc. logo".
 - No phone number anywhere on the site or in emails. Contact is email only: `company.contactEmail` in `src/config/company.ts`.
 - Only client-confirmed facts in the trust bar: USDOT 4020917, MC-1516594, "Fully licensed and bonded with a cargo limit of $250,000 per occurrence".
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 
 ## Commands
+
 - `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright; uses the DATABASE_URL in .env.local: a dev branch only)
 - `npm run e2e:stripe:api` (payment behavior with signed webhook events, no iframe: the stable gate) and `npm run e2e:stripe` (adds the two real-iframe payment tests; needs the Stripe CLI)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 
 ## Definition of done for any change
+
 `npm run lint && npm run typecheck && npm test && npm run build` all pass, and the affected screen has been
 viewed at 390px and 1280px widths.

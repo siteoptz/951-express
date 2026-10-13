@@ -1,74 +1,67 @@
-# Client Inputs Still Owed by 951 Express
+# Open Questions and Inputs for 951 Express (Cal)
 
-Check items off as they arrive. Every placeholder in code is marked `TODO(client)`.
+Every placeholder in code is marked `TODO(client)`. Tick an item when Cal answers it, then make the change named in it.
+Items are grouped as: decisions, content and files, accounts and launch.
 
-## Brand and photography
+## 1. Decisions
 
-- [x] Logo received (JPEG on a black background; the black was cut out to make a transparent version). A clean transparent PNG or SVG from the client would be sharper: drop it at `originals/951-express-logo.png` and run `node scripts/optimize-images.mjs`.
-- [x] Accent color: the logo orange #F06A1A (approved), with navy text on it.
-- [ ] **Hero:** only one supplied photo is at least 2000px wide (the red truck profile on gravel). Ask for a higher-resolution, carrier-in-frame hero shot if they want a stronger option.
-- [ ] **Team / office / terminal photos:** none supplied. The About section uses the fleet photo only.
-- [ ] More gallery photos (we have 2). Original files, not screenshots or messaging-app copies.
-- [ ] Approval to publish the photos, including the blurred license plates.
+### Quotes and pricing
 
-## Business details
+- [ ] **Full-size vans** (Transit, Sprinter, Express, Savana, ProMaster): personalized quote (current) or an online price? (`src/config/eligibility.ts`)
+- [ ] **Exotic list** (Ferrari, Lamborghini, McLaren, Rolls-Royce, Bentley, Aston Martin, Bugatti, Pagani, Koenigsegg, Maserati, Lotus, any Maybach): keep Maserati and Lotus?
+- [ ] **High value:** is $100,000 the right line for "personalized quote"? (`highValueThresholdUsd`)
+- [ ] **Sedan and SUV class lists:** confirm them and the pickup year cutoffs. Ranger 2013–2018 is not classified (not sold in the U.S. those years), so the customer picks a class.
+- [ ] **Delivery estimate:** confirm "7–10 days after pickup" (`deliveryWindowDays`). The dispatch sheet shows the first day of the pickup week + 7 to the last day + 10 (for example Oct 26 – Nov 4).
 
-- [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks. Atlanta metro (30001–30400) was added on 2026-10-13 via `data/raw/east_additions.txt`. Charlotte (280-282), Birmingham (350-352), all of Florida, and the Northeast above Delaware are still outside the East list.
-- [x] Base rates per size class, received.
-- [x] Inoperable and modified vehicles no longer get an online price: they go to a personalized quote (Cal, 2026-10-13). The old +$150 and +$100 surcharges are retired.
-- [x] Deposit is a flat $100 on every booking (Cal, 2026-10-13). The balance is paid at delivery by Cash, Cashier's Check, or Zelle only; no credit cards.
-- [ ] Confirm the standard delivery estimate of 7–10 days after pickup (`deliveryWindowDays` in `src/config/booking.ts`).
-- [x] Inoperable vehicles no longer book online (personalized quote), so the top-deck question for them is moot.
-- [ ] **Top-deck limits** (defaults in `topDeckLimits`, `src/config/pricing.ts`): 3 SUV slots and 1 car slot per route per week, held together with the 6 main spots. Confirm: is it 3 SUVs **and** 1 car at the same time? Are minivans and small/midsize pickups allowed on top (default: yes, as SUV slots)? May a sedan use a free SUV slot when the car slot is taken (default: yes)?
-- [ ] Confirm the sedan and SUV class lists and the pickup year cutoffs (Ranger 2013-2018 is unclassified: those years were not sold in the U.S., so the customer picks).
-- [ ] Should full-size vans (Transit, Sprinter, Express, Savana, ProMaster) be quote-required? Savana was added as the Express twin.
-- [x] Weekly capacity is 6 per direction per week (Cal, 2026-10-13).
-- [x] Public contact email: 951.dispatcher@gmail.com (the site shows no phone number). [ ] Street address.
-- [x] USDOT 4020917, MC-1516594, and the insurance wording (fully licensed and bonded, cargo limit of $250,000 per occurrence) are confirmed and shown. Nothing else is claimed: no crash record, no years in operation. Add a stat to `company.confirmedStats` only after the client confirms it.
+### Top Deck Load limits (defaults in `topDeckLimits`, `src/config/pricing.ts`)
 
-## Legal
+- [ ] Is it 3 SUVs **and** 1 car on top at the same time, per route per week, on top of the 6 main spots?
+- [ ] Are minivans and small and midsize pickups allowed on top (current: yes, as SUV slots)?
+- [ ] May a sedan use a free SUV slot when the car slot is taken (current: yes)?
 
-- [ ] Terms are a standard draft. Cal should confirm the `TODO(client)` items in `src/content/terms.ts` (cancellation window, refund timing, accepted payment methods at delivery, claim deadline, packing rules, surcharges, governing venue) and have the terms reviewed by an attorney before taking live deposits.
+### Service area
 
-## Accounts and infrastructure
+- [ ] **East list gaps:** Charlotte (280–282), Birmingham (350–352), all of Florida, and the Northeast above Delaware are outside East. Intentional? (Atlanta metro 30001–30400 was added 2026-10-13.)
+- [ ] **Yuma, AZ** (85336, 85349, 85350, 85364–85367, 85369) is West for both pickup and delivery. Is Yuma pickup-only?
 
-- [ ] Stripe account activated in the client's name (test keys now, live keys at launch).
-- [ ] Booking inbox address (`BOOKINGS_EMAIL_TO`).
-- [ ] Domain, purchased by the client, plus DNS access.
-- [ ] Email sending domain access for SPF/DKIM verification (Resend).
-- [ ] Google Analytics 4 measurement ID, if they want GA.
+### Addresses and the dispatch sheet
 
-## Added after the ZIP review
+- [ ] **Street-address verification** (Smarty or Google Address Validation, a small per-lookup cost): yes or no? Today we check state and city against the ZIP only.
+- [ ] **Carrier address** printed on the dispatch sheet: `2108 Collett Ave Apt 204, Corona, CA 92879` (from Cal's own sheet). Confirm. (`company.dispatchAddress`, used only on the sheet.)
+- [ ] **VIN check:** a VIN is accepted when it has 17 letters and numbers, no I, O or Q. Add the check-digit test too? (Older and imported vehicles often fail it.)
+- [ ] **Lot #** is left blank on the dispatch sheet for Cal's dispatch system. Right?
 
-- [ ] The East list still doesn't include Charlotte or Birmingham metro ZIPs, or anything in Florida (Atlanta metro, 30001–30400, is now included). Is that intentional?
+### Payments and legal
 
-## Stripe go-live (Phase 6)
+- [ ] **Link and extra payment methods** ("Save my information with Link", Bank, Klarna): keep or switch off? They are Stripe Dashboard settings.
+- [ ] **Terms:** a standard draft. Confirm the `TODO(client)` items in `src/content/terms.ts` (cancellation window, refund timing, claim deadline, packing rules, governing venue) and have an attorney review it before live deposits.
 
-- [ ] Live keys in Vercel Production only. Preview and Development keep test keys.
-- [ ] A webhook endpoint per environment (`/api/stripe/webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`), each with its own `STRIPE_WEBHOOK_SECRET` in Vercel. Until then the deployed app can take payments but cannot verify webhooks; the status check still marks bookings paid.
-- [ ] Decide whether to keep Link ("Save my information for faster checkout") and the extra payment methods Stripe shows (Bank, Klarna). They are Dashboard settings.
-- [ ] `RESEND_API_KEY` and `EMAIL_FROM` for the "deposit received" email.
+## 2. Content and files
 
-## Email (Phase 7)
+- [ ] **Hero photo:** the black-and-white truck is only 1500px wide (we did not enlarge it). A larger original (2400px or wider) would be sharper.
+- [ ] **Team, office and terminal photos:** none supplied; About uses the fleet photo only.
+- [ ] **More gallery photos:** we have six. Original files, not screenshots or messaging-app copies.
+- [ ] **Permission to publish the photos**, including the blurred license plates.
+- [ ] **Logo:** a clean transparent PNG or SVG would be sharper than the cut-out we made. Drop it at `originals/951-express-logo.png` and run `node scripts/optimize-images.mjs`.
+- [ ] **Public contact:** the site shows `951.dispatcher@gmail.com` and no phone number. Confirm, and send a street address if it should appear on the site.
+- [ ] **Customer confirmation wording** ("What happens next", `src/content/emails.ts`): review it.
+- [ ] **Company stats** (years in business, and so on): only added to the trust bar after Cal confirms them (`company.confirmedStats`).
 
-- [x] Sending domain `notify.951express.com` verified in Resend; `EMAIL_FROM` uses it. Customers now receive confirmations.
-- [ ] Review the wording of the customer confirmation ("What happens next") in `src/content/emails.ts`.
-- [x] Dispatcher inbox: 951.dispatcher@gmail.com (`BOOKINGS_EMAIL_TO`; also the Reply-To on customer emails). Add more addresses, comma separated, if the client wants them.
+## 3. Accounts and launch
 
-## Personalized quote routing (Cal's call, 2026-10-13)
+- [ ] **Stripe** account activated in the client's name. Live keys go in Vercel Production only (Preview and Development keep test keys).
+- [ ] **Stripe webhook** endpoint per environment (`/api/stripe/webhook`; events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`), each with its own `STRIPE_WEBHOOK_SECRET`. Pin it to the API version in `src/config/stripe.ts`.
+- [ ] **Domain** bought by the client, plus DNS access; then set `NEXT_PUBLIC_SITE_URL`.
+- [ ] **Email sending:** `notify.951express.com` is verified in Resend. Move `EMAIL_FROM` to the final domain if it changes.
+- [ ] **Booking inbox** (`BOOKINGS_EMAIL_TO`): currently 951.dispatcher@gmail.com; add more addresses (comma separated) if wanted.
+- [ ] **Google Analytics 4** measurement ID, if they want GA.
+- [ ] **Real-device check:** pay a test-mode deposit on a real iPhone and Android phone (Stripe's checkout can stall in automated browsers).
+- [ ] **Production data:** confirm the production database has the final routes, rates and the $100 deposit; client edits made in the admin (Phase 8) survive deploys.
 
-These go to the quote form instead of online booking. The defaults below are in `src/config/eligibility.ts`.
+## Done (for the record)
 
-- [ ] **Full-size vans** (Transit, Sprinter, Express, Savana, ProMaster): personalized quote (default) or a price?
-- [ ] **Exotic list:** Ferrari, Lamborghini, McLaren, Rolls-Royce, Bentley, Aston Martin, Bugatti, Pagani, Koenigsegg, Maserati, Lotus, and any Maybach model. Keep Maserati and Lotus?
-- [ ] **High value:** the "worth more than $100,000" threshold is `highValueThresholdUsd`. Is $100,000 right?
-
-## Dispatch sheet PDF (Batch 6)
-
-- [ ] **Confirm the carrier address** (`2108 Collett Ave Apt 204, Corona, CA 92879`) on the dispatch sheet (`company.dispatchAddress` in `src/config/company.ts`, from Cal's own sheet; used nowhere else).
-- [ ] **VIN check:** a VIN is accepted when it is 17 letters and numbers with no I, O or Q. It is not checked against the VIN check digit, because older and imported vehicles often fail it. Add the check digit test?
-- [ ] **Lot #** is left blank on the sheet for Cal to fill in his dispatch system. Is that right?
-- [ ] **Estimated delivery** is the first day of the pickup week + 7 to the last day + 10 (for example "Oct 26 – Nov 4").
-
-## West region: Yuma, AZ (Batch 7)
-- [ ] Yuma-area ZIPs (85336, 85349, 85350, 85364, 85365, 85366, 85367, 85369) were added to West for **both pickup and delivery**, like the rest of the West list. Is Yuma pickup-only?
+- [x] Logo, accent color (#F06A1A), ZIP lists, base rates, USDOT 4020917 and MC-1516594 wording received.
+- [x] Deposit is a flat $100 and the balance is Cash, Cashier's Check, or Zelle only (2026-10-13).
+- [x] Weekly capacity is 6 per direction (2026-10-13).
+- [x] Inoperable and modified vehicles go to a personalized quote (2026-10-13).
+- [x] Dispatcher inbox and Resend sending domain set up.

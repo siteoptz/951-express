@@ -5,20 +5,40 @@ signed proposal. Read `CLAUDE.md` first. Run **one phase per session**: do the t
 push, confirm the Vercel preview deploy, then stop and report. Each phase ends with a prompt you can paste
 to start it.
 
-| Phase | What ships | Proposal week |
-|---|---|---|
-| 0 | Repo audit, project setup, image inventory, config skeleton | Wk 1 |
-| 1 | Design system + static landing page | Wk 1–2 |
-| 2 | Interactive service-area map | Wk 2 |
-| 3A | Booking rules: ZIP regions, routing, pricing, vehicle classes (pure + tested) | Wk 2 |
-| 3B | Remaining business logic: weeks, shared schemas (the vPIC helpers were later removed) | Wk 2 |
-| 4 | Database + race-safe capacity holds | Wk 2–3 |
-| 5 | Booking modal, Step 1 (Qualify & Quote) | Wk 3 |
-| 6 | Step 2: cart + Stripe deposit + webhooks | Wk 3 |
-| 7 | Step 3 details + Step 4 emails | Wk 3 |
-| 8 | Terms page + admin view | Wk 3–4 |
-| 9 | SEO, analytics, accessibility, performance | Wk 4 |
-| 10 | End-to-end QA + launch | Wk 4 |
+## Changes since the proposal: Cal's requests of 2026-10-13
+
+Built in eight batches after Phase 7 (source: `docs/CAL_CHANGES_2026-10-13.md`). Each shipped on its own commit.
+
+| Batch | Change                                                                                                                                                                                                             | Where                                                                 |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 0     | Password-manager attributes on the ZIP inputs                                                                                                                                                                      | `src/lib/zip-input.ts`                                                |
+| 1     | Personalized-quote routing: large SUVs, pickups and vans, inoperable, modified, exotic, over $100,000 get a lead form instead of a price (old surcharges retired)                                                  | `src/lib/eligibility.ts`, `src/config/eligibility.ts`                 |
+| 2     | Flat $100 deposit; balance by Cash, Cashier's Check, or Zelle only; 7–10 day delivery estimate; Terms updated                                                                                                      | `src/config/booking.ts`, migration 0005                               |
+| 3     | 6 spots per direction per week; Top Deck limits (3 SUV + 1 car slots per route per week, inside the same advisory-locked transaction); the seed only inserts missing rows, changes to live rows ship as migrations | `src/server/capacity.ts`, `src/lib/top-deck.ts`, migrations 0004–0005 |
+| 4     | Vehicle entry is three typed fields; the server normalizes and stores typed and normalized values; vPIC and `/api/vehicles/*` removed                                                                              | `src/lib/vehicle-normalize.ts`, migration 0006                        |
+| 5     | Address consistency: state from the ZIP, city check with a confirmed override flagged for review                                                                                                                   | `src/lib/address*.ts`, `src/server/details.ts`, migration 0007        |
+| 6     | One-page dispatch sheet PDF attached to the team email; optional color, VIN and contacts in Step 3                                                                                                                 | `src/pdf/`, `src/server/dispatch-pdf.ts`, migration 0008              |
+| 7     | Yuma, AZ ZIPs added to West                                                                                                                                                                                        | `data/raw/west_additions.txt`                                         |
+| 8     | Hero is the black-and-white truck; red Cascadia profile is gallery item 2                                                                                                                                          | `src/components/landing/Hero.tsx`                                     |
+
+Test gates: `npm run e2e:stripe:api` is the payment gate (signed webhook events, no iframe). `npm run e2e:stripe` adds two
+real-checkout UI tests that are informational while Stripe's checkout can stall in automated browsers. `npm run e2e:email`
+sends the real emails and checks the dispatch sheet attachment in Resend.
+
+| Phase | What ships                                                                            | Proposal week |
+| ----- | ------------------------------------------------------------------------------------- | ------------- |
+| 0     | Repo audit, project setup, image inventory, config skeleton                           | Wk 1          |
+| 1     | Design system + static landing page                                                   | Wk 1–2        |
+| 2     | Interactive service-area map                                                          | Wk 2          |
+| 3A    | Booking rules: ZIP regions, routing, pricing, vehicle classes (pure + tested)         | Wk 2          |
+| 3B    | Remaining business logic: weeks, shared schemas (the vPIC helpers were later removed) | Wk 2          |
+| 4     | Database + race-safe capacity holds                                                   | Wk 2–3        |
+| 5     | Booking modal, Step 1 (Qualify & Quote)                                               | Wk 3          |
+| 6     | Step 2: cart + Stripe deposit + webhooks                                              | Wk 3          |
+| 7     | Step 3 details + Step 4 emails                                                        | Wk 3          |
+| 8     | Terms page + admin view                                                               | Wk 3–4        |
+| 9     | SEO, analytics, accessibility, performance                                            | Wk 4          |
+| 10    | End-to-end QA + launch                                                                | Wk 4          |
 
 ---
 
@@ -239,7 +259,7 @@ The Step 2 summary is a placeholder: its payment button stays disabled until Pha
       ZIPs, vehicle, operable/modified, notes) that stores a lead: no deposit, no spot hold.
    3. "Is the vehicle operable?" (Yes, it runs and drives / No) and "Has it been modified in any way?"
       (Yes / No, factory stock), as radio pills.
-   3b. "Standard or Top Deck Load (+$150)?" radio, with the two benefits from `topDeck.benefits` shown with the
+      3b. "Standard or Top Deck Load (+$150)?" radio, with the two benefits from `topDeck.benefits` shown with the
       option.
    4. "Any personal items in the vehicle?" (Yes / No). Yes reveals the accent-tinted callout:
       **"100 lbs included. Anything over 100 lbs is at the driver's discretion."**
@@ -263,6 +283,7 @@ a full week can't be picked, and the modal passes axe checks.
 ## Phase 6: Step 2 (cart + Stripe deposit)
 
 **Status:** approved and deployed. Notes from the build:
+
 - The current Stripe API (the SDK's default) renamed `ui_mode: 'embedded'` to `'embedded_page'`. Same inline checkout.
 - Stripe requires a session to live at least 30 minutes, so the session expires 30:10 out and the hold is extended
   to match (`sessionExpiry` in `src/lib/checkout-session.ts`).
@@ -283,8 +304,8 @@ a full week can't be picked, and the modal passes axe checks.
   - A dialog, a scrolling box with a sticky header, a long page behind it, and a cart above the form, rebuilt on a bare page
     with the same geometry (iframe bottom at 860 to 912px): all pay. So the cause is something else on our page, not
     yet found. Next step: pay on real phones (Phase 10), and if it shows up there, send Stripe support the repro.
-  The stall also shows up as an occasional flake in automated runs after many test payments from one machine (a few
-  failures in dozens of runs, never in the same test twice), so `npm run e2e:stripe` retries a failed test once.
+    The stall also shows up as an occasional flake in automated runs after many test payments from one machine (a few
+    failures in dozens of runs, never in the same test twice), so `npm run e2e:stripe` retries a failed test once.
 - `npm run e2e:stripe` runs the Stripe suite in two parts. `@stripe-api` tests (`e2e/stripe-api.spec.ts`) never open Stripe's
   iframe: they make holds through our own endpoints and send webhook events signed with the webhook secret (paid, replay,
   expired, tampered signature, release, status backstop, full week). They are stable and are the gate
@@ -329,6 +350,7 @@ hold; abandoning checkout frees the spot after expiry; replaying a webhook chang
 ## Phase 7: Step 3 details + Step 4 emails
 
 **Status:** approved. Notes from the build:
+
 - Step 3 is one shared form (`DetailsForm`) used in the modal and on `/booking/[token]`. Pickup and delivery ZIPs start
   as the quoted ZIPs; the customer may refine them, but each must stay in the quoted region (checked live, and again on
   the server). Editing a field clears its error.
