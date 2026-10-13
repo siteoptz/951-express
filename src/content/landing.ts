@@ -15,8 +15,7 @@ export const landing = {
       'Enclosed-quality care on an open carrier built for volume. Check your route, see your price, and reserve your spot in minutes.',
     cta: 'Get My Instant Quote',
     emailCta: 'Email us',
-    imageAlt:
-      'A red 951 Express car hauler loaded with six vehicles, parked on a gravel lot under a blue sky.',
+    imageAlt: 'A 951 Express truck hauling eight vehicles, in black and white.',
   },
   about: {
     heading: 'A carrier you can look up and trust',
@@ -76,10 +75,10 @@ export const landing = {
         alt: 'A red 951 Express truck loaded with cars at a fuel stop after dark.',
       },
       {
-        src: '/images/gallery/hauler-black-white.webp',
-        width: 1500,
-        height: 1500,
-        alt: 'A black-and-white photo of a 951 Express truck hauling eight vehicles.',
+        src: '/images/gallery/red-cascadia-profile.webp',
+        width: 1600,
+        height: 1200,
+        alt: 'A red 951 Express car hauler loaded with six vehicles, parked on a gravel lot under a blue sky.',
       },
       {
         src: '/images/gallery/red-cascadia-daylight.webp',

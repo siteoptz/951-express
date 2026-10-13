@@ -27,11 +27,11 @@ Rules: hero must be at least 2000px wide and show a truck or carrier (not a clos
 
 | Output file | Source | Size | Notes |
 |---|---|---|---|
-| `public/images/hero/red-cascadia-profile.webp` | #3 | 2048×1536, 683 KB | The only image meeting the 2000px rule, so it replaces #1 as hero. Bottom half is empty gravel: use `object-position: top` or a crop in Phase 1. |
+| `public/images/hero/hauler-black-white.webp` | #5 | 1500×1500 original (357 KB), exported at 183 KB | Hero since Batch 8 (Cal's request 2026-10-13). The original is only 1500px, so it is not enlarged. Plate blurred. The crop is set in `Hero.tsx`. |
 | `public/images/about/white-cascadia-loaded.webp` | #2 | 1600×1200, 194 KB | Plate blurred. |
 | `public/images/services/white-cascadia-front.webp` | #4 | 1500×1500, 347 KB | No readable plate. |
 | `public/images/gallery/red-cascadia-night.webp` | #1 | 1600×1200, 172 KB | Plate blurred. |
-| `public/images/gallery/hauler-black-white.webp` | #5 | 1500×1500, 198 KB | Plate blurred. |
+| `public/images/gallery/red-cascadia-profile.webp` | #3 | 2048×1536 original, exported at 1600×1200, 491 KB | Gallery item 2 (it was the hero before Batch 8). |
 | `public/images/logos/` | none | n/a | Empty: placeholder until the client sends a logo. |
 
 License plates were blurred on #1, #2 and #5 (the only ones with a readable plate) and verified by zooming in. Run `node scripts/optimize-images.mjs` to regenerate from `originals/`.

@@ -141,8 +141,8 @@ export const eastStateLabels = [
   { state: 'SC', dx: 6, dy: 4 },
   { state: 'NC', dx: 6, dy: 0 },
   { state: 'VA', dx: 6, dy: 4 },
-  { state: 'MD', dx: 36, dy: -20 },
-  { state: 'DE', dx: 38, dy: 2 },
+  { state: 'MD', dx: 36, dy: -24 },
+  { state: 'DE', dx: 40, dy: 6 },
   { state: 'DC', dx: 36, dy: 24 },
 ] as const;
 

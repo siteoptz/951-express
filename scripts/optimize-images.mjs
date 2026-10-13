@@ -10,11 +10,19 @@ const OUT = 'public/images';
 
 // plates: [left, top, width, height] in source pixels
 const jobs = [
+  // Hero: the black-and-white truck (a 1500 x 1500 original, so it is not enlarged).
+  {
+    src: 'IMG_20260606_191132_361.WEBP',
+    out: 'hero/hauler-black-white.webp',
+    max: 2400,
+    quality: 78,
+    plates: [[1378, 991, 34, 35]],
+  },
+  // Gallery item 2: the red Cascadia profile that used to be the hero, at gallery size.
   {
     src: '64ef2c00-1564-47c7-8a02-59f34ca6e6dc.JPG',
-    out: 'hero/red-cascadia-profile.webp',
-    max: 2400,
-    quality: 68,
+    out: 'gallery/red-cascadia-profile.webp',
+    max: 1600,
     plates: [],
   },
   {
@@ -34,12 +42,6 @@ const jobs = [
     out: 'gallery/red-cascadia-night.webp',
     max: 1600,
     plates: [[100, 824, 56, 56]],
-  },
-  {
-    src: 'IMG_20260606_191132_361.WEBP',
-    out: 'gallery/hauler-black-white.webp',
-    max: 1600,
-    plates: [[1378, 991, 34, 35]],
   },
 ];
 
