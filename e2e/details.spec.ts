@@ -402,3 +402,77 @@ test('a region change in Step 3 is rejected by the server, whatever the browser 
   });
   expect((await row(b.id)).status).toBe('paid');
 });
+
+test.describe('dispatch sheet fields (optional)', () => {
+  test('a bad VIN is flagged, then a color, VIN and two contacts are saved', async ({ page }) => {
+    const b = await seed();
+    await page.goto(`/booking/${b.publicToken}`);
+    await fillValid(page);
+    await page.getByLabel('VIN').fill('1GNSKCKD5MR12345I'); // 17 characters, but it ends in an I
+    await page.getByRole('button', { name: 'Finish my booking' }).click();
+    await expect(page.getByText('A VIN has 17 letters and numbers (no I, O or Q).')).toBeVisible();
+    expect((await row(b.id)).status).toBe('paid');
+
+    await page.getByLabel('VIN').fill('1gnskckd5mr123456'); // typed in lowercase
+    await expect(page.getByLabel('VIN')).toHaveValue('1GNSKCKD5MR123456');
+    await page.getByLabel('Vehicle color').fill('Midnight blue');
+    await page.getByLabel('Someone else will meet the driver at pickup').check();
+    await page.getByLabel('Someone else will meet the driver at delivery').check();
+    await page.getByRole('button', { name: 'Finish my booking' }).click();
+    // The ticked boxes are empty: both contacts must be filled in.
+    await expect(page.getByText('Please fix the highlighted fields.')).toBeVisible();
+    const names = page.getByLabel('Contact name');
+    const phones = page.getByLabel('Contact phone');
+    await names.nth(0).fill('Lee Neighbor');
+    await phones.nth(0).fill('951-555-0111');
+    await names.nth(1).fill('Sam Receiver');
+    await phones.nth(1).fill('301-555-0122');
+    await page.getByRole('button', { name: 'Finish my booking' }).click();
+    await expect(page.getByText("✓ You're booked!")).toBeVisible();
+
+    expect(await row(b.id)).toMatchObject({
+      status: 'completed',
+      vehicleColor: 'Midnight blue',
+      vehicleVin: '1GNSKCKD5MR123456',
+      pickupContact: { name: 'Lee Neighbor', phone: '951-555-0111' },
+      deliveryContact: { name: 'Sam Receiver', phone: '301-555-0122' },
+    });
+  });
+
+  test('leaving them all empty books the same as before and stores nothing extra', async ({
+    page,
+  }) => {
+    const b = await seed();
+    await page.goto(`/booking/${b.publicToken}`);
+    await fillValid(page);
+    await page.getByRole('button', { name: 'Finish my booking' }).click();
+    await expect(page.getByText("✓ You're booked!")).toBeVisible();
+    expect(await row(b.id)).toMatchObject({
+      status: 'completed',
+      vehicleColor: null,
+      vehicleVin: null,
+      pickupContact: null,
+      deliveryContact: null,
+    });
+  });
+
+  test('the API refuses a malformed VIN or a half-filled contact', async ({ request }) => {
+    const b = await seed();
+    const addr = { street: '1 Main St', city: 'Corona', zip: '92881' };
+    const body = {
+      firstName: 'Pat',
+      lastName: 'Driver',
+      phone: '951-555-0100',
+      email: 'pat@example.com',
+      address: addr,
+      pickupAddress: addr,
+      deliveryAddress: { street: '2 B', city: 'Baltimore', zip: '21201' },
+    };
+    const url = `/api/bookings/${b.publicToken}/details`;
+    expect((await request.post(url, { data: { ...body, vin: 'NOTAVIN' } })).status()).toBe(400);
+    expect(
+      (await request.post(url, { data: { ...body, pickupContact: { name: 'Lee' } } })).status(),
+    ).toBe(400);
+    expect((await row(b.id)).status).toBe('paid');
+  });
+});

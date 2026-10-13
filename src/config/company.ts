@@ -9,6 +9,9 @@ export const company = {
     state: 'CA',
     zip: '', // TODO(client)
   },
+  // Used only on the dispatch sheet PDF (not on the site, in emails or in the Terms), from Cal's own dispatch sheet.
+  // TODO(client): confirm this is the address to print on the sheet.
+  dispatchAddress: '2108 Collett Ave Apt 204, Corona, CA 92879',
   usdot: '4020917',
   mc: 'MC-1516594',
   insurance: 'Fully licensed and bonded with a cargo limit of $250,000 per occurrence',

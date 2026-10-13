@@ -43,6 +43,22 @@ describe('sendEmail', () => {
     });
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer re_test_key');
   });
+  it('sends attachments to Resend as base64, and none when there are none', async () => {
+    const f = vi.fn(async () => json({ id: 'em_2' }));
+    await sendEmail(
+      { ...msg, attachments: [{ filename: 'a.pdf', content: Buffer.from('%PDF-1.7') }] },
+      env,
+      f as never,
+    );
+    const body = JSON.parse(String((f.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body.attachments).toEqual([
+      { filename: 'a.pdf', content: Buffer.from('%PDF-1.7').toString('base64') },
+    ]);
+    await sendEmail({ ...msg, attachments: [] }, env, f as never);
+    expect(
+      JSON.parse(String((f.mock.calls[1] as unknown as [string, RequestInit])[1].body)),
+    ).not.toHaveProperty('attachments');
+  });
   it('accepts several recipients and a response without an id', async () => {
     const f = vi.fn(async () => new Response('not json', { status: 200 }));
     expect(

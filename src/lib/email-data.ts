@@ -2,7 +2,7 @@
 import { booking as bookingConfig } from '@/config/booking';
 import { topDeck } from '@/config/pricing';
 import { emailCopy } from '@/content/emails';
-import type { Address, Customer, Vehicle, VehicleTyped } from '@/db/schema';
+import type { Address, Contact, Customer, Vehicle, VehicleTyped } from '@/db/schema';
 import { bookingRef, formatAddress, formatPacific } from '@/lib/format';
 import { weekLabel } from '@/lib/weeks';
 
@@ -15,6 +15,11 @@ export type BookingForEmail = {
   reviewReason?: string | null;
   /** Address problems the customer confirmed anyway (a city that does not match its ZIP). */
   addressFlags?: string[] | null;
+  /** Optional Step 3 details for the dispatch sheet. */
+  vehicleColor?: string | null;
+  vehicleVin?: string | null;
+  pickupContact?: Contact | null;
+  deliveryContact?: Contact | null;
   customer: Customer;
   pickupAddress: Address;
   deliveryAddress: Address;

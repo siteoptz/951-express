@@ -177,6 +177,7 @@ test('Resend accepted all four emails and shows their delivery status @email', a
   }
 
   const table: string[] = [];
+  let attachment = 'none';
   for (const w of wanted) {
     const r = find(rows, w);
     expect(r, `Resend has no record of: ${w.name}`).toBeTruthy();
@@ -191,12 +192,25 @@ test('Resend accepted all four emails and shows their delivery status @email', a
       }
       await new Promise((x) => setTimeout(x, 600));
     }
+    if (r && w.name === 'New booking (team)') {
+      // The dispatch sheet must ride along with the team email.
+      const att = await api(`/emails/${r.id}/attachments`);
+      expect(att.ok(), `Resend attachments lookup failed (${att.status()})`).toBe(true);
+      const list = ((await att.json()) as { data: { filename: string; size: number }[] }).data;
+      expect(list).toHaveLength(1);
+      expect(list[0].filename).toMatch(/^951-Express-Dispatch-[0-9A-F]{8}-2020-Honda-Civic\.pdf$/);
+      expect(list[0].size).toBeGreaterThan(5_000);
+      attachment = `${list[0].filename} (${list[0].size} bytes)`;
+      await new Promise((x) => setTimeout(x, 600));
+    }
     table.push(
       `${w.name.padEnd(22)} to ${w.to.padEnd(28)} status: ${(r?.last_event ?? '?').padEnd(10)} reply-to: ${replyTo}`,
     );
     expect(bad.has(r!.last_event), `${w.name} came back ${r!.last_event}`).toBe(false);
   }
-  console.log(`\nRESEND DELIVERY STATUS\n${table.join('\n')}\n`);
+  console.log(
+    `\nRESEND DELIVERY STATUS\n${table.join('\n')}\nTeam email attachment: ${attachment}\n`,
+  );
   for (const w of wanted)
     expect(
       done.has(find(rows, w)!.last_event),

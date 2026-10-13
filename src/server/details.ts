@@ -132,6 +132,10 @@ export async function submitDetails(
       pickupAddress: addresses.pickupAddress,
       deliveryAddress: addresses.deliveryAddress,
       notes: input.notes || null,
+      vehicleColor: input.vehicleColor ?? null,
+      vehicleVin: input.vin ?? null,
+      pickupContact: input.pickupContact ?? null,
+      deliveryContact: input.deliveryContact ?? null,
       detailsSubmittedAt: now,
       ...(flagged
         ? {

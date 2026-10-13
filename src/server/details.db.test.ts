@@ -2,7 +2,7 @@
 // Each file run uses its own throwaway route, so spot numbers are not disturbed by other tests.
 import { randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createDb } from '@/db';
 import { bookings, leads, routes } from '@/db/schema';
 import { regionOfZip } from '@/lib/routing.server';
@@ -463,6 +463,55 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
       expect(saved.customerEmailSentAt).toBeInstanceOf(Date);
       expect(saved.emailError).toBeNull();
       expect(saved.status).toBe('completed');
+    });
+
+    it('attaches the dispatch sheet to the team email only, named for the booking and vehicle', async () => {
+      const b = await booking('paid');
+      await submitDetails(
+        db,
+        b.publicToken,
+        input({
+          vehicleColor: 'Midnight blue',
+          vin: '1GNSKCKD5MR123456',
+          deliveryContact: { name: 'Sam Receiver', phone: '301-555-0122' },
+        }),
+        regionOfZip,
+      );
+      const saved = await row(b.id);
+      expect(saved).toMatchObject({
+        vehicleColor: 'Midnight blue',
+        vehicleVin: '1GNSKCKD5MR123456',
+        pickupContact: null,
+        deliveryContact: { name: 'Sam Receiver', phone: '301-555-0122' },
+      });
+      const f = fakeSend();
+      await sendBookingEmails(db, b.id, { send: f.send, env, pause });
+      const [team, customer] = f.sent;
+      expect(team.attachments).toHaveLength(1);
+      expect(team.attachments![0].filename).toBe(
+        `951-Express-Dispatch-${b.id.replace(/-/g, '').slice(0, 8).toUpperCase()}-2021-Toyota-RAV4.pdf`,
+      );
+      expect(team.attachments![0].content.subarray(0, 5).toString()).toBe('%PDF-');
+      expect(customer.attachments).toBeUndefined();
+    });
+
+    it('sends the team email without the sheet, and logs the error, when the sheet cannot be made', async () => {
+      const b = await completed();
+      const f = fakeSend();
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const out = await sendBookingEmails(db, b.id, {
+        send: f.send,
+        env,
+        pause,
+        makePdf: async () => {
+          throw new Error('font exploded');
+        },
+      });
+      expect(out).toMatchObject({ team: { sent: true }, customer: { sent: true } });
+      expect(f.sent[0].attachments).toBeUndefined();
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('[dispatch pdf]'));
+      expect((await row(b.id)).emailError).toBeNull(); // the email itself went out
+      log.mockRestore();
     });
 
     it('puts a Review needed banner on flagged bookings', async () => {

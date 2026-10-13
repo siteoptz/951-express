@@ -16,12 +16,15 @@ import {
 import { customerReplyTo } from '@/config/email';
 import { sizeClasses } from '@/config/pricing';
 import { customerText, leadText, teamText } from '@/emails/text';
+import { renderDispatchPdf, type DispatchPdf } from '@/server/dispatch-pdf';
 import { sendEmail, teamRecipients, type EmailResult } from '@/server/email';
 import { weekCapacity } from '@/server/capacity';
 
 type Env = Record<string, string | undefined>;
 export type EmailDeps = {
   send?: typeof sendEmail;
+  /** Builds the dispatch sheet; tests swap it to force a failure. */
+  makePdf?: typeof renderDispatchPdf;
   env?: Env;
   pause?: (ms: number) => Promise<unknown>;
 };
@@ -88,18 +91,33 @@ export async function sendBookingEmails(
       pickupAddress: b.pickupAddress,
       deliveryAddress: b.deliveryAddress,
     };
-    const d = buildBookingEmailData(input, {
+    const ctx = {
       routeName: route.name,
       sizeClassLabel: sizeClasses.find((c) => c.id === b.sizeClass)?.label ?? b.sizeClass,
       spot: { n: await spotNumber(db, b), of: capacity },
       stripeTestMode: !/_live_/.test(env.STRIPE_SECRET_KEY ?? ''),
-    });
+    };
+    const d = buildBookingEmailData(input, ctx);
+
+    // The dispatch sheet rides along with the team email. If it cannot be made, the email still goes out without it.
+    let pdf: DispatchPdf | null = null;
+    try {
+      pdf = await (deps.makePdf ?? renderDispatchPdf)(input, ctx, env);
+    } catch (e) {
+      console.error(`[dispatch pdf] ${bookingId}: ${e instanceof Error ? e.message : String(e)}`);
+    }
 
     const team = teamRecipients(env);
     const teamMail = await rendered(<NewBookingEmail d={d} />, teamText(d));
     const teamResult: EmailResult = team.length
       ? await send(
-          { to: team, subject: teamSubject(d), ...teamMail, replyTo: d.customer.email },
+          {
+            to: team,
+            subject: teamSubject(d),
+            ...teamMail,
+            replyTo: d.customer.email,
+            ...(pdf ? { attachments: [pdf] } : {}),
+          },
           env,
         )
       : { sent: false, reason: 'not_configured', error: 'BOOKINGS_EMAIL_TO is not set' };

@@ -72,6 +72,9 @@ export type Customer = {
   address?: Address;
 };
 
+/** A person to meet at pickup or delivery. */
+export type Contact = { name: string; phone: string };
+
 export const bookings = pgTable(
   'bookings',
   {
@@ -103,6 +106,11 @@ export const bookings = pgTable(
     reviewReason: text('review_reason'),
     /** Address problems the customer confirmed anyway, in words the team can act on (empty when there are none). */
     addressFlags: jsonb('address_flags').$type<string[]>(),
+    // Optional Step 3 details for the dispatch sheet. A missing contact means the customer.
+    vehicleColor: text('vehicle_color'),
+    vehicleVin: text('vehicle_vin'),
+    pickupContact: jsonb('pickup_contact').$type<Contact>(),
+    deliveryContact: jsonb('delivery_contact').$type<Contact>(),
     termsVersion: text('terms_version').notNull(),
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }).notNull(),
     stripeSessionId: text('stripe_session_id').unique(),

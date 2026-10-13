@@ -394,6 +394,7 @@ dashboard; submitting details twice is rejected; the fallback link works.
      per-week override. The columns `week_overrides.top_deck_suv_override` and `top_deck_car_override` already exist
      and the capacity code honors them.
    - **Address review:** the booking detail shows `address_flags` (a city the customer confirmed even though it does not
+   - **Dispatch sheet:** a "Download dispatch sheet" button on the booking detail, backed by `GET /api/admin/bookings/[id]/dispatch.pdf` (admin session required). Reuse `renderDispatchPdf` in `src/server/dispatch-pdf.ts`; it needs no changes. The booking detail also shows the optional vehicle color, VIN and the pickup and delivery contacts. For now the email attachment is the only way Cal gets the PDF.
      match its ZIP) next to the review reason "city/ZIP mismatch", the derived state, and the region of each address.
    - **Vehicles:** the booking detail, the leads list and the dispatch sheet show both what the customer typed
      (`vehicle_typed`) and the normalized vehicle, and the review reason (`review_reason`, for example

@@ -9,6 +9,9 @@ export default defineConfig({
     },
   },
   test: {
+    // The database tests share one dev branch, and the seed test briefly changes real settings (the deposit, a route's
+    // capacity) that the checkout tests read. Run the files one at a time so they can never see each other's changes.
+    fileParallelism: false,
     include: ['src/**/*.test.{ts,tsx}'],
     passWithNoTests: true,
     coverage: {

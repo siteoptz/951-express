@@ -11,6 +11,8 @@ export type EmailMessage = {
   html: string;
   text: string;
   replyTo?: string | string[];
+  /** Files to attach (the dispatch sheet). Sent to Resend as base64. */
+  attachments?: { filename: string; content: Buffer }[];
 };
 export type EmailResult =
   | { sent: true; id: string | null }
@@ -39,6 +41,14 @@ export async function sendEmail(
     html: msg.html,
     text: msg.text,
     reply_to: msg.replyTo,
+    ...(msg.attachments?.length
+      ? {
+          attachments: msg.attachments.map((a) => ({
+            filename: a.filename,
+            content: a.content.toString('base64'),
+          })),
+        }
+      : {}),
   });
   try {
     for (let attempt = 0; attempt < 2; attempt++) {

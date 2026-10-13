@@ -183,6 +183,18 @@ export const bookingCopy = {
       'This ZIP is in our {actual} region. Your {side} must stay in our {region} region, the one you got your quote for.',
     zipNotServed:
       "We don't currently pick up or deliver in {zip}. Your {side} must be in our {region} region.",
+    vehicleHeading: 'About your vehicle (optional)',
+    vehicleColor: 'Vehicle color',
+    vin: 'VIN',
+    vinHint:
+      '17 characters. It helps the driver and the dispatch sheet. Leave it blank if you do not have it handy.',
+    invalidVin: 'A VIN has 17 letters and numbers (no I, O or Q).',
+    contactsHeading: 'Who meets the driver? (optional)',
+    contactsHint: 'We use your name and phone unless you add someone else.',
+    otherPickupContact: 'Someone else will meet the driver at pickup',
+    otherDeliveryContact: 'Someone else will meet the driver at delivery',
+    contactName: 'Contact name',
+    contactPhone: 'Contact phone',
     notes: 'Notes for the driver (optional)',
     notesHint: 'Gate codes, best times to reach you, anything the driver should know.',
     submit: 'Finish my booking',

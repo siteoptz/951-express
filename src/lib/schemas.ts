@@ -105,6 +105,26 @@ export const addressSchema = z.object({
   zip,
 });
 
+const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
+
+/** A VIN is 17 letters and digits, never I, O or Q. Optional; checked only when entered. */
+export const vinSchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'A VIN has 17 letters and numbers (no I, O or Q)')
+    .optional(),
+);
+const vehicleColor = z.preprocess(
+  blankToUndefined,
+  z.string().trim().max(30).refine(noControlChars).optional(),
+);
+/** Who the driver meets at pickup or delivery, when it is not the customer. Both parts are needed. */
+export const contactSchema = z.object({ name, phone });
+export type Contact = z.infer<typeof contactSchema>;
+
 /** Step 3 (customer details, after payment). Pickup and delivery ZIPs are locked to the qualified ZIPs on the server. */
 export const step3Schema = z.object({
   firstName: name,
@@ -115,6 +135,11 @@ export const step3Schema = z.object({
   pickupAddress: addressSchema,
   deliveryAddress: addressSchema,
   notes: notes.optional(),
+  vehicleColor,
+  vin: vinSchema,
+  /** Left out when the contact is the customer. */
+  pickupContact: contactSchema.optional(),
+  deliveryContact: contactSchema.optional(),
   /** True when the customer saw the "city doesn't match the ZIP" message and said "Yes, this is correct". */
   confirmAddresses: z.boolean().optional(),
 });

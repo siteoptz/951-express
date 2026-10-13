@@ -129,6 +129,55 @@ describe('step3Schema', () => {
     expect(step3Schema.safeParse({ ...valid, address: noState }).success).toBe(true);
     expect(step3Schema.parse({ ...valid, confirmAddresses: true }).confirmAddresses).toBe(true);
   });
+  describe('optional dispatch fields', () => {
+    it('are all optional, and blank values count as not entered', () => {
+      const r = step3Schema.parse({ ...valid, vehicleColor: '  ', vin: '' });
+      expect(r.vehicleColor).toBeUndefined();
+      expect(r.vin).toBeUndefined();
+      expect(r.pickupContact).toBeUndefined();
+      expect(r.deliveryContact).toBeUndefined();
+    });
+    it('keep a color, and uppercase and accept a 17-character VIN', () => {
+      const r = step3Schema.parse({
+        ...valid,
+        vehicleColor: ' Midnight blue ',
+        vin: ' 1gnskckd5mr123456 ',
+      });
+      expect(r.vehicleColor).toBe('Midnight blue');
+      expect(r.vin).toBe('1GNSKCKD5MR123456');
+    });
+    it('reject a VIN that is the wrong length or uses I, O or Q', () => {
+      for (const vin of [
+        '1GNSKCKD5MR12345',
+        '1GNSKCKD5MR1234567',
+        '1GNSKCKD5MR12345I',
+        'O'.repeat(17),
+        'Q'.repeat(17),
+        '1GNSKCKD5MR12345!',
+      ])
+        expect(step3Schema.safeParse({ ...valid, vin }).success, vin).toBe(false);
+    });
+    it('reject a color that is too long or has control characters', () => {
+      expect(step3Schema.safeParse({ ...valid, vehicleColor: 'x'.repeat(31) }).success).toBe(false);
+      expect(step3Schema.safeParse({ ...valid, vehicleColor: 'red\u0007' }).success).toBe(false);
+    });
+    it('take a contact with a name and a phone, and need both', () => {
+      const ok = { name: 'Lee Neighbor', phone: '951-555-0111' };
+      expect(
+        step3Schema.parse({ ...valid, pickupContact: ok, deliveryContact: ok }).pickupContact,
+      ).toEqual(ok);
+      expect(
+        step3Schema.safeParse({ ...valid, pickupContact: { name: '', phone: ok.phone } }).success,
+      ).toBe(false);
+      expect(
+        step3Schema.safeParse({ ...valid, deliveryContact: { name: ok.name, phone: '123' } })
+          .success,
+      ).toBe(false);
+      expect(step3Schema.safeParse({ ...valid, deliveryContact: { name: ok.name } }).success).toBe(
+        false,
+      );
+    });
+  });
   it('rejects a missing address field and a bad ZIP', () => {
     expect(step3Schema.safeParse({ ...valid, address: { ...addr, street: '' } }).success).toBe(
       false,

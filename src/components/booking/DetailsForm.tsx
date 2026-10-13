@@ -47,6 +47,69 @@ type Place = {
 const inputClass =
   'mt-1 w-full rounded-lg border-2 border-black/15 px-4 py-3 text-base focus:border-navy aria-[invalid=true]:border-danger';
 
+type ContactState = { name: string; phone: string };
+/** The contact to send, or nothing when the customer is the contact. A ticked box with blanks is sent, so the form says what is missing. */
+const contactBody = (c: ContactState | null) =>
+  c ? { name: c.name.trim(), phone: c.phone.trim() } : undefined;
+
+/** A checkbox that reveals a name and phone for someone other than the customer. */
+function ContactToggle({
+  uid,
+  label,
+  value,
+  onChange,
+  errors,
+  path,
+}: {
+  uid: string;
+  label: string;
+  value: ContactState | null;
+  onChange: (v: ContactState | null) => void;
+  errors: Record<string, string>;
+  path: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <label className="flex cursor-pointer items-center gap-3 font-semibold">
+        <input
+          type="checkbox"
+          checked={value !== null}
+          onChange={(e) => onChange(e.target.checked ? { name: '', phone: '' } : null)}
+          className="h-5 w-5 accent-navy"
+        />
+        {label}
+      </label>
+      {value && (
+        <div className="grid grid-cols-1 gap-3 pl-8 sm:grid-cols-2">
+          <Field id={`${uid}-name`} label={t.details.contactName} error={errors[`${path}.name`]}>
+            <input
+              id={`${uid}-name`}
+              value={value.name}
+              autoComplete="off"
+              onChange={(e) => onChange({ ...value, name: e.target.value })}
+              aria-invalid={!!errors[`${path}.name`]}
+              aria-describedby={errors[`${path}.name`] ? `${uid}-name-err` : undefined}
+              className={inputClass}
+            />
+          </Field>
+          <Field id={`${uid}-phone`} label={t.details.contactPhone} error={errors[`${path}.phone`]}>
+            <input
+              id={`${uid}-phone`}
+              type="tel"
+              value={value.phone}
+              autoComplete="off"
+              onChange={(e) => onChange({ ...value, phone: e.target.value })}
+              aria-invalid={!!errors[`${path}.phone`]}
+              aria-describedby={errors[`${path}.phone`] ? `${uid}-phone-err` : undefined}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Field({
   id,
   label,
@@ -254,6 +317,10 @@ export function DetailsForm({
   const [pickupOwn, setPickup] = useState<AddrState>(emptyAddr(ctx.pickupZip));
   const [delivery, setDelivery] = useState<AddrState>(emptyAddr(ctx.deliveryZip));
   const [notes, setNotes] = useState('');
+  const [color, setColor] = useState('');
+  const [vin, setVin] = useState('');
+  const [pickupContact, setPickupContact] = useState<ContactState | null>(null);
+  const [deliveryContact, setDeliveryContact] = useState<ContactState | null>(null);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -283,6 +350,7 @@ export function DetailsForm({
 
   const fieldMessage = (path: string): string => {
     if (/email/.test(path)) return t.details.invalidEmail;
+    if (/vin/.test(path)) return t.details.invalidVin;
     if (/phone/.test(path)) return t.details.invalidPhone;
     if (/zip/.test(path)) return t.details.invalidZip;
     return t.details.required;
@@ -300,6 +368,10 @@ export function DetailsForm({
       pickupAddress: resolved(pickup, pickupCheck.place),
       deliveryAddress: resolved(delivery, deliveryCheck.place),
       notes: notes.trim() || undefined,
+      vehicleColor: color.trim() || undefined,
+      vin: vin.trim() || undefined,
+      pickupContact: contactBody(pickupContact),
+      deliveryContact: contactBody(deliveryContact),
       ...(confirmAddresses ? { confirmAddresses: true } : {}),
     };
     const parsed = step3Schema.safeParse(body);
@@ -461,6 +533,65 @@ export function DetailsForm({
           .replace('{zip}', ctx.deliveryZip)
           .replace('{region}', regionLabels[ctx.deliveryRegion])}
       />
+
+      <fieldset className="space-y-3">
+        <legend className="font-display text-xl font-extrabold uppercase">
+          {t.details.vehicleHeading}
+        </legend>
+        <div className="space-y-3">
+          <Field id={`${uid}-color`} label={t.details.vehicleColor}>
+            <input
+              id={`${uid}-color`}
+              value={color}
+              maxLength={30}
+              onChange={(e) => setColor(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            id={`${uid}-vin`}
+            label={t.details.vin}
+            error={errors.vin}
+            hint={t.details.vinHint}
+          >
+            <input
+              id={`${uid}-vin`}
+              value={vin}
+              maxLength={17}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => (setVin(e.target.value.toUpperCase()), clear('vin'))}
+              aria-invalid={!!errors.vin}
+              aria-describedby={errors.vin ? `${uid}-vin-err` : undefined}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="font-display text-xl font-extrabold uppercase">
+          {t.details.contactsHeading}
+        </legend>
+        <p className="text-muted">{t.details.contactsHint}</p>
+        <ContactToggle
+          uid={`${uid}-pc`}
+          label={t.details.otherPickupContact}
+          value={pickupContact}
+          onChange={setPickupContact}
+          errors={errors}
+          path="pickupContact"
+        />
+        <ContactToggle
+          uid={`${uid}-dc`}
+          label={t.details.otherDeliveryContact}
+          value={deliveryContact}
+          onChange={setDeliveryContact}
+          errors={errors}
+          path="deliveryContact"
+        />
+      </fieldset>
 
       <Field id={`${uid}-notes`} label={t.details.notes} hint={t.details.notesHint}>
         <textarea
