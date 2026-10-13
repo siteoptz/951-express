@@ -1,7 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { bookings, routes } from '@/db/schema';
+import { bookings, routes, type Address } from '@/db/schema';
 import { buildBookingView } from '@/lib/booking-view';
+import { cityMismatchMessage, sameCity } from '@/lib/address';
+import { zipPlace } from '@/lib/address.server';
 import type { RegionLookup } from '@/lib/routing';
 import { regionLabels } from '@/config/routes';
 import type { Step3 } from '@/lib/schemas';
@@ -12,10 +14,28 @@ export type DetailsResult =
   | {
       ok: false;
       status: 404 | 409 | 422;
-      reason: 'not_found' | 'not_paid' | 'already_submitted' | 'pickup_region' | 'delivery_region';
+      reason:
+        | 'not_found'
+        | 'not_paid'
+        | 'already_submitted'
+        | 'pickup_region'
+        | 'delivery_region'
+        | 'unknown_zip'
+        | 'city_zip_mismatch';
       error: string;
       field?: string;
+      /** For `city_zip_mismatch`: every address whose city does not match its ZIP. */
+      mismatches?: { field: string; message: string }[];
     };
+
+/** The review reason stored when the customer confirmed a city that does not match its ZIP. */
+export const CITY_ZIP_REASON = 'city/ZIP mismatch';
+
+const ADDRESS_LABELS = {
+  address: 'Home address',
+  pickupAddress: 'Pickup address',
+  deliveryAddress: 'Delivery address',
+} as const;
 
 /**
  * Step 3: saves the customer's details on a paid booking and completes it. Only a `paid` booking can be completed, once:
@@ -54,6 +74,50 @@ export async function submitDetails(
     }
   }
 
+  // The state is derived from the ZIP, never taken from the customer. The city is checked against the ZIP; a
+  // mismatch is refused unless the customer confirmed it, and then the booking is flagged for the team.
+  const addresses = {} as Record<keyof typeof ADDRESS_LABELS, Address>;
+  const mismatches: { field: string; message: string; flag: string }[] = [];
+  for (const key of Object.keys(ADDRESS_LABELS) as (keyof typeof ADDRESS_LABELS)[]) {
+    const a = input[key];
+    const place = zipPlace(a.zip);
+    if (!place) {
+      return {
+        ok: false,
+        status: 422,
+        reason: 'unknown_zip',
+        field: `${key}.zip`,
+        error: `We could not find ZIP ${a.zip}. Please check it and try again.`,
+      };
+    }
+    addresses[key] = {
+      street: a.street,
+      ...(a.street2 ? { street2: a.street2 } : {}),
+      city: a.city,
+      state: place.state,
+      zip: a.zip,
+    };
+    if (place.city && !sameCity(a.city, place.city)) {
+      const message = cityMismatchMessage(a.zip, { city: place.city, state: place.state });
+      mismatches.push({
+        field: `${key}.city`,
+        message,
+        flag: `${ADDRESS_LABELS[key]}: city "${a.city}" does not match ZIP ${a.zip} (${place.city}, ${place.state}). The customer confirmed it is correct.`,
+      });
+    }
+  }
+  if (mismatches.length > 0 && !input.confirmAddresses) {
+    return {
+      ok: false,
+      status: 422,
+      reason: 'city_zip_mismatch',
+      field: mismatches[0].field,
+      error: mismatches[0].message,
+      mismatches: mismatches.map(({ field, message }) => ({ field, message })),
+    };
+  }
+  const flagged = mismatches.length > 0;
+
   const [done] = await db
     .update(bookings)
     .set({
@@ -63,12 +127,19 @@ export async function submitDetails(
         lastName: input.lastName,
         phone: input.phone,
         email: input.email,
-        address: input.address,
+        address: addresses.address,
       },
-      pickupAddress: input.pickupAddress,
-      deliveryAddress: input.deliveryAddress,
+      pickupAddress: addresses.pickupAddress,
+      deliveryAddress: addresses.deliveryAddress,
       notes: input.notes || null,
       detailsSubmittedAt: now,
+      ...(flagged
+        ? {
+            needsReview: true,
+            reviewReason: sql`case when ${bookings.reviewReason} is null then ${CITY_ZIP_REASON} else ${bookings.reviewReason} || '; ' || ${CITY_ZIP_REASON} end`,
+            addressFlags: mismatches.map((m) => m.flag),
+          }
+        : {}),
     })
     .where(and(eq(bookings.publicToken, token), eq(bookings.status, 'paid')))
     .returning();

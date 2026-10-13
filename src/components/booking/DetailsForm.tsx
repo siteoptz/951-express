@@ -19,21 +19,30 @@ export type DetailsContext = {
   weekLabel: string;
 };
 
-/** Address text boxes. `city` and `state` are null until the customer types, so a ZIP lookup can suggest them. */
+/**
+ * Address text boxes. `city` is null until the customer types, so the ZIP lookup can fill it in. There is no state box:
+ * the state always comes from the ZIP, on the server.
+ */
 type AddrState = {
   street: string;
   street2: string;
   city: string | null;
-  state: string | null;
   zip: string;
 };
 const emptyAddr = (zip = ''): AddrState => ({
   street: '',
   street2: '',
   city: null,
-  state: null,
   zip,
 });
+
+/** What the ZIP lookup says about an address: where it is, and whether it is in one of our regions. */
+type Place = {
+  city: string | null;
+  state: string | null;
+  stateName: string | null;
+  region: Region | null;
+};
 
 const inputClass =
   'mt-1 w-full rounded-lg border-2 border-black/15 px-4 py-3 text-base focus:border-navy aria-[invalid=true]:border-danger';
@@ -75,7 +84,7 @@ function AddressFields({
   errors,
   zipHint,
   zipError,
-  suggestion,
+  place,
   readOnly,
 }: {
   legend: string;
@@ -85,13 +94,22 @@ function AddressFields({
   errors: Record<string, string>;
   zipHint?: string;
   zipError?: string;
-  suggestion?: { city: string | null; state: string | null };
+  place?: Place;
   readOnly?: boolean;
 }) {
   const id = useId();
   const key = (f: string) => `${prefix === 'home' ? 'address' : `${prefix}Address`}.${f}`;
-  const cityValue = value.city ?? suggestion?.city ?? '';
-  const stateValue = value.state ?? suggestion?.state ?? '';
+  const cityValue = value.city ?? place?.city ?? '';
+  const stateText = place?.stateName
+    ? t.details.stateFromZip.replace('{state}', place.stateName)
+    : '';
+  // "Delivery: Mount Airy, MD · East region"
+  const placeText = place?.state
+    ? t.details.placeLine
+        .replace('{side}', t.details.sides[prefix])
+        .replace('{place}', place.city ? `${place.city}, ${place.state}` : place.state) +
+      (place.region ? t.details.regionSuffix.replace('{region}', regionLabels[place.region]) : '')
+    : '';
   const set = (patch: Partial<AddrState>) => onChange({ ...value, ...patch });
   const base = { readOnly, 'aria-readonly': readOnly || undefined };
   return (
@@ -119,33 +137,35 @@ function AddressFields({
           className={inputClass}
         />
       </Field>
-      <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-3">
-        <Field id={`${id}-city`} label={t.details.city} error={errors[key('city')]}>
-          <input
-            id={`${id}-city`}
-            {...base}
-            autoComplete={`section-${prefix} address-level2`}
-            value={cityValue}
-            onChange={(e) => set({ city: e.target.value })}
-            aria-invalid={!!errors[key('city')]}
-            aria-describedby={errors[key('city')] ? `${id}-city-err` : undefined}
-            className={inputClass}
-          />
-        </Field>
-        <Field id={`${id}-state`} label={t.details.state} error={errors[key('state')]}>
-          <input
-            id={`${id}-state`}
-            {...base}
-            autoComplete={`section-${prefix} address-level1`}
-            maxLength={2}
-            value={stateValue}
-            onChange={(e) => set({ state: e.target.value.toUpperCase().replace(/[^A-Z]/g, '') })}
-            aria-invalid={!!errors[key('state')]}
-            aria-describedby={errors[key('state')] ? `${id}-state-err` : undefined}
-            className={`${inputClass} uppercase`}
-          />
-        </Field>
-      </div>
+      <Field
+        id={`${id}-city`}
+        label={t.details.city}
+        error={errors[key('city')]}
+        hint={place?.city ? t.details.cityHint : undefined}
+      >
+        <input
+          id={`${id}-city`}
+          {...base}
+          autoComplete={`section-${prefix} address-level2`}
+          value={cityValue}
+          onChange={(e) => set({ city: e.target.value })}
+          aria-invalid={!!errors[key('city')]}
+          aria-describedby={errors[key('city')] ? `${id}-city-err` : undefined}
+          className={inputClass}
+        />
+      </Field>
+      <Field id={`${id}-state`} label={t.details.state}>
+        <input
+          id={`${id}-state`}
+          readOnly
+          aria-readonly="true"
+          tabIndex={-1}
+          value={stateText}
+          placeholder={t.details.statePlaceholder}
+          data-testid={`${prefix}-state`}
+          className={`${inputClass} cursor-not-allowed bg-soft text-ink`}
+        />
+      </Field>
       <Field
         id={`${id}-zip`}
         label={t.details.zip}
@@ -158,21 +178,26 @@ function AddressFields({
           {...zipInputAttrs}
           autoComplete={`section-${prefix} postal-code`}
           value={value.zip}
-          onChange={(e) => set({ zip: digitsOnly(e.target.value) })}
+          // The ZIP decides the city and the state, so a new ZIP starts over with its own city.
+          onChange={(e) => set({ zip: digitsOnly(e.target.value), city: null })}
           aria-invalid={!!(zipError ?? errors[key('zip')])}
           aria-describedby={(zipError ?? errors[key('zip')]) ? `${id}-zip-err` : undefined}
           className={inputClass}
         />
       </Field>
+      {placeText && (
+        <p data-testid={`${prefix}-place`} className="text-sm font-bold text-navy">
+          {placeText}
+        </p>
+      )}
     </fieldset>
   );
 }
 
-const resolved = (a: AddrState, s?: { city: string | null; state: string | null }) => ({
+const resolved = (a: AddrState, p?: Place) => ({
   street: a.street.trim(),
   street2: a.street2.trim() || undefined,
-  city: (a.city ?? s?.city ?? '').trim(),
-  state: (a.state ?? s?.state ?? '').trim(),
+  city: (a.city ?? p?.city ?? '').trim(),
   zip: a.zip,
 });
 
@@ -193,13 +218,20 @@ function useRegionCheck(zip: string, expected: Region, side: 'pickup' | 'deliver
         .replace('{side}', side)
         .replace('{region}', label);
   }
-  const suggestion =
-    check.status === 'done' ? { city: check.data.city, state: check.data.state } : undefined;
+  const place: Place | undefined =
+    check.status === 'done'
+      ? {
+          city: check.data.city,
+          state: check.data.state,
+          stateName: check.data.stateName,
+          region: check.data.region,
+        }
+      : undefined;
   return {
     error,
     pending: check.status === 'loading',
     unknown: check.status === 'error',
-    suggestion,
+    place,
   };
 }
 
@@ -225,41 +257,50 @@ export function DetailsForm({
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  /** Set when the server says a city does not match its ZIP: the customer can fix it or confirm it. */
+  const [needsConfirm, setNeedsConfirm] = useState(false);
   /** Editing a field clears whatever error was shown for it (and for its address group), so no stale message lingers. */
-  const clear = (prefix: string) =>
+  const clear = (prefix: string) => {
     setErrors((prev) =>
       Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(prefix))),
     );
+    if (/ddress/.test(prefix)) setNeedsConfirm(false);
+  };
 
   const pickup = same ? home : pickupOwn;
   const pickupCheck = useRegionCheck(pickup.zip, ctx.pickupRegion, 'pickup');
   const deliveryCheck = useRegionCheck(delivery.zip, ctx.deliveryRegion, 'delivery');
-  const homeCheck = useZipCheck(home.zip); // only to suggest a city and state
-  const homeSuggestion =
+  const homeCheck = useZipCheck(home.zip); // only to show the place, the state, and the region
+  const homePlace: Place | undefined =
     homeCheck.status === 'done'
-      ? { city: homeCheck.data.city, state: homeCheck.data.state }
+      ? {
+          city: homeCheck.data.city,
+          state: homeCheck.data.state,
+          stateName: homeCheck.data.stateName,
+          region: homeCheck.data.region,
+        }
       : undefined;
 
   const fieldMessage = (path: string): string => {
     if (/email/.test(path)) return t.details.invalidEmail;
     if (/phone/.test(path)) return t.details.invalidPhone;
-    if (/state/.test(path)) return t.details.invalidState;
     if (/zip/.test(path)) return t.details.invalidZip;
     return t.details.required;
   };
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(e: React.FormEvent | null, confirmAddresses = false) {
+    e?.preventDefault();
     setFormError(null);
     const body = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim(),
       email: email.trim(),
-      address: resolved(home, homeSuggestion),
-      pickupAddress: resolved(pickup, pickupCheck.suggestion),
-      deliveryAddress: resolved(delivery, deliveryCheck.suggestion),
+      address: resolved(home, homePlace),
+      pickupAddress: resolved(pickup, pickupCheck.place),
+      deliveryAddress: resolved(delivery, deliveryCheck.place),
       notes: notes.trim() || undefined,
+      ...(confirmAddresses ? { confirmAddresses: true } : {}),
     };
     const parsed = step3Schema.safeParse(body);
     const next: Record<string, string> = {};
@@ -280,6 +321,19 @@ export function DetailsForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (data.reason === 'city_zip_mismatch' && Array.isArray(data.mismatches)) {
+          // Show each message on its city box, and let the customer confirm the address as written.
+          setErrors(
+            Object.fromEntries(
+              (data.mismatches as { field: string; message: string }[]).map((m) => [
+                m.field,
+                m.message,
+              ]),
+            ),
+          );
+          setNeedsConfirm(true);
+          return;
+        }
         if (data.field) setErrors({ [data.field]: data.error });
         return setFormError(data.error ?? t.genericError);
       }
@@ -365,9 +419,9 @@ export function DetailsForm({
         legend={t.details.home}
         prefix="home"
         value={home}
-        onChange={setHome}
+        onChange={(a) => (setHome(a), clear('address.'))}
         errors={errors}
-        suggestion={homeSuggestion}
+        place={homePlace}
       />
 
       <div className="space-y-3">
@@ -387,7 +441,7 @@ export function DetailsForm({
           onChange={(a) => (setPickup(a), clear('pickupAddress.'))}
           errors={errors}
           readOnly={same}
-          suggestion={pickupCheck.suggestion}
+          place={same ? homePlace : pickupCheck.place}
           zipError={pickupCheck.error ?? errors['pickupAddress.zip']}
           zipHint={t.details.zipLocked
             .replace('{zip}', ctx.pickupZip)
@@ -401,7 +455,7 @@ export function DetailsForm({
         value={delivery}
         onChange={(a) => (setDelivery(a), clear('deliveryAddress.'))}
         errors={errors}
-        suggestion={deliveryCheck.suggestion}
+        place={deliveryCheck.place}
         zipError={deliveryCheck.error ?? errors['deliveryAddress.zip']}
         zipHint={t.details.zipLocked
           .replace('{zip}', ctx.deliveryZip)
@@ -418,6 +472,23 @@ export function DetailsForm({
         />
       </Field>
 
+      {needsConfirm && (
+        <div
+          role="alert"
+          data-testid="confirm-address"
+          className="space-y-3 rounded-lg border-2 border-danger p-4"
+        >
+          <p className="font-semibold text-danger">{t.details.confirmAddressNote}</p>
+          <Button
+            type="button"
+            variant="ghostDark"
+            onClick={() => void submit(null, true)}
+            disabled={busy}
+          >
+            {t.details.confirmAddress}
+          </Button>
+        </div>
+      )}
       {formError && (
         <p role="alert" className="rounded-lg bg-danger/10 px-4 py-3 font-semibold text-danger">
           {formError}

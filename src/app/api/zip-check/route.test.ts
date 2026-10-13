@@ -20,6 +20,7 @@ describe('POST /api/zip-check', () => {
       region: 'west',
       city: 'Los Angeles',
       state: 'CA',
+      stateName: 'California',
       oppositeRegion: 'east',
     });
   });
@@ -30,6 +31,7 @@ describe('POST /api/zip-check', () => {
       region: 'east',
       city: 'Baltimore',
       state: 'MD',
+      stateName: 'Maryland',
       oppositeRegion: 'west',
     });
   });
@@ -40,6 +42,7 @@ describe('POST /api/zip-check', () => {
       region: null,
       city: 'New York',
       state: 'NY',
+      stateName: 'New York',
       oppositeRegion: null,
     });
   });
@@ -52,6 +55,7 @@ describe('POST /api/zip-check', () => {
       region: null,
       city: null,
       state: null,
+      stateName: null,
       oppositeRegion: null,
     });
   });

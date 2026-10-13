@@ -123,15 +123,18 @@ describe('step3Schema', () => {
     pickupAddress: addr,
     deliveryAddress: { ...addr, street2: 'Unit 2', city: 'Baltimore', state: 'MD', zip: '21201' },
   };
-  it('accepts valid details and upper-cases the state', () => {
-    const r = step3Schema.parse({ ...valid, notes: 'Gate code 1234' });
-    expect(r.address.state).toBe('CA');
+  it('accepts valid details, with or without a state (the server derives it from the ZIP)', () => {
+    expect(step3Schema.safeParse({ ...valid, notes: 'Gate code 1234' }).success).toBe(true);
+    const noState = { street: addr.street, city: addr.city, zip: addr.zip };
+    expect(step3Schema.safeParse({ ...valid, address: noState }).success).toBe(true);
+    expect(step3Schema.parse({ ...valid, confirmAddresses: true }).confirmAddresses).toBe(true);
   });
-  it('rejects a missing address field and a bad state', () => {
+  it('rejects a missing address field and a bad ZIP', () => {
     expect(step3Schema.safeParse({ ...valid, address: { ...addr, street: '' } }).success).toBe(
       false,
     );
-    expect(step3Schema.safeParse({ ...valid, address: { ...addr, state: 'Cali' } }).success).toBe(
+    expect(step3Schema.safeParse({ ...valid, address: { ...addr, city: '' } }).success).toBe(false);
+    expect(step3Schema.safeParse({ ...valid, address: { ...addr, zip: '9288' } }).success).toBe(
       false,
     );
   });

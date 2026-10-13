@@ -38,6 +38,16 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
         {d.customer.address && <Field label="Home address">{d.customer.address}</Field>}
       </Block>
 
+      {d.addressFlags.length > 0 && (
+        <Block title="Address review">
+          {d.addressFlags.map((flag) => (
+            <Text key={flag} style={{ margin: '8px 0 0', fontSize: 14, lineHeight: '21px' }}>
+              • {flag}
+            </Text>
+          ))}
+        </Block>
+      )}
+
       <Block title="Shipment">
         <Field label="Pickup">
           {d.pickup.address}

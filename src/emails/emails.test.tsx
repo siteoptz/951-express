@@ -91,6 +91,23 @@ describe('NewBookingEmail', () => {
     expect(teamText(typed)).toContain('As typed by the customer: 2021 toyota rav 4');
     expect(teamText(buildBookingEmailData(booking, ctx))).not.toContain('As typed');
   });
+  it('shows an address review block only when the customer confirmed a mismatch', async () => {
+    const flag =
+      'Delivery address: city "Parrs Ridge" does not match ZIP 21771 (Mount Airy, MD). The customer confirmed it is correct.';
+    const flagged = buildBookingEmailData(
+      { ...booking, needsReview: true, reviewReason: 'city/ZIP mismatch', addressFlags: [flag] },
+      ctx,
+    );
+    const out = await text(<NewBookingEmail d={flagged} />);
+    expect(out).toContain('Address review');
+    expect(out).toContain('does not match ZIP 21771');
+    expect(out).toContain('city/ZIP mismatch');
+    expect(teamText(flagged)).toContain('ADDRESS REVIEW');
+    expect(teamText(flagged)).toContain(`- ${flag}`);
+    const clean = await text(<NewBookingEmail d={buildBookingEmailData(booking, ctx)} />);
+    expect(clean).not.toContain('Address review');
+    expect(teamText(buildBookingEmailData(booking, ctx))).not.toContain('ADDRESS REVIEW');
+  });
   it('tells the team how the balance is collected', async () => {
     const out = await text(<NewBookingEmail d={d} />);
     expect(out).toContain("Cash, Cashier's Check, Zelle only. No credit cards.");

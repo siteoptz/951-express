@@ -26,7 +26,12 @@ export async function POST(request: Request, ctx: RouteContext<'/api/bookings/[t
   const result = await submitDetails(db, token, parsed.data, regionOfZip);
   if (!result.ok)
     return Response.json(
-      { error: result.error, reason: result.reason, field: result.field },
+      {
+        error: result.error,
+        reason: result.reason,
+        field: result.field,
+        mismatches: result.mismatches,
+      },
       { status: result.status },
     );
 

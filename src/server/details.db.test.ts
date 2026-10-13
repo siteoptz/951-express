@@ -23,7 +23,21 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
   const bookingIds: string[] = [];
   const leadIds: string[] = [];
 
-  const addr = (zip = '90001') => ({ street: '1 Main St', city: 'Los Angeles', state: 'CA', zip });
+  // Real cities for the ZIPs used here: the server checks the city against the ZIP.
+  const CITY: Record<string, [string, string]> = {
+    '90001': ['Los Angeles', 'CA'],
+    '92881': ['Corona', 'CA'],
+    '90210': ['Beverly Hills', 'CA'],
+    '21201': ['Baltimore', 'MD'],
+    '21771': ['Mount Airy', 'MD'],
+    '10001': ['New York', 'NY'],
+  };
+  const addr = (zip = '90001') => ({
+    street: '1 Main St',
+    city: CITY[zip][0],
+    state: CITY[zip][1],
+    zip,
+  });
   const input = (over: Partial<Step3> = {}): Step3 => ({
     firstName: 'Pat',
     lastName: 'Driver',
@@ -31,7 +45,7 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
     email: 'pat@example.com',
     address: addr('92881'),
     pickupAddress: addr('90001'),
-    deliveryAddress: { street: '9 Pier Rd', city: 'Baltimore', state: 'MD', zip: '21201' },
+    deliveryAddress: { ...addr('21201'), street: '9 Pier Rd' },
     notes: 'Gate code 1234',
     ...over,
   });
@@ -193,6 +207,172 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
         ),
       ).toMatchObject({ ok: false, reason: 'pickup_region' });
       expect(await row(b.id)).toMatchObject({ status: 'paid', customer: null });
+    });
+
+    describe('address consistency', () => {
+      const MOUNT_AIRY =
+        "That city doesn't match ZIP 21771 (Mount Airy, MD). Please check your address.";
+
+      it('derives the state from the ZIP: a forged state is ignored, so Maryland can never be saved as California', async () => {
+        const b = await booking();
+        // The reported case: delivery ZIP 21771 (Mount Airy, MD) with the state set to California.
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({ deliveryAddress: { ...addr('21771'), state: 'CA' } }),
+          regionOfZip,
+        );
+        expect(r.ok).toBe(true);
+        const saved = await row(b.id);
+        expect(saved.deliveryAddress).toMatchObject({
+          city: 'Mount Airy',
+          state: 'MD',
+          zip: '21771',
+        });
+        expect(saved.pickupAddress?.state).toBe('CA'); // derived for every address
+        expect(saved.customer?.address?.state).toBe('CA');
+        expect(saved.needsReview).toBe(false);
+      });
+
+      it('derives the state even when the browser sends none', async () => {
+        const b = await booking();
+        const noState = { street: '1 Main St', city: 'Mount Airy', zip: '21771' };
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({ deliveryAddress: noState }),
+          regionOfZip,
+        );
+        expect(r.ok).toBe(true);
+        expect((await row(b.id)).deliveryAddress?.state).toBe('MD');
+      });
+
+      it('blocks a city that does not match the ZIP, with the agreed message, and changes nothing', async () => {
+        const b = await booking();
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({ deliveryAddress: { ...addr('21771'), city: 'Los Angeles', state: 'CA' } }),
+          regionOfZip,
+        );
+        expect(r).toMatchObject({
+          ok: false,
+          status: 422,
+          reason: 'city_zip_mismatch',
+          field: 'deliveryAddress.city',
+          error: MOUNT_AIRY,
+          mismatches: [{ field: 'deliveryAddress.city', message: MOUNT_AIRY }],
+        });
+        expect(await row(b.id)).toMatchObject({
+          status: 'paid',
+          customer: null,
+          needsReview: false,
+        });
+      });
+
+      it('lists every mismatching address at once', async () => {
+        const b = await booking();
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({
+            address: { ...addr('92881'), city: 'Springfield' },
+            deliveryAddress: { ...addr('21771'), city: 'Elsewhere' },
+          }),
+          regionOfZip,
+        );
+        expect(!r.ok && r.mismatches?.map((m) => m.field)).toEqual([
+          'address.city',
+          'deliveryAddress.city',
+        ]);
+      });
+
+      it('accepts spelling variants of the same city (Mt. and Mount, any case)', async () => {
+        const b = await booking();
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({ deliveryAddress: { ...addr('21771'), city: 'mt. airy' } }),
+          regionOfZip,
+        );
+        expect(r.ok).toBe(true);
+        expect((await row(b.id)).needsReview).toBe(false);
+      });
+
+      it('lets a confirmed city through, flags the booking for review, and keeps the derived state', async () => {
+        const b = await booking();
+        const r = await submitDetails(
+          db,
+          b.publicToken,
+          input({
+            deliveryAddress: { ...addr('21771'), city: 'Parrs Ridge', state: 'CA' },
+            confirmAddresses: true,
+          }),
+          regionOfZip,
+        );
+        expect(r.ok).toBe(true);
+        const saved = await row(b.id);
+        expect(saved).toMatchObject({
+          status: 'completed',
+          needsReview: true,
+          reviewReason: 'city/ZIP mismatch',
+        });
+        expect(saved.deliveryAddress).toMatchObject({ city: 'Parrs Ridge', state: 'MD' });
+        expect(saved.addressFlags).toEqual([
+          'Delivery address: city "Parrs Ridge" does not match ZIP 21771 (Mount Airy, MD). The customer confirmed it is correct.',
+        ]);
+      });
+
+      it('adds to an existing review reason instead of replacing it', async () => {
+        const b = await booking('paid', {
+          needsReview: true,
+          reviewReason: "vehicle not recognized: 'zzz thing'",
+        });
+        await submitDetails(
+          db,
+          b.publicToken,
+          input({
+            pickupAddress: { ...addr('90001'), city: 'Somewhere' },
+            confirmAddresses: true,
+          }),
+          regionOfZip,
+        );
+        expect((await row(b.id)).reviewReason).toBe(
+          "vehicle not recognized: 'zzz thing'; city/ZIP mismatch",
+        );
+      });
+
+      it('does nothing special when "confirm" is sent but every city matches', async () => {
+        const b = await booking();
+        await submitDetails(db, b.publicToken, input({ confirmAddresses: true }), regionOfZip);
+        expect(await row(b.id)).toMatchObject({
+          status: 'completed',
+          needsReview: false,
+          reviewReason: null,
+          addressFlags: null,
+        });
+      });
+
+      it('still rejects a ZIP that is not in the quoted region, whatever else is sent', async () => {
+        const b = await booking();
+        expect(
+          await submitDetails(
+            db,
+            b.publicToken,
+            input({ deliveryAddress: addr('90210'), confirmAddresses: true }),
+            regionOfZip,
+          ),
+        ).toMatchObject({ ok: false, reason: 'delivery_region' });
+        expect(
+          await submitDetails(
+            db,
+            b.publicToken,
+            input({ pickupAddress: addr('21771'), confirmAddresses: true }),
+            regionOfZip,
+          ),
+        ).toMatchObject({ ok: false, reason: 'pickup_region' });
+        expect((await row(b.id)).status).toBe('paid');
+      });
     });
 
     it('rejects a booking that is not paid, and one that does not exist', async () => {

@@ -393,6 +393,8 @@ dashboard; submitting details twice is rejected; the fallback link works.
    - **Weeks grid:** show top-deck usage per route and week (SUV slots and the car slot, taken and left) and allow a
      per-week override. The columns `week_overrides.top_deck_suv_override` and `top_deck_car_override` already exist
      and the capacity code honors them.
+   - **Address review:** the booking detail shows `address_flags` (a city the customer confirmed even though it does not
+     match its ZIP) next to the review reason "city/ZIP mismatch", the derived state, and the region of each address.
    - **Vehicles:** the booking detail, the leads list and the dispatch sheet show both what the customer typed
      (`vehicle_typed`) and the normalized vehicle, and the review reason (`review_reason`, for example
      "vehicle not recognized: 'zzz thing'").

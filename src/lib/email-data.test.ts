@@ -155,6 +155,19 @@ describe('typed vehicle and review reason', () => {
   });
 });
 
+describe('address review flags', () => {
+  it('passes the flags through, and defaults to none', () => {
+    const flags = [
+      'Delivery address: city "Parrs Ridge" does not match ZIP 21771 (Mount Airy, MD).',
+    ];
+    expect(buildBookingEmailData({ ...base, addressFlags: flags }, ctx).addressFlags).toEqual(
+      flags,
+    );
+    expect(buildBookingEmailData(base, ctx).addressFlags).toEqual([]);
+    expect(buildBookingEmailData({ ...base, addressFlags: null }, ctx).addressFlags).toEqual([]);
+  });
+});
+
 describe('reviewReasons', () => {
   it('is empty when nothing needs review', () => {
     expect(reviewReasons({ needsReview: false, sizeClassSource: 'customer' })).toEqual([]);

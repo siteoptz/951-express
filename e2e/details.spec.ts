@@ -88,9 +88,8 @@ async function fillValid(page: Page) {
   await page.getByLabel('Phone').fill('951-555-0100');
   const home = group(page, 'Your address');
   await home.getByLabel('Street address').fill('1 Main St');
-  await home.getByLabel('City').fill('Corona');
-  await home.getByLabel('State').fill('CA');
   await home.getByLabel('ZIP').fill('92881');
+  await expect(home.getByLabel('City')).toHaveValue('Corona'); // from the ZIP
   const pick = group(page, 'Pickup address');
   await pick.getByLabel('Street address').fill('77 Sunset Blvd');
   const del = group(page, 'Delivery address');
@@ -115,9 +114,18 @@ test('the fallback page shows Step 3 with the email prefilled and the ZIPs locke
   await expect(
     page.getByText('Quoted for 21201. You can refine it within our East region.'),
   ).toBeVisible();
-  // City and state are suggested from the ZIP.
+  // The city is suggested from the ZIP, and the state comes from the ZIP and cannot be typed.
   await expect(group(page, 'Pickup address').getByLabel('City')).toHaveValue('Los Angeles');
-  await expect(group(page, 'Pickup address').getByLabel('State')).toHaveValue('CA');
+  await expect(group(page, 'Pickup address').getByLabel('State')).toHaveValue(
+    'California, from your ZIP',
+  );
+  await expect(group(page, 'Pickup address').getByLabel('State')).toHaveAttribute('readonly', '');
+  await expect(page.getByTestId('pickup-place')).toHaveText(
+    'Pickup: Los Angeles, CA · West region',
+  );
+  await expect(page.getByTestId('delivery-place')).toHaveText(
+    'Delivery: Baltimore, MD · East region',
+  );
   await expect(group(page, 'Delivery address').getByLabel('City')).toHaveValue('Baltimore');
   await axeClean(page, 'step 3 form');
 });
@@ -272,4 +280,125 @@ test('an unpaid booking, a completed booking, and a bad link behave', async ({ p
   await axeClean(page, 'booking not found');
   await page.goto(`/booking/${done.publicToken}`);
   expect(await page.locator('meta[name=robots]').getAttribute('content')).toMatch(/noindex/);
+});
+
+// The reported bug: a tester entered delivery ZIP 21771 (Mount Airy, MD) while the address said California, and the
+// booking completed. The state now comes from the ZIP and cannot be typed.
+test('the reported case is blocked: the state comes from the ZIP and cannot be typed', async ({
+  page,
+  request,
+}) => {
+  const b = await seed();
+  await page.goto(`/booking/${b.publicToken}`);
+  await fillValid(page);
+  const del = group(page, 'Delivery address');
+  await del.getByLabel('ZIP').fill('21771');
+  await expect(del.getByLabel('City')).toHaveValue('Mount Airy');
+  const state = del.getByLabel('State');
+  await expect(state).toHaveValue('Maryland, from your ZIP');
+  await expect(state).toHaveAttribute('readonly', '');
+  await state.fill('California', { force: true }).catch(() => undefined); // typing is not possible
+  await expect(state).toHaveValue('Maryland, from your ZIP');
+  await expect(page.getByTestId('delivery-place')).toHaveText(
+    'Delivery: Mount Airy, MD · East region',
+  );
+  await page.getByRole('button', { name: 'Finish my booking' }).click();
+  await expect(page.getByText("✓ You're booked!")).toBeVisible();
+  const saved = await row(b.id);
+  expect(saved.deliveryAddress).toMatchObject({ city: 'Mount Airy', state: 'MD', zip: '21771' });
+  expect(saved.needsReview).toBe(false);
+
+  // Sending the old bad combination straight to the server changes nothing: the state is derived from the ZIP.
+  const forged = await seed();
+  const res = await request.post(`/api/bookings/${forged.publicToken}/details`, {
+    data: {
+      firstName: 'Tess',
+      lastName: 'Tester',
+      phone: '951-555-0100',
+      email: 'tess@example.com',
+      address: { street: '1 A', city: 'Corona', state: 'CA', zip: '92881' },
+      pickupAddress: { street: '1 A', city: 'Los Angeles', state: 'CA', zip: '90001' },
+      deliveryAddress: { street: '2 B', city: 'Mount Airy', state: 'CA', zip: '21771' },
+    },
+  });
+  expect(res.status()).toBe(200);
+  expect((await row(forged.id)).deliveryAddress).toMatchObject({ state: 'MD', zip: '21771' });
+});
+
+test('a city that does not match the ZIP is blocked with the agreed message, then fixed', async ({
+  page,
+}) => {
+  const b = await seed();
+  await page.goto(`/booking/${b.publicToken}`);
+  await fillValid(page);
+  const del = group(page, 'Delivery address');
+  await del.getByLabel('ZIP').fill('21771');
+  await expect(del.getByLabel('City')).toHaveValue('Mount Airy');
+  await del.getByLabel('City').fill('Los Angeles');
+  await page.getByRole('button', { name: 'Finish my booking' }).click();
+
+  const message = "That city doesn't match ZIP 21771 (Mount Airy, MD). Please check your address.";
+  await expect(page.getByRole('alert').filter({ hasText: message })).toBeVisible();
+  await expect(page.getByTestId('confirm-address')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Yes, this is correct' })).toBeVisible();
+  await expect(del.getByLabel('City')).toHaveAttribute('aria-invalid', 'true');
+  expect((await row(b.id)).status).toBe('paid'); // nothing saved
+  await axeClean(page, 'step 3 city mismatch');
+
+  // Fixing the city clears the message and the booking goes through unflagged.
+  await del.getByLabel('City').fill('Mount Airy');
+  await expect(page.getByTestId('confirm-address')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Finish my booking' }).click();
+  await expect(page.getByText("✓ You're booked!")).toBeVisible();
+  expect(await row(b.id)).toMatchObject({ status: 'completed', needsReview: false });
+});
+
+test('"Yes, this is correct" completes the booking and flags it for the team', async ({ page }) => {
+  const b = await seed();
+  await page.goto(`/booking/${b.publicToken}`);
+  await fillValid(page);
+  const del = group(page, 'Delivery address');
+  await del.getByLabel('ZIP').fill('21771');
+  await del.getByLabel('City').fill('Parrs Ridge');
+  await page.getByRole('button', { name: 'Finish my booking' }).click();
+  await expect(page.getByTestId('confirm-address')).toBeVisible();
+  await page.getByRole('button', { name: 'Yes, this is correct' }).click();
+  await expect(page.getByText("✓ You're booked!")).toBeVisible();
+
+  const saved = await row(b.id);
+  expect(saved).toMatchObject({
+    status: 'completed',
+    needsReview: true,
+    reviewReason: 'city/ZIP mismatch',
+  });
+  expect(saved.deliveryAddress).toMatchObject({ city: 'Parrs Ridge', state: 'MD', zip: '21771' });
+  expect(saved.addressFlags).toEqual([
+    'Delivery address: city "Parrs Ridge" does not match ZIP 21771 (Mount Airy, MD). The customer confirmed it is correct.',
+  ]);
+});
+
+test('a region change in Step 3 is rejected by the server, whatever the browser says', async ({
+  request,
+}) => {
+  const b = await seed();
+  const ok = { street: '1 A', city: 'Los Angeles', zip: '90001' };
+  const res = await request.post(`/api/bookings/${b.publicToken}/details`, {
+    data: {
+      firstName: 'Tess',
+      lastName: 'Tester',
+      phone: '951-555-0100',
+      email: 'tess@example.com',
+      address: ok,
+      pickupAddress: ok,
+      // The quote was West -> East, so a delivery in the West is refused.
+      deliveryAddress: { street: '2 B', city: 'Beverly Hills', zip: '90210' },
+      confirmAddresses: true,
+    },
+  });
+  expect(res.status()).toBe(422);
+  expect(await res.json()).toMatchObject({
+    reason: 'delivery_region',
+    field: 'deliveryAddress.zip',
+  });
+  expect((await row(b.id)).status).toBe('paid');
 });

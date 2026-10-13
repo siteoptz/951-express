@@ -101,6 +101,8 @@ export const bookings = pgTable(
     needsReview: boolean('needs_review').notNull().default(false),
     /** Why it needs review, e.g. "vehicle not recognized: 'zzz thing'" (null when there is no specific reason). */
     reviewReason: text('review_reason'),
+    /** Address problems the customer confirmed anyway, in words the team can act on (empty when there are none). */
+    addressFlags: jsonb('address_flags').$type<string[]>(),
     termsVersion: text('terms_version').notNull(),
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }).notNull(),
     stripeSessionId: text('stripe_session_id').unique(),

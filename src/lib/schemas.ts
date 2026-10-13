@@ -97,7 +97,11 @@ export const addressSchema = z.object({
   street: z.string().trim().min(1).max(120),
   street2: z.string().trim().max(120).optional(),
   city: z.string().trim().min(1).max(80),
-  state: z.string().trim().length(2).toUpperCase(),
+  /**
+   * Ignored. The state is always derived from the ZIP on the server, so a state that does not match the ZIP (a
+   * tester once sent California with a Maryland ZIP) can never be stored.
+   */
+  state: z.string().max(20).optional(),
   zip,
 });
 
@@ -111,6 +115,8 @@ export const step3Schema = z.object({
   pickupAddress: addressSchema,
   deliveryAddress: addressSchema,
   notes: notes.optional(),
+  /** True when the customer saw the "city doesn't match the ZIP" message and said "Yes, this is correct". */
+  confirmAddresses: z.boolean().optional(),
 });
 export type Step3 = z.infer<typeof step3Schema>;
 

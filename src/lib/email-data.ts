@@ -13,6 +13,8 @@ export type BookingForEmail = {
   vehicleTyped?: VehicleTyped | null;
   /** Why the booking needs review, e.g. "vehicle not recognized: 'zzz thing'". */
   reviewReason?: string | null;
+  /** Address problems the customer confirmed anyway (a city that does not match its ZIP). */
+  addressFlags?: string[] | null;
   customer: Customer;
   pickupAddress: Address;
   deliveryAddress: Address;
@@ -117,6 +119,7 @@ export function buildBookingEmailData(b: BookingForEmail, ctx: EmailContext) {
       : null,
     needsReview: b.needsReview,
     reviewReason: b.reviewReason ?? null,
+    addressFlags: b.addressFlags ?? [],
     reviewReasons: reviewReasons(b),
     personalItemsNotice: bookingConfig.personalItemsNotice,
     topDeckBenefits: topDeck.benefits,

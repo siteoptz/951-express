@@ -24,6 +24,13 @@ export function teamText(d: BookingEmailData): string {
       ...(d.customer.address ? [line('Home address', d.customer.address)] : []),
     ]),
   );
+  if (d.addressFlags.length > 0)
+    parts.push(
+      section(
+        'Address review',
+        d.addressFlags.map((f) => `- ${f}`),
+      ),
+    );
   parts.push(
     section('Shipment', [
       line(

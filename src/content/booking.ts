@@ -167,7 +167,16 @@ export const bookingCopy = {
     street: 'Street address',
     street2: 'Apt, suite, gate code (optional)',
     city: 'City',
+    cityHint: 'Filled in from your ZIP. You can change it.',
     state: 'State',
+    stateFromZip: '{state}, from your ZIP',
+    statePlaceholder: 'Fills in from your ZIP',
+    placeLine: '{side}: {place}',
+    regionSuffix: ' · {region} region',
+    confirmAddress: 'Yes, this is correct',
+    confirmAddressNote:
+      'If your city is right as you wrote it, confirm it and we will double-check the address with you before pickup.',
+    sides: { home: 'Your address', pickup: 'Pickup', delivery: 'Delivery' },
     zip: 'ZIP',
     zipLocked: 'Quoted for {zip}. You can refine it within our {region} region.',
     zipWrongRegion:

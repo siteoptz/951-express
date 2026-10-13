@@ -72,9 +72,9 @@ export async function fillDetails(root: Page | Locator, opts: { email?: string }
   if (opts.email) await root.getByLabel('Email').fill(opts.email);
   const home = root.getByRole('group', { name: 'Your address' });
   await home.getByLabel('Street address').fill('1 Main St');
-  await home.getByLabel('City').fill('Corona');
-  await home.getByLabel('State').fill('CA');
   await home.getByLabel('ZIP').fill('92881');
+  // The city fills in from the ZIP and the state is read-only, so there is nothing else to type here.
+  await expect(home.getByLabel('City')).toHaveValue('Corona');
   await root
     .getByRole('group', { name: 'Pickup address' })
     .getByLabel('Street address')

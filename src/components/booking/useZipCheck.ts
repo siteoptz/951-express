@@ -9,6 +9,8 @@ export type ZipCheck = {
   region: Region | null;
   city: string | null;
   state: string | null;
+  /** "Maryland", for "Maryland, from your ZIP". */
+  stateName: string | null;
   oppositeRegion: Region | null;
 };
 export type ZipStatus =
