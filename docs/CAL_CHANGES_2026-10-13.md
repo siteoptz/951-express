@@ -12,14 +12,18 @@ to confirm.
 
 ---
 
-## Batch 0: Status check (no code changes)
-Before starting, report the status of these earlier items:
-- the contact form that replaces the "Email Us" mailto links
-- the Phase 8 basic admin area
-- the password-manager attributes on ZIP inputs
+## Batch 0: Password-manager attributes on ZIP inputs
+Status today: the three ZIP inputs only have `autoComplete` (`postal-code`, plus `off` on the delivery ZIP). None has the
+password-manager opt-out attributes, so extensions like 1Password show their icon in the ZIP fields.
+- On every ZIP input (map "Check your ZIP" box, modal pickup ZIP, modal delivery ZIP, and the Step 3 address ZIPs), add
+  `data-1p-ignore`, `data-lpignore="true"`, `data-bwignore` and `data-form-type="other"`.
+- Keep `autoComplete="postal-code"` on all of them, including the delivery ZIP, so browsers still offer saved ZIPs.
+- Test: a unit or e2e check that every ZIP input has all four attributes.
 
-If any of them aren't built yet, tell me. Don't start them unless I say so. Note where the batches below will need to
-connect to them (the admin rates editor, the weeks grid, and the leads list).
+**Not in this plan:** the Phase 8 basic admin area hasn't started yet; it stays in BUILD_PLAN.md as its own phase.
+The contact form that would have replaced the "Email Us" links was dropped, so leave those links as they are.
+Wherever a batch below mentions the admin area, don't build admin UI now. Add the item to the Phase 8 section of
+BUILD_PLAN.md so it's included when Phase 8 is built.
 
 ---
 
@@ -46,7 +50,8 @@ Requirements:
 - Leads store `quote_reasons` and `modification_details`. NewLeadEmail subject:
   `Quote request ({reasons}): {year make model} · {route}`, with the reasons and modification details at the top of the body.
 - Remove the inoperable (+$150) and modified (+$100) surcharges and the "modified → needs review" path from online pricing,
-  config, the seed/settings, the rates editor (if it exists) and the emails. Keep the DB columns for history.
+  config, the seed/settings and the emails. Keep the DB columns for history. (Phase 8 note: the rates editor must not
+  include these surcharges.)
 - Terms: "Vehicles that don't run, modified vehicles, exotic or high-value vehicles (over $100,000), and large SUVs,
   pickups and vans require a personalized quote." Bump the terms version.
 - Tests: each trigger switches the form, switching back restores it, the modification description is required, the API
@@ -91,7 +96,7 @@ Requirements:
      vehicle changes.
    - Server: `/api/quote`, `/api/checkout` and `createHold` recheck. A full slot type returns 409 with the next week that has
      top-deck space for this vehicle. The availability API returns top-deck remaining per slot type per week.
-   - Admin (if built, or when built): show top-deck usage in the weeks grid and allow a per-week override.
+   - Phase 8 note (don't build now): the admin weeks grid shows top-deck usage and allows a per-week top-deck override.
    - Tests: fill the SUV slots and confirm the next SUV top-deck hold is rejected while standard still works; the car-slot
      rule and the sedan-into-SUV-slot fallback; concurrency (5 simultaneous SUV top-deck holds → exactly 3); the UI disabled state.
 
@@ -112,8 +117,8 @@ Customers didn't realize they had to type into the make/model pickers. Cal's dec
 3. Classification uses the normalized values against the class tables, the large/exotic lists and the year rules. If the
    vehicle isn't recognized, show the vehicle-type cards with examples, including "Large SUV / Full-size pickup / Van",
    which goes to the quote form. Set `needsReview` with the reason `vehicle not recognized: '{typed text}'`.
-4. Store the **exact typed text** and the normalized values on bookings and leads. Show both in the team email, the admin
-   and the dispatch sheet.
+4. Store the **exact typed text** and the normalized values on bookings and leads. Show both in the team email and the
+   dispatch sheet (and in the admin in Phase 8).
 5. The high-value question and the inoperable/modified rules apply whether or not the vehicle is recognized.
 6. Tests:
    - "chevy tahoe" → quote
@@ -134,8 +139,8 @@ A tester entered delivery ZIP 21771 (Mount Airy, MD) while the address state sai
    ("Yes, this is correct") sets `needsReview` with the reason "city/ZIP mismatch".
 3. **Route integrity**: the Step 3 pickup and delivery ZIPs must stay in the regions of the paid route, rechecked on the server.
 4. Show the region next to each address ("Delivery: Mount Airy, MD · East region").
-5. Show address review flags in the team email, the admin booking detail and the dispatch sheet.
-6. Find the tester's booking (delivery ZIP 21771) and report its stored address fields. Don't delete it.
+5. Show address review flags in the team email and the dispatch sheet (and in the admin booking detail in Phase 8).
+6. Find the tester's booking (delivery ZIP 21771) in the database and report its stored address fields. Don't delete it.
 7. Tests: a state mismatch is impossible, a city mismatch is blocked unless confirmed (then flagged), a region change in
    Step 3 is rejected, and an e2e that reproduces the reported case is now blocked.
 
@@ -160,8 +165,8 @@ completed booking using that sheet's **field layout**, with **951 Express brandi
    - Footer: terms URL
 3. Attach it to the NewBookingEmail as `951-Express-Dispatch-{ref}-{year}-{make}-{model}.pdf`. If generation fails, send
    the email without it and log the error.
-4. Add `GET /api/admin/bookings/[id]/dispatch.pdf` (admin session) and a "Download dispatch sheet" button in the admin
-   booking detail (or note it for Phase 8 if admin isn't built).
+4. Phase 8 note (don't build now): an admin download route `GET /api/admin/bookings/[id]/dispatch.pdf` and a
+   "Download dispatch sheet" button in the admin booking detail. For now, the email attachment is the only way Cal gets the PDF.
 5. Tests: a snapshot of the PDF text, VIN validation, the attachment in the email payload, the failure path, and the
    delivery window and balance wording present.
 6. Show me a sample PDF for a test booking before committing.
