@@ -83,6 +83,7 @@ describe('buildMap', () => {
       'Southern California',
       'Phoenix',
       'Tucson',
+      'Yuma',
       'El Paso',
     ]);
     expect(map.stateLabels.map((s) => s.abbr)).toEqual([

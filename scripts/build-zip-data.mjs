@@ -1,5 +1,6 @@
 // Builds src/data/zips/{west,east,coverage}.json from the raw client files in data/raw/.
 // Run: node scripts/build-zip-data.mjs [--report-only]
+// West = west_zip_codes.xlsx plus west_additions.txt (client additions, same format), de-duplicated.
 // East = east_zip_codes.txt plus east_additions.txt (client additions, ranges allowed), de-duplicated.
 // Refuses to write anything if a ZIP appears in both regions.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -81,7 +82,9 @@ const westCells = readXlsxCells(`${rawDir}west_zip_codes.xlsx`);
 const westTexts = westCells.map((c) => c.text);
 const eastText = readFileSync(`${rawDir}east_zip_codes.txt`, 'utf8');
 
-const west = normalize(parseTokens(westTexts));
+const westAdd = readAdditions(`${rawDir}west_additions.txt`);
+const west = normalize([...parseTokens(westTexts), ...westAdd.tokens]);
+const westBase = normalize(parseTokens(westTexts));
 const eastAdd = readAdditions(`${rawDir}east_additions.txt`);
 const east = normalize([...parseTokens([eastText]), ...eastAdd.tokens]);
 const eastBase = normalize(parseTokens([eastText]));
@@ -130,6 +133,13 @@ for (const [name, r, l] of [['WEST', west, w], ['EAST', east, e]]) {
   const recognized = addUnique.filter((z) => zipcodes.lookup(z)).length;
   const westSet = new Set(west.zips);
   console.log(`\neast_additions.txt (${eastAdd.ranges.join(', ') || 'no ranges'}): ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${already} already in the original list, ${addUnique.filter((z) => westSet.has(z)).length} also in West`);
+}
+{
+  const baseSet = new Set(westBase.zips);
+  const eastAll = new Set(east.zips);
+  const addUnique = [...new Set(westAdd.tokens)];
+  const recognized = addUnique.filter((z) => zipcodes.lookup(z)).length;
+  console.log(`\nwest_additions.txt: ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${addUnique.filter((z) => baseSet.has(z)).length} already in the original list, ${addUnique.filter((z) => eastAll.has(z)).length} also in East`);
 }
 console.log(`\nZIPs in BOTH lists: ${both.length}${both.length ? ' ' + both.join(', ') : ''}`);
 

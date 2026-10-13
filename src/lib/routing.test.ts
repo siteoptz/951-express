@@ -53,6 +53,34 @@ describe('Atlanta metro additions (30001–30400, client request 2026-10-13)', (
   });
 });
 
+describe('Yuma, AZ additions (client request 2026-10-13)', () => {
+  const YUMA = ['85336', '85349', '85350', '85364', '85365', '85366', '85367', '85369'];
+  it('puts every Yuma-area ZIP in West', () => {
+    for (const z of YUMA) expect(regionOfZip(z), z).toBe('west');
+    expect(east.some((z: string) => YUMA.includes(z))).toBe(false);
+  });
+  it('resolves 85364 to West for pickup and for delivery', () => {
+    expect(resolvePickupZip('85364')).toMatchObject({
+      ok: true,
+      pickupRegion: 'west',
+      deliveryRegion: 'east',
+    });
+    expect(resolveRouteForZips(EAST2, '85364')).toMatchObject({ ok: true, deliveryRegion: 'west' });
+  });
+  it('routes Yuma → Atlanta (85364 → 30303) as West → East', () => {
+    const r = resolveRouteForZips('85364', '30303');
+    expect(r).toMatchObject({ ok: true, pickupRegion: 'west', deliveryRegion: 'east' });
+    expect(r.ok && r.route.id).toBe('west-to-east');
+  });
+  it('rejects Yuma → Corona (85364 → 92879) as same_region', () => {
+    expect(resolveRouteForZips('85364', '92879')).toEqual({
+      ok: false,
+      reason: 'same_region',
+      region: 'west',
+    });
+  });
+});
+
 describe('resolveRouteForZips', () => {
   it('routes West → East', () => {
     const r = resolveRouteForZips(WEST, EAST);

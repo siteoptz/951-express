@@ -32,7 +32,7 @@ export const termsSections: TermsSection[] = [
     title: '1. Who we are and what we do',
     body: [
       `${company.name} ("951 Express," "we," "us") is a licensed motor carrier based in ${company.address.city}, ${company.address.state} (USDOT ${company.usdot}, ${company.mc}). "You" means the person who books the transport and anyone acting for you.`,
-      'We move vehicles on open carriers (open trailers) between our West region and our East region, in either direction. We do not move vehicles within the West region or within the East region. Our West region covers Southern California, Phoenix, Tucson, and El Paso. Our East region covers parts of Alabama, Georgia, South Carolina, North Carolina, Virginia, Maryland, Delaware, and Washington, DC.',
+      'We move vehicles on open carriers (open trailers) between our West region and our East region, in either direction. We do not move vehicles within the West region or within the East region. Our West region covers Southern California, Phoenix, Tucson, Yuma, and El Paso. Our East region covers parts of Alabama, Georgia, South Carolina, North Carolina, Virginia, Maryland, Delaware, and Washington, DC.',
       'The ZIP code check on our website decides whether a pickup or delivery location is in our service area. If a ZIP code is not served, we cannot book it online.',
     ],
   },

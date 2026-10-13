@@ -1,0 +1,13 @@
+# Client request 2026-10-13: Yuma, AZ area
+# 85336 Gadsden, 85349 San Luis, 85350 Somerton, 85364 85365 85366 85367 85369 Yuma. One entry per line or comma-separated;
+# "start-end" ranges are allowed. The original west_zip_codes.xlsx is left untouched; these are merged into west.json by
+# scripts/build-zip-data.mjs, which still refuses to write anything if a ZIP lands in both regions.
+# West ZIPs work for both pickup and delivery. TODO(client): confirm Yuma is not pickup-only.
+85336
+85349
+85350
+85364
+85365
+85366
+85367
+85369

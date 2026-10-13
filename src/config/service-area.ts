@@ -122,6 +122,7 @@ export const westMetros = [
     anchor: 'middle',
   },
   { name: 'Tucson', lines: ['Tucson'], lat: 32.22, lng: -110.97, dx: 0, dy: 32, anchor: 'middle' },
+  { name: 'Yuma', lines: ['Yuma'], lat: 32.69, lng: -114.63, dx: 22, dy: 24, anchor: 'middle' },
   {
     name: 'El Paso',
     lines: ['El Paso'],
@@ -150,6 +151,6 @@ export const mapCopy = {
   terminalLabel: 'Corona, CA terminal',
   legendNote: 'Every shipment runs between the two regions.',
   mapLabel: 'Service area map: West and East regions',
-  westMetroSummary: 'Southern California, Phoenix, Tucson, and El Paso',
+  westMetroSummary: 'Southern California, Phoenix, Tucson, Yuma, and El Paso',
   tooltip: '{state} · {region} region · {count} ZIP codes served',
 } as const;

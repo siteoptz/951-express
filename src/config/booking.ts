@@ -23,6 +23,6 @@ export const booking = {
   deliveryWindowDays: { min: 7, max: 10 },
   personalItemsNotice: "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
   // Bumped whenever the terms text changes. It is saved with every booking. Date format: the day the text was published.
-  termsVersion: '2026-10-13.3',
+  termsVersion: '2026-10-13.4',
   termsLastUpdated: 'October 13, 2026',
 } as const;

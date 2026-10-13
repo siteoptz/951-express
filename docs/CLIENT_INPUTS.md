@@ -69,3 +69,6 @@ These go to the quote form instead of online booking. The defaults below are in 
 - [ ] **VIN check:** a VIN is accepted when it is 17 letters and numbers with no I, O or Q. It is not checked against the VIN check digit, because older and imported vehicles often fail it. Add the check digit test?
 - [ ] **Lot #** is left blank on the sheet for Cal to fill in his dispatch system. Is that right?
 - [ ] **Estimated delivery** is the first day of the pickup week + 7 to the last day + 10 (for example "Oct 26 – Nov 4").
+
+## West region: Yuma, AZ (Batch 7)
+- [ ] Yuma-area ZIPs (85336, 85349, 85350, 85364, 85365, 85366, 85367, 85369) were added to West for **both pickup and delivery**, like the rest of the West list. Is Yuma pickup-only?

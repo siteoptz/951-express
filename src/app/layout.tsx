@@ -13,7 +13,7 @@ const display = Barlow_Condensed({
 
 const title = '951 Express | Licensed & Bonded Auto Transport';
 const description =
-  'Licensed and bonded auto transport from Corona, CA. Weekly runs between Southern California, Phoenix, Tucson, and El Paso and the Southeast and Mid-Atlantic. Get an instant quote online.';
+  'Licensed and bonded auto transport from Corona, CA. Weekly runs between Southern California, Phoenix, Tucson, Yuma, and El Paso and the Southeast and Mid-Atlantic. Get an instant quote online.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

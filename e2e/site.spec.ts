@@ -110,7 +110,7 @@ test('the Terms page has the real terms, with a last-updated date and no draft w
   await page.goto('/terms');
   await expect(page.getByRole('heading', { level: 1, name: 'Terms & Conditions' })).toBeVisible();
   await expect(
-    page.getByText('Last updated October 13, 2026 · Version 2026-10-13.3'),
+    page.getByText('Last updated October 13, 2026 · Version 2026-10-13.4'),
   ).toBeVisible();
   await expect(
     page.getByRole('banner').getByRole('img', { name: '951 Express Inc. logo' }),

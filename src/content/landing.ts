@@ -47,7 +47,7 @@ export const landing = {
   },
   serviceArea: {
     heading: 'Where we haul',
-    body: 'Weekly runs out of Corona, CA. We pick up in Southern California, Phoenix, Tucson, and El Paso and deliver across the Southeast and Mid-Atlantic (AL, GA, SC, NC, VA, MD, DE, DC), and we run it the other way too.',
+    body: 'Weekly runs out of Corona, CA. We pick up in Southern California, Phoenix, Tucson, Yuma, and El Paso and deliver across the Southeast and Mid-Atlantic (AL, GA, SC, NC, VA, MD, DE, DC), and we run it the other way too.',
     zipBox: {
       heading: 'Check your ZIP',
       label: 'ZIP code',

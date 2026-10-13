@@ -43,7 +43,7 @@ describe('terms content', () => {
     termsSections.forEach((s, i) => expect(s.title.startsWith(`${i + 1}. `)).toBe(true));
   });
   it('has a version and a last-updated date', () => {
-    expect(booking.termsVersion).toBe('2026-10-13.3');
+    expect(booking.termsVersion).toBe('2026-10-13.4');
     expect(booking.termsLastUpdated).toBe('October 13, 2026');
   });
 });
