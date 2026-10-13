@@ -8,8 +8,8 @@ import {
   asNewVisitor,
   dialog,
   expectAccessible,
-  mockVpic,
   openModal,
+  typeVehicle,
 } from './helpers';
 
 // Top Deck Load is limited per route per week: 3 SUV slots and 1 car slot by default, on top of the 6 main spots.
@@ -73,7 +73,6 @@ test.afterAll(async () => {
 });
 test.beforeEach(async ({ page, baseURL }) => {
   await asNewVisitor(page, baseURL!);
-  await mockVpic(page);
   await openModal(page);
 });
 
@@ -82,15 +81,7 @@ async function fillUntilWeeks(page: Page, make: string, model: string) {
   await d.getByLabel('Pickup ZIP').fill('90001');
   await d.getByLabel('Delivery ZIP').fill('21201');
   await d.getByText('✓ Great news, we service this route.').waitFor();
-  await d.getByLabel('Year').selectOption('2021');
-  for (const [label, text] of [
-    ['Make', make],
-    ['Model', model],
-  ] as const) {
-    const box = d.getByRole('combobox', { name: label });
-    await box.fill(text);
-    await box.press('Tab');
-  }
+  await typeVehicle(d, '2021', make, model);
   await answerHighValue(d, 'No');
   await d
     .getByRole('group', { name: 'Is the vehicle operable?' })
@@ -184,7 +175,7 @@ test('changing the vehicle can take Top Deck away too, with the same notice', as
   await pickWeek(page, weekA.label); // the SUV slots are full, but a sedan still has the car slot
   await topDeckOption(page).check({ force: true });
   await expect(topDeckOption(page)).toBeChecked();
-  const model = dialog(page).getByRole('combobox', { name: 'Model' });
+  const model = dialog(page).getByLabel(/^Type the model/);
   await model.fill('CR-V'); // a small SUV: no SUV slot left in this week
   await model.press('Tab');
   await expect(dialog(page).getByTestId('top-deck-switched')).toHaveText(

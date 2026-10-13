@@ -4,27 +4,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { createDb } from '../src/db';
 import { bookings, leads, routes } from '../src/db/schema';
 import { bookableWeeks } from '../src/lib/weeks';
-import { answerHighValue } from './helpers';
-
-// vPIC answers are mocked at our own /api/vehicles boundary, so these tests never depend on NHTSA.
-// The real API is covered by the separate @live smoke test (e2e/vpic-live.spec.ts).
-const MAKES = ['Chevrolet', 'Ford', 'Honda', 'Toyota'];
-const MODELS: Record<string, string[]> = {
-  honda: ['Accord', 'Civic', 'CR-V'],
-  toyota: ['Camry', 'RAV4', 'Tacoma'],
-  chevrolet: ['Silverado 1500', 'Tahoe'],
-  ford: ['F-150', 'Ranger'],
-};
-
-async function mockVpic(page: Page) {
-  await page.route('**/api/vehicles/makes*', (route) =>
-    route.fulfill({ json: { makes: MAKES.map((m) => ({ value: m.toUpperCase(), label: m })) } }),
-  );
-  await page.route('**/api/vehicles/models*', (route) => {
-    const make = new URL(route.request().url()).searchParams.get('make')?.toLowerCase() ?? '';
-    return route.fulfill({ json: { models: MODELS[make] ?? [] } });
-  });
-}
+import { answerHighValue, typeVehicle } from './helpers';
 
 const WEST = '90001';
 const WEST2 = '90002';
@@ -82,7 +62,6 @@ test.beforeEach(async ({ page }) => {
   await page.setExtraHTTPHeaders({
     'x-forwarded-for': `10.20.${Math.floor(++n / 250)}.${n % 250}`,
   });
-  await mockVpic(page);
   await page.goto('/');
   await page.getByRole('banner').getByRole('button', { name: 'Get My Quote' }).click();
   await expect(page.getByRole('dialog', { name: 'Get My Instant Quote' })).toBeVisible();
@@ -106,17 +85,8 @@ async function enterRoute(page: Page, pickup: string, delivery: string) {
   await dialog(page).getByLabel('Delivery ZIP').fill(delivery);
 }
 
-/** Types into a make/model combobox and commits what was typed (picking the list entry when there is one). */
-async function pick(page: Page, label: 'Make' | 'Model', text: string) {
-  const box = dialog(page).getByRole('combobox', { name: label });
-  await box.fill(text);
-  await box.press('Tab');
-}
-
 async function chooseVehicle(page: Page, year: string, make: string, model: string) {
-  await dialog(page).getByLabel('Year').selectOption(year);
-  await pick(page, 'Make', make);
-  await pick(page, 'Model', model);
+  await typeVehicle(dialog(page), year, make, model);
 }
 
 async function fillOptions(page: Page, opts: { topDeck?: boolean } = {}) {
@@ -146,13 +116,7 @@ test('West → East happy path ends on the Step 2 summary', async ({ page }) => 
   await expect(d.getByText('Shipping West → East')).toBeVisible();
   await expect(d.getByText('✓ Great news, we service this route.')).toBeVisible();
 
-  await d.getByLabel('Year').selectOption('2020');
-  const make = d.getByRole('combobox', { name: 'Make' });
-  await make.fill('hond');
-  await d.getByRole('option', { name: 'Honda', exact: true }).click(); // from the vPIC list
-  const model = d.getByRole('combobox', { name: 'Model' });
-  await model.fill('civ');
-  await d.getByRole('option', { name: 'Civic', exact: true }).click();
+  await chooseVehicle(page, '2020', 'Honda', 'Civic');
   await expect(d.getByTestId('size-chip')).toHaveText('Vehicle size: Small sedan');
 
   await expect(seePrice(page)).toBeDisabled(); // until every answer is in
@@ -207,8 +171,8 @@ test('same-region ZIPs are rejected with the agreed copy', async ({ page }) => {
   await expect(d.getByRole('alert')).toContainText(
     'We haul between the West and the East. Both of these ZIP codes are in our West region.',
   );
-  await expect(d.getByRole('combobox', { name: 'Make' })).toHaveCount(0);
-  await expect(d.getByLabel('Year')).toHaveCount(0);
+  await expect(d.getByLabel(/^Type the make/)).toHaveCount(0);
+  await expect(d.getByLabel("Type your vehicle's year")).toHaveCount(0);
   await axeClean(page, 'same-region error');
 });
 
@@ -239,9 +203,7 @@ test('an unknown vehicle asks the customer to pick a size, and the booking needs
   await chooseVehicle(page, '2020', 'Zzzmake', 'Thing');
   await expect(d.getByText("We couldn't match your vehicle. Pick the closest size.")).toBeVisible();
   await expect(d.getByText('e.g., Honda HR-V')).toBeVisible();
-  await expect(
-    d.getByText('e.g., Chevrolet Tahoe, Chevrolet Silverado 1500 and larger'),
-  ).toBeVisible();
+  await expect(d.getByText('e.g., Chevrolet Tahoe, Ford F-150, Ram ProMaster')).toBeVisible();
   await axeClean(page, 'size class cards');
   await d.getByRole('radio', { name: /Small SUV/ }).check({ force: true });
   await fillOptions(page);
@@ -256,7 +218,9 @@ test('a large vehicle replaces the form with a personalized quote request and st
   const d = dialog(page);
   await enterRoute(page, WEST, EAST);
   await chooseVehicle(page, '2021', 'Chevrolet', 'Tahoe');
-  await expect(d.getByTestId('size-chip')).toHaveText('Vehicle size: Large SUV or pickup');
+  await expect(d.getByTestId('size-chip')).toHaveText(
+    'Vehicle size: Large SUV / Full-size pickup / Van',
+  );
   await expect(d.getByRole('heading', { name: 'Request a personalized quote' })).toBeVisible();
   await expect(d.getByText('Top Deck Load')).toHaveCount(0);
   await expect(d.getByRole('checkbox', { name: /Terms/ })).toHaveCount(0);

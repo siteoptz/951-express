@@ -8,8 +8,8 @@ import {
   asNewVisitor,
   dialog,
   expectAccessible,
-  mockVpic,
   openModal,
+  typeVehicle,
 } from './helpers';
 
 // Vehicles that cannot be booked online go to the personalized quote form. Each trigger switches the form,
@@ -34,7 +34,6 @@ test.afterAll(async () => {
 });
 test.beforeEach(async ({ page, baseURL }) => {
   await asNewVisitor(page, baseURL!);
-  await mockVpic(page);
   await openModal(page);
 });
 
@@ -43,15 +42,7 @@ async function startRoute(page: Page, make = 'Honda', model = 'Civic') {
   await d.getByLabel('Pickup ZIP').fill('90001');
   await d.getByLabel('Delivery ZIP').fill('21201');
   await d.getByText('✓ Great news, we service this route.').waitFor();
-  await d.getByLabel('Year').selectOption('2020');
-  for (const [label, text] of [
-    ['Make', make],
-    ['Model', model],
-  ] as const) {
-    const box = d.getByRole('combobox', { name: label });
-    await box.fill(text);
-    await box.press('Tab');
-  }
+  await typeVehicle(d, '2020', make, model);
 }
 
 const quoteHeading = (page: Page) =>
@@ -124,7 +115,7 @@ for (const [label, message, apply] of [
     await expect(d.getByTestId('quote-reasons')).toContainText(message);
     for (const el of bookingOnly(page)) await expect(el).toHaveCount(0);
     await expect(d.getByLabel('Pickup ZIP')).toHaveValue('90001'); // ZIPs and vehicle are kept
-    await expect(d.getByRole('combobox', { name: 'Model' })).toHaveValue('Civic');
+    await expect(d.getByLabel(/^Type the model/)).toHaveValue('Civic');
 
     // Back: the normal flow returns with the earlier answers kept.
     await answerAll(page);
@@ -139,15 +130,7 @@ test('an exotic make goes straight to the quote form, with no size question', as
   await d.getByLabel('Pickup ZIP').fill('90001');
   await d.getByLabel('Delivery ZIP').fill('21201');
   await d.getByText('✓ Great news, we service this route.').waitFor();
-  await d.getByLabel('Year').selectOption('2021');
-  for (const [label, text] of [
-    ['Make', 'Ferrari'],
-    ['Model', 'Roma'],
-  ] as const) {
-    const box = d.getByRole('combobox', { name: label });
-    await box.fill(text);
-    await box.press('Tab');
-  }
+  await typeVehicle(d, '2021', 'Ferrari', 'Roma');
   await expect(quoteHeading(page)).toBeVisible();
   await expect(d.getByTestId('quote-reasons')).toContainText(MESSAGES.exotic);
   await expect(d.getByText("We couldn't match your vehicle")).toHaveCount(0);

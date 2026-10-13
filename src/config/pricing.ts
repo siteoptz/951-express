@@ -39,8 +39,8 @@ export const sizeClasses: readonly SizeClassConfig[] = [
 
 // Large SUVs, pickups and vans have no online price: the customer requests a personalized quote.
 export const largeVehicle = {
-  label: 'Large SUV or pickup',
-  example: 'Chevrolet Tahoe, Chevrolet Silverado 1500 and larger',
+  label: 'Large SUV / Full-size pickup / Van',
+  example: 'Chevrolet Tahoe, Ford F-150, Ram ProMaster',
 } as const;
 
 export type DepositConfig =

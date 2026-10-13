@@ -74,7 +74,8 @@ export async function createCheckout(
       deliveryZip: input.deliveryZip,
       pickupRegion: r.pickupRegion,
       deliveryRegion: r.deliveryRegion,
-      vehicle: input.vehicle,
+      vehicle: r.vehicle,
+      vehicleTyped: r.vehicleTyped,
       // Only fully eligible vehicles reach here (running, factory stock), so these are fixed.
       operable: true,
       modified: false,
@@ -86,6 +87,7 @@ export async function createCheckout(
       depositCents: r.quote.depositCents,
       balanceCents: r.quote.balanceCents,
       needsReview: r.needsReview,
+      reviewReason: r.reviewReason,
       termsVersion: bookingConfig.termsVersion,
       termsAcceptedAt: now,
     },
@@ -127,7 +129,7 @@ export async function createCheckout(
       buildSessionParams({
         bookingId: hold.bookingId,
         depositCents: r.quote.depositCents,
-        lineName: depositLineName(input.vehicle, r.route.name, r.week.label),
+        lineName: depositLineName(r.vehicle, r.route.name, r.week.label),
         expiresAtSec: expiry.expiresAtSec,
         integrationIdentifier: bookingConfig.stripeIntegrationIdentifier,
       }),

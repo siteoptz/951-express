@@ -12,7 +12,6 @@ import {
   loadForm,
   saveForm,
   step1Payload,
-  yearOptions,
   type FormState,
 } from '@/lib/booking-form';
 
@@ -44,8 +43,17 @@ const set = (s: FormState, field: keyof FormState, value: string | boolean | nul
 describe('formReducer', () => {
   it('clears dependent answers when a parent changes', () => {
     const f = { ...filled, selectedClass: 'small-suv' };
-    expect(set(f, 'year', '2019')).toMatchObject({ make: '', model: '', selectedClass: '' });
-    expect(set(f, 'make', 'FORD')).toMatchObject({ make: 'FORD', model: '', selectedClass: '' });
+    // The vehicle fields are independent typed text; only a size picked for the old text is dropped.
+    expect(set(f, 'year', '2019')).toMatchObject({
+      make: 'HONDA',
+      model: 'Civic',
+      selectedClass: '',
+    });
+    expect(set(f, 'make', 'FORD')).toMatchObject({
+      make: 'FORD',
+      model: 'Civic',
+      selectedClass: '',
+    });
     expect(set(f, 'model', 'Fiesta')).toMatchObject({ model: 'Fiesta', selectedClass: '' });
     expect(set({ ...f, leadWeek: '2026-10-19' }, 'pickupZip', '85001')).toMatchObject({
       deliveryZip: '',
@@ -68,11 +76,6 @@ describe('helpers', () => {
     expect(digitsOnly('90a0-01 7')).toBe('90001');
     expect(isZip('90001')).toBe(true);
     expect(isZip('9000')).toBe(false);
-  });
-  it('lists model years newest first', () => {
-    const y = yearOptions(new Date('2026-10-08'));
-    expect(y[0]).toBe(2027);
-    expect(y.at(-1)).toBe(1980);
   });
 });
 
@@ -264,5 +267,60 @@ describe('personalized quote routing', () => {
     expect(Object.keys(step1Payload(filled) ?? {}).some((k) => /cents|price|total/i.test(k))).toBe(
       false,
     );
+  });
+});
+
+describe('typed vehicle fields', () => {
+  const typed = (over: Partial<FormState>): FormState => ({ ...filled, ...over });
+
+  it('classifies what was typed: "chevy tahoe" is a quote, "f150" is a quote, "rav 4" is a small SUV', () => {
+    expect(decidedClass(typed({ make: 'chevy', model: 'tahoe' })).decided).toBe('large');
+    expect(formQuoteReasons(typed({ make: 'chevy', model: 'tahoe' }))).toEqual(['large_vehicle']);
+    expect(decidedClass(typed({ make: 'ford', model: 'f150' })).decided).toBe('large');
+    expect(formQuoteReasons(typed({ make: 'Ford', model: 'F150' }))).toEqual(['large_vehicle']);
+    expect(decidedClass(typed({ make: 'toyota', model: 'rav 4' })).decided).toBe('small-suv');
+    expect(decidedClass(typed({ make: 'Honda', model: 'crv' })).decided).toBe('small-suv');
+  });
+  it('a misspelled exotic with "worth over $100,000" = Yes goes to the quote form', () => {
+    const f = typed({ make: 'ferarri', model: 'roma', highValue: true });
+    expect(decidedClass(f).classified).toBeNull(); // not recognized
+    expect(formQuoteReasons(f)).toEqual(['high_value']);
+    expect(step1Payload(f)).toBeNull();
+  });
+  it('a correctly spelled exotic goes to the quote form on its own', () => {
+    expect(formQuoteReasons(typed({ make: 'Ferrari', model: 'Roma', highValue: false }))).toEqual([
+      'exotic',
+    ]);
+  });
+  it('an unrecognized vehicle has no class until the customer picks one', () => {
+    const f = typed({ make: 'Zzzmake', model: 'Thing' });
+    expect(decidedClass(f)).toEqual({ classified: null, decided: null });
+    expect(step1Payload(f)).toBeNull();
+    expect(decidedClass({ ...f, selectedClass: 'small-suv' })).toEqual({
+      classified: null,
+      decided: 'small-suv',
+    });
+    expect(step1Payload({ ...f, selectedClass: 'small-suv' })).toMatchObject({
+      vehicle: { year: 2020, make: 'Zzzmake', model: 'Thing' },
+      selectedClass: 'small-suv',
+    });
+  });
+  it('sends the text exactly as typed, and only a valid four-digit year', () => {
+    const p = step1Payload(typed({ make: '  chevy ', model: 'Tahoe  ', operable: true }));
+    expect(p).toBeNull(); // a large vehicle is never booked online
+    const ok = step1Payload(typed({ make: ' Honda ', model: 'civic  lx' }))!;
+    expect(ok.vehicle).toEqual({ year: 2020, make: ' Honda ', model: 'civic  lx' });
+  });
+  it.each(['', '20', '202', '1949', '2028', '20a0', '20200'])(
+    'year "%s" is not accepted',
+    (year) => {
+      expect(decidedClass(typed({ year }))).toEqual({ classified: null, decided: null });
+      expect(step1Payload(typed({ year }))).toBeNull();
+    },
+  );
+  it('accepts 1950 and next year', () => {
+    const next = String(new Date().getFullYear() + 1);
+    expect(step1Payload(typed({ year: '1950' }))).not.toBeNull();
+    expect(step1Payload(typed({ year: next }))).not.toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import { resolveRouteForZips } from '@/lib/routing.server';
 import { quoteRequestSchema } from '@/lib/schemas';
 import { sendLeadEmail } from '@/server/booking-emails';
 import { quoteReasons } from '@/lib/eligibility';
+import { normalizeVehicle } from '@/lib/vehicle-normalize';
 import { findBookableWeek } from '@/lib/weeks';
 
 const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
@@ -33,9 +34,12 @@ export async function POST(request: Request) {
       { status: 422 },
     );
 
+  // The vehicle arrives exactly as typed. We store both that and the normalized version.
+  const vehicle = normalizeVehicle(d.vehicle);
+
   // The server decides the reasons; a lead for a vehicle with an online price is refused.
   const reasons = quoteReasons({
-    vehicle: d.vehicle,
+    vehicle,
     selectedClass: d.selectedClass,
     operable: d.operable,
     modified: d.modified,
@@ -71,7 +75,8 @@ export async function POST(request: Request) {
       routeId: route.id,
       pickupZip: d.pickupZip,
       deliveryZip: d.deliveryZip,
-      vehicle: d.vehicle,
+      vehicle,
+      vehicleTyped: { year: String(d.vehicle.year), make: d.vehicle.make, model: d.vehicle.model },
       operable: d.operable,
       modified: d.modified,
       highValue: d.highValue,

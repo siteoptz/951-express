@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     quoteRequired: false,
     route: { id: r.route.id, name: r.route.name },
     week: r.week,
-    vehicle: parsed.data.vehicle,
+    vehicle: r.vehicle,
     sizeClass: { id: r.sizeClass, label: r.sizeClassLabel, source: r.sizeClassSource },
     loadType: r.loadType,
     personalItems: parsed.data.personalItems,

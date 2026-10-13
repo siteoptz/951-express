@@ -54,6 +54,8 @@ export const weekOverrides = pgTable(
 );
 
 export type Vehicle = { year: number; make: string; model: string };
+/** The vehicle exactly as the customer typed it (the year as text), kept next to the normalized `vehicle`. */
+export type VehicleTyped = { year: string; make: string; model: string };
 export type Address = {
   street: string;
   street2?: string;
@@ -85,6 +87,8 @@ export const bookings = pgTable(
     pickupRegion: regionEnum('pickup_region').notNull(),
     deliveryRegion: regionEnum('delivery_region').notNull(),
     vehicle: jsonb('vehicle').$type<Vehicle>().notNull(),
+    /** What the customer typed, exactly (null on bookings made before typed entry). */
+    vehicleTyped: jsonb('vehicle_typed').$type<VehicleTyped>(),
     operable: boolean('operable').notNull(),
     modified: boolean('modified').notNull(),
     topDeck: boolean('top_deck').notNull().default(false),
@@ -95,6 +99,8 @@ export const bookings = pgTable(
     depositCents: integer('deposit_cents').notNull(),
     balanceCents: integer('balance_cents').notNull(),
     needsReview: boolean('needs_review').notNull().default(false),
+    /** Why it needs review, e.g. "vehicle not recognized: 'zzz thing'" (null when there is no specific reason). */
+    reviewReason: text('review_reason'),
     termsVersion: text('terms_version').notNull(),
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }).notNull(),
     stripeSessionId: text('stripe_session_id').unique(),
@@ -130,6 +136,7 @@ export const leads = pgTable('leads', {
   pickupZip: text('pickup_zip').notNull(),
   deliveryZip: text('delivery_zip').notNull(),
   vehicle: jsonb('vehicle').$type<Vehicle>().notNull(),
+  vehicleTyped: jsonb('vehicle_typed').$type<VehicleTyped>(),
   operable: boolean('operable').notNull(),
   modified: boolean('modified').notNull(),
   topDeck: boolean('top_deck').notNull().default(false),

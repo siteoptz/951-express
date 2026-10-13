@@ -2,13 +2,17 @@
 import { booking as bookingConfig } from '@/config/booking';
 import { topDeck } from '@/config/pricing';
 import { emailCopy } from '@/content/emails';
-import type { Address, Customer, Vehicle } from '@/db/schema';
+import type { Address, Customer, Vehicle, VehicleTyped } from '@/db/schema';
 import { bookingRef, formatAddress, formatPacific } from '@/lib/format';
 import { weekLabel } from '@/lib/weeks';
 
 export type BookingForEmail = {
   id: string;
   vehicle: Vehicle;
+  /** What the customer typed, exactly (null for bookings made before typed entry). */
+  vehicleTyped?: VehicleTyped | null;
+  /** Why the booking needs review, e.g. "vehicle not recognized: 'zzz thing'". */
+  reviewReason?: string | null;
   customer: Customer;
   pickupAddress: Address;
   deliveryAddress: Address;
@@ -43,12 +47,17 @@ export type BookingEmailData = ReturnType<typeof buildBookingEmailData>;
 
 export const vehicleName = (v: Vehicle): string => `${v.year} ${v.make} ${v.model}`;
 
+/** "2021 chevy tahoe": the vehicle exactly as typed, or null when we have no typed text. */
+export const typedVehicleText = (t: VehicleTyped | null | undefined): string | null =>
+  t ? `${t.year} ${t.make} ${t.model}` : null;
+
 /** Why a booking is flagged, in words the team can act on. */
 export function reviewReasons(
-  b: Pick<BookingForEmail, 'needsReview' | 'sizeClassSource'>,
+  b: Pick<BookingForEmail, 'needsReview' | 'sizeClassSource'> & { reviewReason?: string | null },
 ): string[] {
   if (!b.needsReview) return [];
   const reasons: string[] = [];
+  if (b.reviewReason) reasons.push(b.reviewReason);
   if (b.sizeClassSource === 'customer')
     reasons.push(
       'Vehicle size was chosen by the customer because the vehicle is not in our size table. Confirm the class and price.',
@@ -66,6 +75,7 @@ export function buildBookingEmailData(b: BookingForEmail, ctx: EmailContext) {
   return {
     ref: bookingRef(b.id),
     vehicle: vehicleName(b.vehicle),
+    vehicleTyped: typedVehicleText(b.vehicleTyped),
     routeName: ctx.routeName,
     week,
     weekStart: b.weekStart,
@@ -106,6 +116,7 @@ export function buildBookingEmailData(b: BookingForEmail, ctx: EmailContext) {
       ? `https://dashboard.stripe.com/${ctx.stripeTestMode ? 'test/' : ''}payments/${b.stripePaymentIntent}`
       : null,
     needsReview: b.needsReview,
+    reviewReason: b.reviewReason ?? null,
     reviewReasons: reviewReasons(b),
     personalItemsNotice: bookingConfig.personalItemsNotice,
     topDeckBenefits: topDeck.benefits,
@@ -128,6 +139,7 @@ export type LeadForEmail = {
   phone: string;
   email: string;
   vehicle: Vehicle;
+  vehicleTyped?: VehicleTyped | null;
   pickupZip: string;
   deliveryZip: string;
   operable: boolean;
@@ -145,6 +157,7 @@ export function buildLeadEmailData(l: LeadForEmail, routeName: string) {
     ref: bookingRef(l.id),
     receivedAt: formatPacific(l.createdAt),
     vehicle: vehicleName(l.vehicle),
+    vehicleTyped: typedVehicleText(l.vehicleTyped),
     routeName,
     name: l.name,
     phone: l.phone,

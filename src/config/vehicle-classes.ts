@@ -10,11 +10,50 @@ export type VehicleClass = SizeClassId | 'large';
 /** make -> model prefixes. An empty string matches every model of that make. */
 export type ModelsByMake = Record<string, string[]>;
 
+// Common short names and spellings for a make, keyed by the lowercase letters and digits of what was typed
+// ("Mercedes-Benz" -> "mercedesbenz"). Values are the canonical keys the model lists use.
 export const makeAliases: Record<string, string> = {
   chevy: 'chevrolet',
+  chev: 'chevrolet',
   vw: 'volkswagen',
+  volkswagon: 'volkswagen',
   mercedes: 'mercedesbenz',
+  benz: 'mercedesbenz',
+  merc: 'mercedesbenz',
+  mb: 'mercedesbenz',
   ramtrucks: 'ram',
+  dodgeram: 'ram',
+  toyata: 'toyota',
+  lambo: 'lamborghini',
+  rollsroyce: 'rollsroyce',
+  rr: 'rollsroyce',
+  landrover: 'landrover',
+  rangerover: 'landrover',
+  alfa: 'alfaromeo',
+  caddy: 'cadillac',
+  olds: 'oldsmobile',
+  infinity: 'infiniti',
+  mazada: 'mazda',
+  hundai: 'hyundai',
+  suburu: 'subaru',
+};
+
+// How a canonical make is written once we have recognized it. Anything not listed is Title Cased from what was typed.
+export const makeDisplayNames: Record<string, string> = {
+  bmw: 'BMW',
+  gmc: 'GMC',
+  mg: 'MG',
+  amc: 'AMC',
+  vw: 'Volkswagen',
+  mercedesbenz: 'Mercedes-Benz',
+  rollsroyce: 'Rolls-Royce',
+  landrover: 'Land Rover',
+  alfaromeo: 'Alfa Romeo',
+  astonmartin: 'Aston Martin',
+  mclaren: 'McLaren',
+  ram: 'Ram',
+  mini: 'MINI',
+  fiat: 'Fiat',
 };
 
 // Year-dependent models. Each rule applies when the year is <= maxYear or >= minYear; other years are unknown.

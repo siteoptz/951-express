@@ -39,6 +39,7 @@ export function teamText(d: BookingEmailData): string {
       line('Route and direction', d.routeName),
       line('Pickup week', `${d.week} (${d.spotText})`),
       line('Vehicle', d.vehicle),
+      ...(d.vehicleTyped ? [line('As typed by the customer', d.vehicleTyped)] : []),
       line('Size class', `${d.sizeClass} (${d.sizeSource})`),
       line('Operable', yn(d.operable)),
       line('Modified', yn(d.modified)),
@@ -112,6 +113,7 @@ export function leadText(d: ReturnType<typeof buildLeadEmailData>): string {
     section('Contact', [line('Name', d.name), line('Phone', d.phone), line('Email', d.email)]),
     section('Shipment', [
       line('Vehicle', d.vehicle),
+      ...(d.vehicleTyped ? [line('As typed by the customer', d.vehicleTyped)] : []),
       line('Route', d.routeName),
       line('Pickup ZIP', d.pickupZip),
       line('Delivery ZIP', d.deliveryZip),

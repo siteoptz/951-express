@@ -36,6 +36,7 @@ export function NewLeadEmail({ d }: { d: ReturnType<typeof buildLeadEmailData> }
 
       <Block title="Shipment">
         <Field label="Vehicle">{d.vehicle}</Field>
+        {d.vehicleTyped && <Field label="As typed by the customer">{d.vehicleTyped}</Field>}
         <Field label="Route">{d.routeName}</Field>
         <Field label="Pickup ZIP">{d.pickupZip}</Field>
         <Field label="Delivery ZIP">{d.deliveryZip}</Field>

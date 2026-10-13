@@ -11,7 +11,7 @@ to start it.
 | 1 | Design system + static landing page | Wk 1–2 |
 | 2 | Interactive service-area map | Wk 2 |
 | 3A | Booking rules: ZIP regions, routing, pricing, vehicle classes (pure + tested) | Wk 2 |
-| 3B | Remaining business logic: vPIC helpers, weeks, shared schemas | Wk 2 |
+| 3B | Remaining business logic: weeks, shared schemas (the vPIC helpers were later removed) | Wk 2 |
 | 4 | Database + race-safe capacity holds | Wk 2–3 |
 | 5 | Booking modal, Step 1 (Qualify & Quote) | Wk 3 |
 | 6 | Step 2: cart + Stripe deposit + webhooks | Wk 3 |
@@ -149,12 +149,10 @@ performance and accessibility; there are no layout shifts from images.
 
 **Status:** done.
 
-1. **`vehicles.ts`:** NHTSA vPIC helpers, endpoints verified against the live API. SUVs and minivans are filed
-   under vehicle type `mpv`, not `car` or `truck`, so makes and models merge all three types and de-duplicate
-   (settings in `src/config/vehicles.ts`).
-   - makes: `GetMakesForVehicleType/{car|truck|mpv}`
-   - models: `GetModelsForMakeYear/make/{make}/modelyear/{year}/vehicletype/{car|truck|mpv}`
-   Cached with `fetch(..., { next: { revalidate: 86400 } })`. An unknown make or year returns an empty list.
+1. **Vehicle lookup (removed 2026-10-13):** this phase built NHTSA vPIC helpers (`src/lib/vehicles.ts`) and the
+   `/api/vehicles/makes` and `/api/vehicles/models` routes for the old make and model dropdowns. Cal chose plain typed
+   fields instead, so nothing called them and they were deleted, along with the live smoke test. Vehicle year limits
+   (1950 to next year) stay in `src/config/vehicles.ts`; typed text is normalized by `src/lib/vehicle-normalize.ts`.
 2. **`weeks.ts`:** `bookableWeeks(now)` returns the next `weeksShown` Monday-start weeks in
    America/Los_Angeles, skipping any week that starts less than `leadDays` calendar days from now (exactly
    `leadDays` away is allowed). Labels look like "Oct 19 – 25", "Oct 26 – Nov 1", and "Dec 28 – Jan 3".
@@ -233,8 +231,8 @@ The Step 2 summary is a placeholder: its payment button stays disabled until Pha
       accepts only the opposite region. Same-region and not-served failures use the copy in
       `src/config/routes.ts`, and a not-served failure adds an email link (no phone number anywhere). Every later field stays
       disabled until the route resolves.
-   2. Year, Make, and Model as dependent dropdowns (`GET /api/vehicles/makes?year=`,
-      `/api/vehicles/models?year=&make=`), with type-to-search on the long lists. Once all three are set,
+   2. (Replaced 2026-10-13: Year, Make, and Model are now three plain typed fields with no dropdowns; see Batch 4 in
+      docs/CAL_CHANGES_2026-10-13.md.) Originally: dependent dropdowns (the removed `/api/vehicles/*` routes), with type-to-search on the long lists. Once all three are set,
       show the size class chip. If the vehicle isn't classified, show class cards with the example vehicles, and
       the booking gets `needsReview: true`. The server re-classifies and never accepts a cheaper class.
       A large vehicle swaps the price button for a "Request a personalized quote" form (name, phone, email,
@@ -389,6 +387,9 @@ dashboard; submitting details twice is rejected; the fallback link works.
    - **Weeks grid:** show top-deck usage per route and week (SUV slots and the car slot, taken and left) and allow a
      per-week override. The columns `week_overrides.top_deck_suv_override` and `top_deck_car_override` already exist
      and the capacity code honors them.
+   - **Vehicles:** the booking detail, the leads list and the dispatch sheet show both what the customer typed
+     (`vehicle_typed`) and the normalized vehicle, and the review reason (`review_reason`, for example
+     "vehicle not recognized: 'zzz thing'").
    - **Leads:** a list of quote requests with their `quote_reasons` (large vehicle, inoperable, modified,
      exotic, high value) and `modification_details`, filterable by reason, with the lead status.
    - **Config values are defaults only; the database is the source of truth once seeded.** The seed

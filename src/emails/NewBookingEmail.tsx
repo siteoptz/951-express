@@ -62,6 +62,7 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
           {d.week} ({d.spotText})
         </Field>
         <Field label="Vehicle">{d.vehicle}</Field>
+        {d.vehicleTyped && <Field label="As typed by the customer">{d.vehicleTyped}</Field>}
         <Field label="Size class">
           {d.sizeClass}{' '}
           <span style={{ color: colors.muted, fontWeight: 400 }}>({d.sizeSource})</span>

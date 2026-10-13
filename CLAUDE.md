@@ -31,7 +31,10 @@ password-protected /admin.
 - Stripe API version is pinned to `2026-09-30.endive` in `src/config/stripe.ts` (the version we tested). Change it only on purpose, and pin Dashboard webhook endpoints to the same version.
 - Stripe Embedded Checkout (`ui_mode: 'embedded_page'`, which is what the newest API calls `embedded`; `redirect_on_completion: 'never'`) + webhooks.
 - Resend + React Email for transactional email.
-- NHTSA vPIC API for vehicle makes and models (free, no key).
+- Vehicle entry is three plain typed fields (year, make, model): no dropdowns and no autocomplete list. The server
+  normalizes the text (`src/lib/vehicle-normalize.ts`: make aliases in `src/config/vehicle-classes.ts`, models
+  matched ignoring case, spaces and hyphens) and stores both the typed text and the normalized vehicle. There is no
+  vehicle lookup API: the NHTSA vPIC helpers and the `/api/vehicles/*` routes were removed once nothing called them.
 - Map: `d3-geo` + `us-atlas` + `topojson-client`, rendered as an SVG React component (no map-library dependency).
 - Validation: `zod` on both client and server. Tests: Vitest (unit, 95% coverage gate on `src/lib`) + Playwright (e2e).
 - ZIP data: `node scripts/build-zip-data.mjs` regenerates `src/data/zips/*` from `data/raw/`; the `zipcodes` package validates it.
@@ -71,7 +74,7 @@ password-protected /admin.
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 
 ## Commands
-- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright with vPIC mocked; `npm run e2e:live` is the real-NHTSA smoke test; uses the DATABASE_URL in .env.local: a dev branch only)
+- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright; uses the DATABASE_URL in .env.local: a dev branch only)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 

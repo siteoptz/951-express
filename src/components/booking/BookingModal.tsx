@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { company, contactMailto } from '@/config/company';
 import { booking } from '@/config/booking';
@@ -21,14 +21,12 @@ import {
   loadForm,
   saveForm,
   step1Payload,
-  yearOptions,
   type FormState,
 } from '@/lib/booking-form';
 import { track } from '@/lib/analytics';
 import type { BookingView } from '@/lib/booking-view';
 import { routeErrorMessage, shippingLabel } from '@/lib/routing';
 import { topDeckSlotFor } from '@/lib/top-deck';
-import { Combobox, type Option } from './Combobox';
 import { RadioPills } from './RadioPills';
 import { BookedView } from './BookedView';
 import { DetailsForm, type DetailsContext } from './DetailsForm';
@@ -37,6 +35,8 @@ import { SummaryStep, type NextWeek, type QuoteResponse } from './SummaryStep';
 import { useZipCheck, type ZipStatus } from './useZipCheck';
 import { WeekPicker, type WeekRow } from './WeekPicker';
 import { zipInputAttrs } from '@/lib/zip-input';
+import { maxVehicleYear, vehicleYears } from '@/config/vehicles';
+import { parseYear } from '@/lib/vehicle-normalize';
 
 type Step = 'form' | 'summary' | 'payment' | 'details' | 'booked' | 'lead_done';
 type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; data: T };
@@ -47,6 +47,19 @@ const callButton = (
     {t.route.email.replace('{email}', company.contactEmail)}
   </ButtonLink>
 );
+
+/** The value, but only after it has stopped changing for `ms` (so typing does not re-run the vehicle checks). */
+function useSettled<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value);
+  const key = JSON.stringify(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(JSON.parse(key) as T), ms);
+    return () => clearTimeout(timer);
+  }, [key, ms]);
+  return settled;
+}
+
+const digitsOnly4 = (v: string) => v.replace(/\D/g, '').slice(0, 4);
 
 function useJson<T>(url: string | null, pick: (body: never) => T, reloadKey = 0): Load<T> {
   const [state, setState] = useState<{ url: string; key: number; value: Load<T> } | null>(null);
@@ -71,11 +84,7 @@ function useJson<T>(url: string | null, pick: (body: never) => T, reloadKey = 0)
   return state?.url === url && state.key === reloadKey ? state.value : { status: 'loading' };
 }
 
-// Stable pickers (a new function each render would refetch).
-// Stored and sent as the readable name ("Chevrolet"); vPIC matches makes case-insensitively.
-const pickMakes = (b: { makes: Option[] }) =>
-  b.makes.map((m) => ({ value: m.label, label: m.label }));
-const pickModels = (b: { models: string[] }) => b.models.map((m) => ({ value: m, label: m }));
+// Stable picker (a new function each render would refetch).
 const pickWeeks = (b: { weeks: WeekRow[] }) => b.weeks;
 
 // The saved answers, with the pickup ZIP from the map's ZIP box applied on top when it differs.
@@ -201,31 +210,38 @@ export default function BookingModal({
     rejectedZip.current = rejected;
   }, [pickupMessage?.rejected, deliveryMessage?.rejected, form.pickupZip, form.deliveryZip]);
 
-  // Vehicle lists.
-  const years = useMemo(() => yearOptions(), []);
-  const makes = useJson<Option[]>(
-    route && form.year ? `/api/vehicles/makes?year=${form.year}` : null,
-    pickMakes,
-  );
-  const models = useJson<Option[]>(
-    route && form.year && form.make.trim()
-      ? `/api/vehicles/models?year=${form.year}&make=${encodeURIComponent(form.make.trim())}`
-      : null,
-    pickModels,
-  );
-  const { classified, decided } = decidedClass(form);
-  const vehicleComplete = !!form.year && !!form.make.trim() && !!form.model.trim();
+  // The vehicle is three plain typed fields. We wait for a short pause in typing before classifying, so the size
+  // chip, the size cards, and the questions below do not flicker with every key.
+  const typed = { year: form.year, make: form.make, model: form.model };
+  const settled = useSettled(typed, 450);
+  const vehicleSettled =
+    settled.year === typed.year && settled.make === typed.make && settled.model === typed.model;
+  const vForm: FormState = { ...form, ...settled };
+  const { classified, decided } = decidedClass(vForm);
+  const vehicleComplete =
+    parseYear(vForm.year) !== null && !!vForm.make.trim() && !!vForm.model.trim();
+  const yearText = form.year.trim();
+  const yearError = yearText.length === 4 && parseYear(yearText) === null;
+  // The next empty (or invalid) field gets the orange ring.
+  const nextField: 'year' | 'make' | 'model' | null =
+    parseYear(yearText) === null
+      ? 'year'
+      : !form.make.trim()
+        ? 'make'
+        : !form.model.trim()
+          ? 'model'
+          : null;
   // Anything that cannot be booked online switches the whole form to the personalized quote request.
   const answersKey = JSON.stringify([
-    form.year,
-    form.make,
-    form.model,
+    vForm.year,
+    vForm.make,
+    vForm.model,
     form.selectedClass,
     form.operable,
     form.modified,
     form.highValue,
   ]);
-  const formReasons = formQuoteReasons(form);
+  const formReasons = formQuoteReasons(vForm);
   const reasons =
     formReasons.length > 0
       ? formReasons
@@ -264,8 +280,9 @@ export default function BookingModal({
   }, [topDeckSoldOut, form.topDeck, topDeckKey, set]);
   const showTopDeckSwitched = form.topDeckSwitched === topDeckKey && !form.topDeck;
 
-  const payload = step1Payload(form);
-  const lead = leadPayload(form);
+  // Nothing is sent while the customer is still typing the vehicle.
+  const payload = vehicleSettled ? step1Payload(form) : null;
+  const lead = vehicleSettled ? leadPayload(form) : null;
 
   async function submitQuote(override: Partial<FormState> = {}) {
     const payload = step1Payload({ ...form, ...override });
@@ -600,48 +617,54 @@ export default function BookingModal({
                 <h3 id="vehicle-h" className="font-display text-xl font-extrabold uppercase">
                   {t.vehicle.heading}
                 </h3>
-                <div>
-                  <label htmlFor="year" className="block text-sm font-semibold text-muted">
-                    {t.vehicle.year}
-                  </label>
-                  <select
-                    id="year"
-                    value={form.year}
-                    onChange={(e) => set('year', e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">{t.vehicle.yearPlaceholder}</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {form.year && (
-                  <Combobox
-                    label={t.vehicle.make}
-                    value={form.make}
-                    onChange={(v) => set('make', v)}
-                    options={makes.status === 'ready' ? makes.data : []}
-                    placeholder={
-                      makes.status === 'loading' ? t.vehicle.loading : t.vehicle.makePlaceholder
-                    }
-                    hint={makes.status === 'error' ? t.vehicle.lookupError : undefined}
-                  />
-                )}
-                {form.year && form.make.trim() && (
-                  <Combobox
-                    label={t.vehicle.model}
-                    value={form.model}
-                    onChange={(v) => set('model', v)}
-                    options={models.status === 'ready' ? models.data : []}
-                    placeholder={
-                      models.status === 'loading' ? t.vehicle.loading : t.vehicle.modelPlaceholder
-                    }
-                    hint={models.status === 'error' ? t.vehicle.lookupError : undefined}
-                  />
-                )}
+                {(
+                  [
+                    ['year', t.vehicle.year, t.vehicle.yearPlaceholder, 'numeric', 4],
+                    ['make', t.vehicle.make, t.vehicle.makePlaceholder, 'text', 60],
+                    ['model', t.vehicle.model, t.vehicle.modelPlaceholder, 'text', 80],
+                  ] as const
+                ).map(([field, label, placeholder, mode, max]) => (
+                  <div key={field}>
+                    <label
+                      htmlFor={`vehicle-${field}`}
+                      className="block text-sm font-semibold text-muted"
+                    >
+                      {label}
+                    </label>
+                    <input
+                      id={`vehicle-${field}`}
+                      type="text"
+                      inputMode={mode}
+                      maxLength={max}
+                      autoComplete="off"
+                      autoCapitalize={field === 'year' ? 'off' : 'words'}
+                      spellCheck={false}
+                      placeholder={placeholder}
+                      value={form[field]}
+                      onChange={(e) =>
+                        set(field, field === 'year' ? digitsOnly4(e.target.value) : e.target.value)
+                      }
+                      aria-invalid={field === 'year' && yearError ? true : undefined}
+                      aria-describedby={
+                        field === 'year' && yearError ? 'vehicle-year-error' : undefined
+                      }
+                      className={`${inputClass} min-h-12 ${
+                        nextField === field ? '!border-accent-text ring-4 ring-accent/40' : ''
+                      }`}
+                    />
+                    {field === 'year' && yearError && (
+                      <p
+                        id="vehicle-year-error"
+                        role="alert"
+                        className="mt-2 font-semibold text-danger"
+                      >
+                        {t.vehicle.yearError
+                          .replace('{min}', String(vehicleYears.min))
+                          .replace('{max}', String(maxVehicleYear()))}
+                      </p>
+                    )}
+                  </div>
+                ))}
 
                 {classified && classified !== 'large' && (
                   <p

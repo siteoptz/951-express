@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { and, count, eq, gt, inArray, or, sql } from 'drizzle-orm';
 import { booking as bookingConfig } from '@/config/booking';
 import type { Region } from '@/config/routes';
-import { bookings, routes, weekOverrides, type Vehicle } from '@/db/schema';
+import { bookings, routes, weekOverrides, type Vehicle, type VehicleTyped } from '@/db/schema';
 import type { Db } from '@/db';
 import {
   defaultTopDeckCapacity,
@@ -27,6 +27,7 @@ export type HoldInput = {
   pickupRegion: Region;
   deliveryRegion: Region;
   vehicle: Vehicle;
+  vehicleTyped?: VehicleTyped | null;
   operable: boolean;
   modified: boolean;
   topDeck: boolean;
@@ -37,6 +38,7 @@ export type HoldInput = {
   depositCents: number;
   balanceCents: number;
   needsReview: boolean;
+  reviewReason?: string | null;
   termsVersion: string;
   termsAcceptedAt: Date;
 };
@@ -196,6 +198,7 @@ export async function createHold(
         pickupRegion: input.pickupRegion,
         deliveryRegion: input.deliveryRegion,
         vehicle: input.vehicle,
+        vehicleTyped: input.vehicleTyped ?? null,
         operable: input.operable,
         modified: input.modified,
         topDeck: input.topDeck,
@@ -206,6 +209,7 @@ export async function createHold(
         depositCents: input.depositCents,
         balanceCents: input.balanceCents,
         needsReview: input.needsReview,
+        reviewReason: input.reviewReason ?? null,
         termsVersion: input.termsVersion,
         termsAcceptedAt: input.termsAcceptedAt,
         holdExpiresAt,

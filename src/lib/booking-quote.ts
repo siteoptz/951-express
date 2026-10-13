@@ -8,11 +8,25 @@ import { calculateQuote, type Quote } from '@/lib/pricing';
 import { resolveRoute, type RegionLookup, type RouteFailure } from '@/lib/routing';
 import type { Step1 } from '@/lib/schemas';
 import { resolveSizeClass } from '@/lib/size-class';
+import {
+  normalizeVehicle,
+  notRecognizedReason,
+  type CleanVehicle,
+  type TypedVehicle,
+} from '@/lib/vehicle-normalize';
 import { findBookableWeek, type Week } from '@/lib/weeks';
 
 export type QuoteLine = { id: string; label: string; cents: number };
 
-type Base = { route: RouteConfig; pickupRegion: Region; deliveryRegion: Region };
+type Base = {
+  route: RouteConfig;
+  pickupRegion: Region;
+  deliveryRegion: Region;
+  /** The vehicle after normalization ("chevy" -> Chevrolet). Used for the booking record, emails and Stripe. */
+  vehicle: CleanVehicle;
+  /** The vehicle exactly as the customer typed it, kept next to the normalized one. */
+  vehicleTyped: TypedVehicle;
+};
 
 export type Step1Result =
   | { ok: false; error: 'route'; failure: RouteFailure }
@@ -27,6 +41,8 @@ export type Step1Result =
       sizeClassSource: 'table' | 'customer';
       loadType: string;
       needsReview: boolean;
+      /** Why the booking is flagged, e.g. "vehicle not recognized: 'zzz thing'". Null when nothing is. */
+      reviewReason: string | null;
       quote: Quote;
       lines: QuoteLine[];
     } & Base);
@@ -38,16 +54,24 @@ export function evaluateStep1(
 ): Step1Result {
   const routed = resolveRoute(regionOf, input.pickupZip, input.deliveryZip);
   if (!routed.ok) return { ok: false, error: 'route', failure: routed };
+  // Everything below works from the normalized vehicle; the typed text is kept for the record.
+  const vehicle = normalizeVehicle(input.vehicle);
   const base: Base = {
     route: routed.route,
     pickupRegion: routed.pickupRegion,
     deliveryRegion: routed.deliveryRegion,
+    vehicle,
+    vehicleTyped: {
+      year: String(input.vehicle.year),
+      make: input.vehicle.make,
+      model: input.vehicle.model,
+    },
   };
 
   // Anything that cannot be booked online goes to the personalized quote form, before any price, hold, or
   // Stripe session. This runs first so an exotic or high-value vehicle never has to pick a size class.
   const reasons = quoteReasons({
-    vehicle: input.vehicle,
+    vehicle,
     selectedClass: input.selectedClass,
     operable: input.operable,
     modified: input.modified,
@@ -55,7 +79,7 @@ export function evaluateStep1(
   });
   if (reasons.length > 0) return { ok: true, quoteRequired: true, quoteReasons: reasons, ...base };
 
-  const size = resolveSizeClass(input.vehicle, input.selectedClass);
+  const size = resolveSizeClass(vehicle, input.selectedClass);
   if (!size.ok) return { ok: false, error: size.reason };
 
   const week = findBookableWeek(input.weekStart, now);
@@ -80,6 +104,7 @@ export function evaluateStep1(
     sizeClassSource: size.needsReview ? 'customer' : 'table',
     loadType: input.topDeck ? topDeck.label : topDeck.standardLabel,
     needsReview: quote.needsReview,
+    reviewReason: size.needsReview ? notRecognizedReason(input.vehicle) : null,
     quote,
     lines: [
       { id: 'base', label: `${cls.label} transport`, cents: quote.baseCents },

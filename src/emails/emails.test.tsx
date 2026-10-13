@@ -80,6 +80,17 @@ describe('NewBookingEmail', () => {
     expect(out).not.toMatch(/Review needed/);
     expect(out).not.toMatch(/TOP DECK/);
   });
+  it('shows what the customer typed next to the normalized vehicle', async () => {
+    const typed = buildBookingEmailData(
+      { ...booking, vehicleTyped: { year: '2021', make: 'toyota', model: 'rav 4' } },
+      ctx,
+    );
+    const out = await text(<NewBookingEmail d={typed} />);
+    expect(out).toContain('As typed by the customer');
+    expect(out).toContain('2021 toyota rav 4');
+    expect(teamText(typed)).toContain('As typed by the customer: 2021 toyota rav 4');
+    expect(teamText(buildBookingEmailData(booking, ctx))).not.toContain('As typed');
+  });
   it('tells the team how the balance is collected', async () => {
     const out = await text(<NewBookingEmail d={d} />);
     expect(out).toContain("Cash, Cashier's Check, Zelle only. No credit cards.");

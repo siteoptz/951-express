@@ -1,9 +1,9 @@
 // Pure state for the booking modal form: reducer, persistence, and the payload sent to the server.
 import { modificationDetailsMaxLength, type QuoteReason } from '@/config/eligibility';
 import { sizeClassIds } from '@/config/pricing';
-import { vehicleYears } from '@/config/vehicles';
 import { quoteReasons } from '@/lib/eligibility';
 import { classifyVehicle } from '@/lib/size-class';
+import { parseYear } from '@/lib/vehicle-normalize';
 import type { VehicleClass } from '@/config/vehicle-classes';
 
 export type FormState = {
@@ -65,9 +65,10 @@ export function formReducer(state: FormState, action: FormAction): FormState {
   const next = { ...state, [action.field]: action.value } as FormState;
   // Picking a load type again clears the "we switched you to Standard" notice.
   if (action.field === 'topDeck') return { ...next, topDeckSwitched: '' };
-  if (action.field === 'year') return { ...next, make: '', model: '', selectedClass: '' };
-  if (action.field === 'make') return { ...next, model: '', selectedClass: '' };
-  if (action.field === 'model') return { ...next, selectedClass: '' };
+  // The three vehicle fields are plain typed text and independent of each other. A size the customer picked for the
+  // previous text no longer applies.
+  if (action.field === 'year' || action.field === 'make' || action.field === 'model')
+    return { ...next, selectedClass: '' };
   if (action.field === 'pickupZip')
     return { ...next, deliveryZip: '', weekStart: '', leadWeek: '' };
   if (action.field === 'deliveryZip') return { ...next, weekStart: '' };
@@ -81,20 +82,14 @@ export const digitsOnly = (v: string): string => v.replace(/\D/g, '').slice(0, 5
 
 export const isZip = (v: string): boolean => /^\d{5}$/.test(v);
 
-export function yearOptions(now: Date = new Date()): number[] {
-  const out: number[] = [];
-  for (let y = now.getFullYear() + vehicleYears.maxAheadOfToday; y >= vehicleYears.min; y--)
-    out.push(y);
-  return out;
-}
-
 /** The class we will price: the table's answer, else the customer's pick for an unknown vehicle. */
 export function decidedClass(f: FormState): {
   classified: VehicleClass | null;
   decided: VehicleClass | null;
 } {
-  const year = Number(f.year);
-  if (!f.year || !f.make.trim() || !f.model.trim()) return { classified: null, decided: null };
+  const year = parseYear(f.year);
+  if (year === null || !f.make.trim() || !f.model.trim())
+    return { classified: null, decided: null };
   const classified = classifyVehicle({ year, make: f.make, model: f.model });
   if (classified) return { classified, decided: classified };
   const picked = f.selectedClass;
@@ -107,15 +102,23 @@ export function decidedClass(f: FormState): {
  * triggers. The server re-decides this on every request, so this only switches the form.
  */
 export function formQuoteReasons(f: FormState): QuoteReason[] {
-  if (!f.year || !f.make.trim() || !f.model.trim()) return [];
+  const year = parseYear(f.year);
+  if (year === null || !f.make.trim() || !f.model.trim()) return [];
   return quoteReasons({
-    vehicle: { year: Number(f.year), make: f.make.trim(), model: f.model.trim() },
+    vehicle: { year, make: f.make, model: f.model },
     selectedClass: f.selectedClass || undefined,
     operable: f.operable ?? true,
     modified: f.modified ?? false,
     highValue: f.highValue ?? false,
   });
 }
+
+/** The vehicle exactly as typed. The server normalizes it, stores both, and classifies from the normalized text. */
+const typedVehicle = (f: FormState) => ({
+  year: parseYear(f.year) ?? Number.NaN,
+  make: f.make,
+  model: f.model,
+});
 
 /** Body for POST /api/quote, or null while anything is missing or the vehicle needs a quote. */
 export function step1Payload(f: FormState) {
@@ -128,7 +131,7 @@ export function step1Payload(f: FormState) {
   return {
     pickupZip: f.pickupZip,
     deliveryZip: f.deliveryZip,
-    vehicle: { year: Number(f.year), make: f.make.trim(), model: f.model.trim() },
+    vehicle: typedVehicle(f),
     selectedClass: f.selectedClass || undefined,
     operable: f.operable,
     modified: f.modified,
@@ -154,7 +157,7 @@ export function leadPayload(f: FormState) {
     email: f.email.trim(),
     pickupZip: f.pickupZip,
     deliveryZip: f.deliveryZip,
-    vehicle: { year: Number(f.year), make: f.make.trim(), model: f.model.trim() },
+    vehicle: typedVehicle(f),
     selectedClass: f.selectedClass || undefined,
     operable: f.operable,
     modified: f.modified,

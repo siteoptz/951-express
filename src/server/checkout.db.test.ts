@@ -256,6 +256,46 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
     expect(standard.r.status).toBe(200);
   });
 
+  it('stores what the customer typed next to the normalized vehicle', async () => {
+    const { r } = await checkout(weeks[4].start, fake(), {
+      vehicle: { year: 2021, make: ' toyota ', model: 'rav  4' },
+    });
+    if (r.status !== 200) throw new Error('expected a booking');
+    const b = await row(r.bookingId);
+    expect(b.vehicle).toEqual({ year: 2021, make: 'Toyota', model: 'RAV4' });
+    expect(b.vehicleTyped).toEqual({ year: '2021', make: ' toyota ', model: 'rav  4' });
+    expect(b).toMatchObject({ sizeClass: 'small-suv', needsReview: false, reviewReason: null });
+  });
+
+  it('flags an unrecognized vehicle with the reason, and keeps the customer-picked size', async () => {
+    const { r } = await checkout(weeks[4].start, fake(), {
+      vehicle: { year: 2020, make: 'Zzzmake', model: 'Thing' },
+      selectedClass: 'small-suv',
+    });
+    if (r.status !== 200) throw new Error('expected a booking');
+    expect(await row(r.bookingId)).toMatchObject({
+      needsReview: true,
+      sizeClass: 'small-suv',
+      sizeClassSource: 'customer',
+      reviewReason: "vehicle not recognized: 'Zzzmake Thing'",
+      vehicleTyped: { year: '2020', make: 'Zzzmake', model: 'Thing' },
+    });
+  });
+
+  it('applies the high-value and exotic rules whether or not the vehicle is recognized', async () => {
+    const unrecognized = { vehicle: { year: 2020, make: 'ferarri', model: 'roma' } };
+    expect(
+      (await checkout(weeks[4].start, fake(), { ...unrecognized, highValue: true })).r,
+    ).toMatchObject({ status: 422, quoteRequired: true, quoteReasons: ['high_value'] });
+    expect(
+      (
+        await checkout(weeks[4].start, fake(), {
+          vehicle: { year: 2020, make: 'Ferrari', model: 'x' },
+        })
+      ).r,
+    ).toMatchObject({ status: 422, quoteRequired: true, quoteReasons: ['exotic'] });
+  });
+
   it('marks paid once: a replayed webhook changes nothing and sends no second email', async () => {
     const { r } = await checkout(weeks[4].start);
     if (r.status !== 200) throw new Error('expected a booking');

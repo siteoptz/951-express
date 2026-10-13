@@ -8,10 +8,10 @@ import {
   asNewVisitor,
   dialog,
   fillDetails,
-  mockVpic,
   openModal,
   reachSummary,
   untickSaveWithLink,
+  typeVehicle,
 } from './helpers';
 
 // REAL emails. Run it on purpose:  npm run e2e:email   (sends 4: deposit received, new booking, confirmation, new lead)
@@ -46,7 +46,6 @@ test.afterAll(async () => {
 });
 test.beforeEach(async ({ page, baseURL }) => {
   await asNewVisitor(page, baseURL!);
-  await mockVpic(page);
   await openModal(page);
 });
 
@@ -108,15 +107,7 @@ test('a personalized-quote request emails the team @email', async ({ page }) => 
   await d.getByLabel('Pickup ZIP').fill('90001');
   await d.getByLabel('Delivery ZIP').fill('21201');
   await d.getByText('✓ Great news, we service this route.').waitFor();
-  await d.getByLabel('Year').selectOption('2021');
-  for (const [label, text] of [
-    ['Make', 'Chevrolet'],
-    ['Model', 'Tahoe'],
-  ] as const) {
-    const box = d.getByRole('combobox', { name: label });
-    await box.fill(text);
-    await box.press('Tab');
-  }
+  await typeVehicle(d, '2021', 'Chevrolet', 'Tahoe');
   await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });

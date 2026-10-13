@@ -23,7 +23,8 @@ describe('ZIP input attributes', () => {
       const src = readFileSync(file, 'utf8');
       expect(src.match(/\{\.\.\.zipInputAttrs\}/g)).toHaveLength(n);
       expect(src.match(/autoComplete=\{?[`"][^`"]*postal-code/g)).toHaveLength(n);
-      expect(src).not.toMatch(/autoComplete="off"/);
+      // No ZIP input turns autocomplete off (other inputs, like the vehicle fields, may).
+      expect(src).not.toMatch(/id="[a-z-]*zip"[^>]*autoComplete="off"/);
     },
   );
 });

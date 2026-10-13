@@ -5,6 +5,7 @@ import {
   customerSubject,
   leadSubject,
   reviewReasons,
+  typedVehicleText,
   teamSubject,
   vehicleName,
   type BookingForEmail,
@@ -126,6 +127,31 @@ describe('buildBookingEmailData', () => {
       ).stripeUrl,
     ).toBe('https://dashboard.stripe.com/payments/pi_9');
     expect(buildBookingEmailData({ ...base, paidAt: null }, ctx).paidAt).toBeNull();
+  });
+});
+
+describe('typed vehicle and review reason', () => {
+  it('reads back the typed text next to the normalized vehicle', () => {
+    expect(typedVehicleText({ year: '2021', make: 'chevy', model: 'tahoe' })).toBe(
+      '2021 chevy tahoe',
+    );
+    expect(typedVehicleText(null)).toBeNull();
+    const d = buildBookingEmailData(
+      { ...base, vehicleTyped: { year: '2021', make: 'toyota', model: 'rav 4' } },
+      ctx,
+    );
+    expect(d.vehicle).toBe('2021 Toyota RAV4');
+    expect(d.vehicleTyped).toBe('2021 toyota rav 4');
+    expect(buildBookingEmailData(base, ctx).vehicleTyped).toBeNull();
+  });
+  it('lists the not-recognized reason first', () => {
+    const r = reviewReasons({
+      needsReview: true,
+      sizeClassSource: 'customer',
+      reviewReason: "vehicle not recognized: 'zzz thing'",
+    });
+    expect(r[0]).toBe("vehicle not recognized: 'zzz thing'");
+    expect(r[1]).toMatch(/chosen by the customer/);
   });
 });
 

@@ -9,7 +9,6 @@ import {
   dialog,
   expectAccessible,
   fillDetails,
-  mockVpic,
   openModal,
   reachSummary,
   untickSaveWithLink,
@@ -61,7 +60,6 @@ test.afterAll(async () => {
 });
 test.beforeEach(async ({ page, baseURL }) => {
   await asNewVisitor(page, baseURL!);
-  await mockVpic(page);
   await openModal(page);
 });
 

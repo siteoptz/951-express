@@ -1,24 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type FrameLocator, type Locator, type Page } from '@playwright/test';
 
-// vPIC answers are mocked at our own /api/vehicles boundary, so tests never depend on NHTSA.
-// The real API is covered by the separate @live smoke test (e2e/vpic-live.spec.ts).
-export const MAKES = ['Chevrolet', 'Ford', 'Honda', 'Toyota'];
-export const MODELS: Record<string, string[]> = {
-  honda: ['Accord', 'Civic', 'CR-V'],
-  toyota: ['Camry', 'RAV4', 'Tacoma'],
-  chevrolet: ['Silverado 1500', 'Tahoe'],
-  ford: ['F-150', 'Ranger'],
-};
-
-export async function mockVpic(page: Page) {
-  await page.route('**/api/vehicles/makes*', (route) =>
-    route.fulfill({ json: { makes: MAKES.map((m) => ({ value: m.toUpperCase(), label: m })) } }),
-  );
-  await page.route('**/api/vehicles/models*', (route) => {
-    const make = new URL(route.request().url()).searchParams.get('make')?.toLowerCase() ?? '';
-    return route.fulfill({ json: { models: MODELS[make] ?? [] } });
-  });
+/**
+ * The vehicle is three plain typed fields (no dropdowns). The form waits a moment after typing stops before it
+ * classifies the vehicle, so the next section appears on its own.
+ */
+export async function typeVehicle(root: Page | Locator, year: string, make: string, model: string) {
+  await root.getByLabel("Type your vehicle's year").fill(year);
+  await root.getByLabel(/^Type the make/).fill(make);
+  await root.getByLabel(/^Type the model/).fill(model);
 }
 
 let n = 0;
@@ -56,15 +46,7 @@ export async function reachSummary(page: Page, opts: { week?: string } = {}) {
   await d.getByLabel('Pickup ZIP').fill('90001');
   await d.getByLabel('Delivery ZIP').fill('21201');
   await d.getByText('✓ Great news, we service this route.').waitFor();
-  await d.getByLabel('Year').selectOption('2020');
-  for (const [label, text] of [
-    ['Make', 'Honda'],
-    ['Model', 'Civic'],
-  ] as const) {
-    const box = d.getByRole('combobox', { name: label });
-    await box.fill(text);
-    await box.press('Tab');
-  }
+  await typeVehicle(d, '2020', 'Honda', 'Civic');
   await answerHighValue(d, 'No');
   await d.getByRole('radio', { name: 'Yes, it runs and drives' }).check({ force: true });
   await d.getByRole('radio', { name: 'No, factory stock' }).check({ force: true });

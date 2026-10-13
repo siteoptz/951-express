@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { modificationDetailsMaxLength } from '@/config/eligibility';
 import { sizeClassIds } from '@/config/pricing';
 import { routeIds } from '@/config/routes';
+import { isValidYear } from '@/lib/vehicle-normalize';
 import { isMondayIso } from '@/lib/weeks';
 
 const zip = z.string().regex(/^\d{5}$/, 'Enter a 5-digit ZIP code');
@@ -17,10 +18,25 @@ const name = z.string().trim().min(1).max(80);
 const notes = z.string().trim().max(2000);
 const modificationDetails = z.string().trim().max(modificationDetailsMaxLength);
 
+const noControlChars = (v: string) => !/[\u0000-\u001f\u007f]/.test(v);
+const typedText = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .refine((v) => v.trim().length > 0, 'Required')
+    .refine(noControlChars, 'Use letters and numbers only');
+
+/**
+ * The vehicle exactly as the customer typed it (the browser never trims or fixes it). The server normalizes it
+ * (src/lib/vehicle-normalize.ts), stores both, and classifies from the normalized values.
+ */
 export const vehicleSchema = z.object({
-  year: z.number().int().min(1900).max(2100),
-  make: z.string().trim().min(1).max(60),
-  model: z.string().trim().min(1).max(80),
+  year: z
+    .number()
+    .int()
+    .refine((y) => isValidYear(y), 'Enter a year from 1950 to next year'),
+  make: typedText(60),
+  model: typedText(80),
 });
 
 /** Class the customer may pick when the vehicle is unknown. The server re-classifies and may ignore it. */
