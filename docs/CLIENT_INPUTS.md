@@ -11,7 +11,7 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] Approval to publish the photos, including the blurred license plates.
 
 ## Business details
-- [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks and leaves out the Atlanta area (300-303), Charlotte (280-282), Birmingham (350-352), and all of Florida and the Northeast above Delaware.
+- [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks. Atlanta metro (30001–30400) was added on 2026-10-13 via `data/raw/east_additions.txt`. Charlotte (280-282), Birmingham (350-352), all of Florida, and the Northeast above Delaware are still outside the East list.
 - [x] Base rates per size class, received.
 - [ ] Do the inoperable (+$150) and modified (+$100) surcharges still apply, or are modified vehicles manual review?
 - [ ] Is the deposit still 25%?
@@ -34,7 +34,7 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [ ] Google Analytics 4 measurement ID, if they want GA.
 
 ## Added after the ZIP review
-- [ ] The East list doesn't include Atlanta, Charlotte, or Birmingham metro ZIPs, or anything in Florida. Is that intentional?
+- [ ] The East list still doesn't include Charlotte or Birmingham metro ZIPs, or anything in Florida (Atlanta metro, 30001–30400, is now included). Is that intentional?
 
 ## Stripe go-live (Phase 6)
 - [ ] Live keys in Vercel Production only. Preview and Development keep test keys.

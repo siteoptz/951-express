@@ -1,0 +1,4 @@
+# Client request 2026-10-13: add 30001–30400
+# Metro Atlanta, GA. One entry per line or comma-separated; "start-end" (or "start–end") is an inclusive range.
+# The original east_zip_codes.txt is left untouched; these are merged into east.json by scripts/build-zip-data.mjs.
+30001–30400

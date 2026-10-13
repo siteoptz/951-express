@@ -49,7 +49,7 @@ describe('buildMap', () => {
     );
   });
   it('writes the tooltip text', () => {
-    expect(byAbbr.GA.tooltip).toBe('Georgia · East region · 462 ZIP codes served');
+    expect(byAbbr.GA.tooltip).toBe('Georgia · East region · 779 ZIP codes served');
     expect(byAbbr.TX.tooltip).toMatch(/^Texas · West region · \d+ ZIP codes served$/);
     expect(byAbbr.OR.tooltip).toBeNull();
   });

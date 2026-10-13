@@ -30,6 +30,29 @@ describe('ZIP data integrity', () => {
   });
 });
 
+describe('Atlanta metro additions (30001–30400, client request 2026-10-13)', () => {
+  const ATLANTA = '30303';
+  it('routes every ZIP in the range, recognized or not', () => {
+    const eastSet = new Set<string>(east);
+    for (let n = 30001; n <= 30400; n++) expect(eastSet.has(String(n))).toBe(true);
+  });
+  it('resolves downtown Atlanta to East', () => {
+    expect(regionOfZip(ATLANTA)).toBe('east');
+  });
+  it('routes Atlanta → Los Angeles as East → West', () => {
+    const r = resolveRouteForZips(ATLANTA, WEST);
+    expect(r).toMatchObject({ ok: true, pickupRegion: 'east', deliveryRegion: 'west' });
+    expect(r.ok && r.route.id).toBe('east-to-west');
+  });
+  it('rejects Atlanta → Baltimore as same_region', () => {
+    expect(resolveRouteForZips(ATLANTA, EAST)).toEqual({
+      ok: false,
+      reason: 'same_region',
+      region: 'east',
+    });
+  });
+});
+
 describe('resolveRouteForZips', () => {
   it('routes West → East', () => {
     const r = resolveRouteForZips(WEST, EAST);

@@ -1,5 +1,6 @@
 // Builds src/data/zips/{west,east,coverage}.json from the raw client files in data/raw/.
 // Run: node scripts/build-zip-data.mjs [--report-only]
+// East = east_zip_codes.txt plus east_additions.txt (client additions, ranges allowed), de-duplicated.
 // Refuses to write anything if a ZIP appears in both regions.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -38,6 +39,27 @@ function parseTokens(texts) {
   return texts.flatMap((t) => t.split(/[\s,;]+/)).filter(Boolean);
 }
 
+/** Reads an additions file: '#' comment lines are skipped, "start-end" ranges (hyphen or en dash) are expanded. */
+function readAdditions(path) {
+  const tokens = [];
+  const ranges = [];
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    const text = line.replace(/#.*$/, '');
+    for (const t of text.split(/[\s,;]+/).filter(Boolean)) {
+      const m = t.match(/^(\d{1,5})[-–](\d{1,5})$/);
+      if (!m) {
+        tokens.push(t);
+        continue;
+      }
+      const [a, b] = [Number(m[1]), Number(m[2])];
+      if (a > b) throw new Error(`Bad range in ${path}: ${t}`);
+      ranges.push(t);
+      for (let n = a; n <= b; n++) tokens.push(String(n).padStart(5, '0'));
+    }
+  }
+  return { tokens, ranges };
+}
+
 function normalize(tokens) {
   const zips = new Set();
   const stats = { tokens: tokens.length, padded: [], invalid: [], duplicates: 0 };
@@ -60,7 +82,9 @@ const westTexts = westCells.map((c) => c.text);
 const eastText = readFileSync(`${rawDir}east_zip_codes.txt`, 'utf8');
 
 const west = normalize(parseTokens(westTexts));
-const east = normalize(parseTokens([eastText]));
+const eastAdd = readAdditions(`${rawDir}east_additions.txt`);
+const east = normalize([...parseTokens([eastText]), ...eastAdd.tokens]);
+const eastBase = normalize(parseTokens([eastText]));
 
 // Real ZIPs per state in the zipcodes package, used to tint partly covered states on the map.
 const packageTotals = {};
@@ -98,6 +122,14 @@ for (const [name, r, l] of [['WEST', west, w], ['EAST', east, e]]) {
   console.log(`  invalid tokens: ${r.stats.invalid.length}${r.stats.invalid.length ? ' ' + JSON.stringify(r.stats.invalid) : ''}`);
   console.log(`  unrecognized by zipcodes pkg: ${l.unknown.length}${l.unknown.length ? ' ' + l.unknown.join(', ') : ''}`);
   console.log(`  states (${Object.keys(l.byState).length}, ${sum(l.byState)} ZIPs recognized): ${Object.entries(l.byState).map(([s, n]) => `${s}:${n}`).join(' ')}`);
+}
+{
+  const baseSet = new Set(eastBase.zips);
+  const addUnique = [...new Set(eastAdd.tokens)];
+  const already = addUnique.filter((z) => baseSet.has(z)).length;
+  const recognized = addUnique.filter((z) => zipcodes.lookup(z)).length;
+  const westSet = new Set(west.zips);
+  console.log(`\neast_additions.txt (${eastAdd.ranges.join(', ') || 'no ranges'}): ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${already} already in the original list, ${addUnique.filter((z) => westSet.has(z)).length} also in West`);
 }
 console.log(`\nZIPs in BOTH lists: ${both.length}${both.length ? ' ' + both.join(', ') : ''}`);
 
