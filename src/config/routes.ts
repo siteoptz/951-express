@@ -15,21 +15,21 @@ export type RouteConfig = {
   weeklyCapacity: number;
 };
 
-// Each direction is its own route with its own capacity. TODO(client): confirm capacity.
+// Each direction is its own route with its own capacity: 6 per direction per week (Cal, 2026-10-13).
 export const routes: readonly RouteConfig[] = [
   {
     id: 'west-to-east',
     name: 'West → East',
     pickupRegion: 'west',
     deliveryRegion: 'east',
-    weeklyCapacity: 12,
+    weeklyCapacity: 6,
   },
   {
     id: 'east-to-west',
     name: 'East → West',
     pickupRegion: 'east',
     deliveryRegion: 'west',
-    weeklyCapacity: 12,
+    weeklyCapacity: 6,
   },
 ];
 

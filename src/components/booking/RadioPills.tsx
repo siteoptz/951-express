@@ -2,7 +2,12 @@
 
 import { useId } from 'react';
 
-export type Pill<T extends string> = { value: T; label: string; extra?: React.ReactNode };
+export type Pill<T extends string> = {
+  value: T;
+  label: string;
+  extra?: React.ReactNode;
+  disabled?: boolean;
+};
 
 export function RadioPills<T extends string>({
   legend,
@@ -23,16 +28,24 @@ export function RadioPills<T extends string>({
       <legend className="text-sm font-semibold text-muted">{legend}</legend>
       <div className={`mt-2 flex gap-2 ${stacked ? 'flex-col' : 'flex-wrap'}`}>
         {options.map((o) => (
-          <label key={o.value} className="block cursor-pointer">
+          <label
+            key={o.value}
+            className={`block ${o.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          >
             <input
               type="radio"
               name={name}
               value={o.value}
               checked={value === o.value}
+              disabled={o.disabled}
               onChange={() => onChange(o.value)}
+              // Clicking the option that is already selected fires no change event, but it is still a pick.
+              onClick={() => onChange(o.value)}
               className="peer sr-only"
             />
-            <span className="block rounded-lg border-2 border-black/15 px-4 py-3 font-semibold peer-checked:border-navy peer-checked:bg-navy peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
+            <span
+              className={`block rounded-lg border-2 border-black/15 px-4 py-3 font-semibold peer-disabled:bg-soft peer-disabled:text-muted peer-checked:border-navy peer-checked:bg-navy peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent`}
+            >
               {o.label}
             </span>
             {o.extra}

@@ -29,6 +29,20 @@
       "when": 1791914333531,
       "tag": "0003_spotty_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791917615981,
+      "tag": "0004_complete_captain_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791919591513,
+      "tag": "0005_data_capacity_and_deposit",
+      "breakpoints": true
     }
   ]
 }

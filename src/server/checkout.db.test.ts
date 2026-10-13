@@ -104,6 +104,12 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
   beforeAll(async () => {
     const [r] = await db.select().from(routes).where(eq(routes.slug, 'west-to-east'));
     routeId = r.id;
+    // Many tests below book the same week, and a week holds only 6, so give that week room.
+    await db.insert(weekOverrides).values({
+      routeId,
+      weekStart: weeks[4].start,
+      capacityOverride: 50,
+    });
   });
   afterAll(async () => {
     if (created.length) await db.delete(bookings).where(inArray(bookings.id, created));
@@ -231,6 +237,24 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
       expect(await count()).toBe(before);
     },
   );
+
+  it('refuses a top-deck booking when the top-deck slots are full: 409 with the next week, no hold, no Stripe session', async () => {
+    await db
+      .insert(weekOverrides)
+      .values({ routeId, weekStart: weeks[3].start, topDeckSuvOverride: 0, topDeckCarOverride: 0 });
+    const { r, f } = await checkout(weeks[3].start, fake(), { topDeck: true });
+    expect(r).toMatchObject({
+      status: 409,
+      reason: 'top_deck_full',
+      error:
+        'Top deck sold out for this week. Standard loading is available, or pick another week.',
+      nextAvailableWeek: { start: weeks[4].start },
+    });
+    expect(f.calls.create).toHaveLength(0);
+    // Standard loading in the same week still works.
+    const standard = await checkout(weeks[3].start);
+    expect(standard.r.status).toBe(200);
+  });
 
   it('marks paid once: a replayed webhook changes nothing and sends no second email', async () => {
     const { r } = await checkout(weeks[4].start);

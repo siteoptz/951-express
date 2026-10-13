@@ -9,6 +9,8 @@ export type WeekRow = {
   taken: number;
   remaining: number;
   closed: boolean;
+  /** Top-deck slots left, by the kind of slot a vehicle needs (cars can also use a free SUV slot). */
+  topDeck: { remaining: { suv: number; car: number } };
 };
 
 export function WeekPicker({

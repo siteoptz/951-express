@@ -27,6 +27,7 @@ import {
 import { track } from '@/lib/analytics';
 import type { BookingView } from '@/lib/booking-view';
 import { routeErrorMessage, shippingLabel } from '@/lib/routing';
+import { topDeckSlotFor } from '@/lib/top-deck';
 import { Combobox, type Option } from './Combobox';
 import { RadioPills } from './RadioPills';
 import { BookedView } from './BookedView';
@@ -102,7 +103,10 @@ export default function BookingModal({
   const [checkout, setCheckout] = useState<CheckoutInfo | null>(null);
   const [detailsCtx, setDetailsCtx] = useState<DetailsContext | null>(null);
   const [booked, setBooked] = useState<BookingView | null>(null);
-  const [weekFull, setWeekFull] = useState<{ next: NextWeek } | null>(null);
+  const [weekFull, setWeekFull] = useState<{
+    next: NextWeek;
+    reason: 'week_full' | 'top_deck_full';
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touchedPickup, setTouchedPickup] = useState(false);
@@ -242,6 +246,24 @@ export default function BookingModal({
     }
   }, [weeks, form.weekStart, set]);
 
+  // Top-deck slots left for the selected week, for this vehicle's kind of slot. Checked again whenever the week
+  // or vehicle changes; the server rechecks on /api/quote and /api/checkout.
+  const slot = decided && decided !== 'large' ? topDeckSlotFor(decided) : null;
+  const selectedWeek =
+    weeks.status === 'ready' ? weeks.data.find((x) => x.start === form.weekStart) : undefined;
+  const topDeckLeft = slot && selectedWeek ? selectedWeek.topDeck.remaining[slot] : null;
+  const topDeckSoldOut = topDeckLeft === 0;
+  // When a week or vehicle change takes Top Deck away, the selection drops to Standard and we say so. The notice
+  // belongs to that week and vehicle, and it clears as soon as the customer picks a load type again.
+  const topDeckKey = `${form.weekStart}|${decided ?? ''}`;
+  useEffect(() => {
+    if (topDeckSoldOut && form.topDeck) {
+      set('topDeck', false);
+      set('topDeckSwitched', topDeckKey);
+    }
+  }, [topDeckSoldOut, form.topDeck, topDeckKey, set]);
+  const showTopDeckSwitched = form.topDeckSwitched === topDeckKey && !form.topDeck;
+
   const payload = step1Payload(form);
   const lead = leadPayload(form);
 
@@ -263,6 +285,8 @@ export default function BookingModal({
           set('weekStart', '');
           setWeeksReload((n) => n + 1);
         }
+        // Someone took the last top-deck slot: reload the counts, which disables the option and clears it.
+        if (body.reason === 'top_deck_full') setWeeksReload((n) => n + 1);
         return;
       }
       if (body.quoteRequired) {
@@ -294,7 +318,11 @@ export default function BookingModal({
         body: JSON.stringify({ ...payload, replacePublicToken: checkout?.publicToken }),
       });
       const body = await res.json().catch(() => ({}));
-      if (res.status === 409) return setWeekFull({ next: body.nextAvailableWeek ?? null });
+      if (res.status === 409)
+        return setWeekFull({
+          next: body.nextAvailableWeek ?? null,
+          reason: body.reason === 'top_deck_full' ? 'top_deck_full' : 'week_full',
+        });
       if (body.quoteRequired) {
         setServerQuote({ key: answersKey, reasons: body.quoteReasons ?? ['large_vehicle'] });
         setStep('form');
@@ -712,16 +740,40 @@ export default function BookingModal({
                         {
                           value: 'top',
                           label: `${t.options.loadTopDeck} (+$${topDeck.surchargeCents / 100})`,
+                          disabled: topDeckSoldOut,
                           extra: (
-                            <ul className="mt-2 list-disc space-y-1 pl-9 pr-2 text-sm text-muted">
-                              {topDeck.benefits.map((b) => (
-                                <li key={b}>{b}</li>
-                              ))}
-                            </ul>
+                            <>
+                              {topDeckLeft !== null && (
+                                <p
+                                  data-testid="top-deck-status"
+                                  className={`mt-2 px-1 text-sm font-bold ${topDeckSoldOut ? 'text-danger' : 'text-success-dark'}`}
+                                >
+                                  {topDeckSoldOut
+                                    ? t.topDeck.soldOut
+                                    : topDeckLeft === 1
+                                      ? t.topDeck.oneSpotLeft
+                                      : t.topDeck.spotsLeft.replace('{n}', String(topDeckLeft))}
+                                </p>
+                              )}
+                              <ul className="mt-2 list-disc space-y-1 pl-9 pr-2 text-sm text-muted">
+                                {topDeck.benefits.map((b) => (
+                                  <li key={b}>{b}</li>
+                                ))}
+                              </ul>
+                            </>
                           ),
                         },
                       ]}
                     />
+                    {showTopDeckSwitched && (
+                      <p
+                        role="status"
+                        data-testid="top-deck-switched"
+                        className="-mt-2 rounded-lg bg-accent/20 px-4 py-3 text-sm font-semibold"
+                      >
+                        {t.topDeck.switched}
+                      </p>
+                    )}
                     <div>
                       <RadioPills
                         legend={t.options.personal}

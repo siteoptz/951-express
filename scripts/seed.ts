@@ -1,76 +1,17 @@
-// Seeds routes, rates, and settings from src/config. Idempotent: existing rows are left alone, so
-// re-running never overwrites a rate the admin has edited. The one exception is the deposit setting.
-import { inArray } from 'drizzle-orm';
+// Seeds routes, rates, and settings from src/config, insert-if-missing only (see src/server/seed.ts).
 import { createDb } from '../src/db';
-import { rates, routes, settings } from '../src/db/schema';
-import { pricing, sizeClasses, topDeck } from '../src/config/pricing';
-import { routes as routeConfig } from '../src/config/routes';
+import { seedDatabase } from '../src/server/seed';
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is not set (put the Neon dev branch string in .env.local)');
 
 const { db, pool } = createDb(url);
 
-async function main() {
-  await db
-    .insert(routes)
-    .values(
-      routeConfig.map((r) => ({
-        slug: r.id,
-        name: r.name,
-        pickupRegion: r.pickupRegion,
-        deliveryRegion: r.deliveryRegion,
-        weeklyCapacity: r.weeklyCapacity,
-      })),
-    )
-    .onConflictDoNothing({ target: routes.slug });
-
-  await db
-    .insert(rates)
-    .values(
-      sizeClasses.map((c, i) => ({
-        sizeClass: c.id,
-        label: c.label,
-        example: c.example,
-        baseCents: c.baseCents,
-        sortOrder: i,
-      })),
-    )
-    .onConflictDoNothing({ target: rates.sizeClass });
-
-  await db
-    .insert(settings)
-    .values([{ key: 'top_deck_surcharge_cents', value: topDeck.surchargeCents }])
-    .onConflictDoNothing({ target: settings.key });
-  // The deposit is a flat $100 now. Unlike the rows above this one is UPDATED on every run, in every
-  // environment, so the stored setting always matches config until the Phase 8 rates editor owns it.
-  await db
-    .insert(settings)
-    .values({ key: 'deposit', value: pricing.deposit })
-    .onConflictDoUpdate({
-      target: settings.key,
-      set: { value: pricing.deposit, updatedAt: new Date() },
-    });
-  // Inoperable and modified vehicles now go to a personalized quote, so these online surcharges are retired.
-  await db.delete(settings).where(
-    inArray(settings.key, [
-      'inoperable_surcharge_cents',
-      'modified_surcharge_cents',
-      'modified_policy',
-      'deposit_percent', // replaced by the 'deposit' setting
-    ]),
-  );
-
-  const [r, c, s] = await Promise.all([
-    db.select().from(routes),
-    db.select().from(rates),
-    db.select().from(settings),
-  ]);
-  console.log(`routes: ${r.map((x) => `${x.slug}(${x.weeklyCapacity})`).join(', ')}`);
-  console.log(`rates: ${c.length}, settings: ${s.length}`);
-}
-
-main()
+seedDatabase(db)
+  .then(({ routes, rates, settings }) => {
+    console.log(`routes: ${routes.map((x) => `${x.slug}(${x.weeklyCapacity})`).join(', ')}`);
+    console.log(`rates: ${rates.length}, settings: ${settings.length}`);
+  })
   .catch((e) => {
     console.error(e);
     process.exitCode = 1;

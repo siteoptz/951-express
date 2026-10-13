@@ -56,6 +56,16 @@ export const bookingCopy = {
     yes: 'Yes',
     no: 'No',
   },
+  topDeck: {
+    spotsLeft: '{n} top-deck spots left',
+    oneSpotLeft: '1 top-deck spot left',
+    soldOut:
+      'Top deck sold out for this week. Standard loading is available, or pick another week.',
+    nextWeek: 'The next week with top-deck space is {label}.',
+    // Shown when a week or vehicle change takes Top Deck away and the selection drops to Standard.
+    switched:
+      "Top deck isn't available for this week, so we switched you to Standard loading (−$150).",
+  },
   weeks: {
     heading: 'Estimated pickup week · {route}',
     loading: 'Loading available weeks…',

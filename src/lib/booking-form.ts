@@ -18,6 +18,8 @@ export type FormState = {
   highValue: boolean | null;
   modificationDetails: string;
   topDeck: boolean;
+  /** Set when a week or vehicle change dropped Top Deck to Standard: `week|class` it applied to. Never saved. */
+  topDeckSwitched: string;
   personalItems: boolean | null;
   weekStart: string;
   leadWeek: string;
@@ -40,6 +42,7 @@ export const initialForm: FormState = {
   highValue: null,
   modificationDetails: '',
   topDeck: false,
+  topDeckSwitched: '',
   personalItems: null,
   weekStart: '',
   leadWeek: '',
@@ -60,6 +63,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
   if (action.type === 'reset') return initialForm;
   if (action.type === 'hydrate') return { ...state, ...action.state };
   const next = { ...state, [action.field]: action.value } as FormState;
+  // Picking a load type again clears the "we switched you to Standard" notice.
+  if (action.field === 'topDeck') return { ...next, topDeckSwitched: '' };
   if (action.field === 'year') return { ...next, make: '', model: '', selectedClass: '' };
   if (action.field === 'make') return { ...next, model: '', selectedClass: '' };
   if (action.field === 'model') return { ...next, selectedClass: '' };
@@ -166,7 +171,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 /** Terms acceptance is never saved: the customer agrees each time. */
 export function saveForm(f: FormState, storage: StorageLike | null): void {
   try {
-    storage?.setItem(KEY, JSON.stringify({ ...f, terms: false }));
+    storage?.setItem(KEY, JSON.stringify({ ...f, terms: false, topDeckSwitched: '' }));
   } catch {
     // Storage can be blocked or full; the form still works without it.
   }

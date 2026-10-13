@@ -45,7 +45,7 @@ to start it.
    - `service-area.ts`: serviced states (placeholder: CA, NV, AZ, OR, WA, UT, ID, NM, CO, TX) and the home
      terminal (Corona, CA, lat 33.8753, lng -117.5664).
    - `routes.ts`: route corridors, each with `id`, `name`, `originStates[]`, `destStates[]`,
-     `weeklyCapacity: 12`. Each direction is its own route (for example `west-to-tx` and `tx-to-west`).
+     `weeklyCapacity: 6`. Each direction is its own route (for example `west-to-tx` and `tx-to-west`).
    - `pricing.ts`: size classes and base rates (sedan $850, mid-size SUV $975, pickup/full-size SUV/van
      $1,100, oversized $1,300), inoperable +$150, modified +$100 with `modifiedPolicy: 'surcharge' | 'review'`,
      deposit `{ type: 'flat', amountCents: 10000 }` (percent is still supported). All money is stored as integer cents.
@@ -55,7 +55,7 @@ to start it.
    `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `BOOKINGS_EMAIL_TO`, `ADMIN_PASSWORD`,
    `NEXT_PUBLIC_SITE_URL`, and `NEXT_PUBLIC_GA_ID`.
 7. **Create `docs/CLIENT_INPUTS.md`**, a checklist of everything still owed by 951 Express: logo files,
-   final states and routes, rates, deposit, weekly capacity if not 12, Terms text, Stripe account, booking
+   final states and routes, rates, deposit, weekly capacity if not 6, Terms text, Stripe account, booking
    inbox, domain (purchased by the client), and confirmation of the trust stats.
 
 **Done when:** `npm run build` passes, the Vercel preview deploys, and both inventories are committed.
@@ -133,7 +133,7 @@ performance and accessibility; there are no layout shifts from images.
   regions. `resolveRoute` returns `{ ok: true, route, pickupRegion, deliveryRegion }` or `ok: false` with
   `invalid_zip | pickup_not_served | delivery_not_served | same_region`. `resolvePickup` drives the "Shipping
   West → East" label and restricts the delivery ZIP to the opposite list. Routes: `west-to-east`, `east-to-west`,
-  12 per week each.
+  6 per week each.
 - **Pricing** (`src/lib/pricing.ts`, `src/config/pricing.ts`): seven classes from $1,400 to $1,900; large vehicles
   return `{ quoteRequired: true }`. Top Deck Load +$150. Deposit: a flat $100 (changed 2026-10-13 from 25%). (Changed 2026-10-13: inoperable and modified vehicles are no longer priced online; they go to a personalized quote.)
 - **Vehicle classes** (`src/lib/size-class.ts`, `src/config/vehicle-classes.ts`): longest-prefix model lists plus
@@ -178,7 +178,7 @@ performance and accessibility; there are no layout shifts from images.
 1. Provision Neon Postgres from the Vercel Marketplace, connected to the project so `DATABASE_URL` is set for
    Preview and Production. Use a separate Neon branch for local dev and Preview.
 2. **Drizzle schema** (`src/db/schema.ts`):
-   - `routes` (id, slug, name, pickup_region, delivery_region, weekly_capacity int default 12,
+   - `routes` (id, slug, name, pickup_region, delivery_region, weekly_capacity int default 6,
      active bool), seeded from `routes.ts` (`west-to-east`, `east-to-west`).
    - `leads` (id, created_at, route_id, pickup_zip, delivery_zip, vehicle jsonb, operable, modified, top_deck,
      name, phone, email, notes, status `new|contacted|closed`) for the quote-required (large vehicle) form.
@@ -205,7 +205,7 @@ performance and accessibility; there are no layout shifts from images.
    `CRON_SECRET`, marks stale holds `expired`. The counting query ignores stale holds anyway, so the cron
    job is only cleanup.
 5. **Concurrency test** (`src/server/capacity.concurrency.test.ts`, runs only with `TEST_DATABASE_URL` set to a dev branch): fire 13 `createHold` calls in parallel against a test database for one route
-   and week. Exactly 12 succeed and 1 returns `full`.
+   and week. Exactly 6 succeed and 1 returns `full` (7 simultaneous holds).
 
 **Done when:** migrations run on Preview, the seed is idempotent, and the concurrency test passes ten times
 in a row.
@@ -247,7 +247,7 @@ The Step 2 summary is a placeholder: its payment button stays disabled until Pha
       **"100 lbs included. Anything over 100 lbs is at the driver's discretion."**
    5. "Estimated pickup week · West → East". Load from `GET /api/availability?route=`. Each week row shows a
       fill bar and "N spots left". Full or closed weeks are struck through, red, `aria-disabled`, labeled
-      "FULL 12/12", and cannot be selected.
+      "FULL 6/6", and cannot be selected.
    6. A checkbox, "I agree to the Terms and Conditions", where the link opens `/terms` in a new tab.
 3. The **"See My Price & Deposit →"** button stays disabled until every field is valid and terms are checked.
    On click, it calls `POST /api/quote`, which validates and recomputes on the server, and moves to Step 2.
@@ -354,7 +354,7 @@ hold; abandoning checkout frees the spot after expiry; replaying a webhook chang
    submitted.
 3. **Emails** with React Email templates in `src/emails/`, sent through Resend:
    - `NewBookingEmail` to `BOOKINGS_EMAIL_TO`. Subject: "New Booking: {year make model} · {route} · Week of
-     {date} · Deposit Paid". Sections: Customer, Shipment (pickup, delivery, week with "spot N of 12",
+     {date} · Deposit Paid". Sections: Customer, Shipment (pickup, delivery, week with "spot N of 6",
      vehicle, size, operable, modified, personal items), Payment (total, deposit paid, balance due, terms
      accepted with timestamp and version), and a link to the booking in /admin. If `needs_review` is set, add
      a "Review needed" banner (unknown vehicle size, or a payment that arrived after the hold expired).
@@ -386,8 +386,17 @@ dashboard; submitting details twice is rejected; the fallback link works.
    - **Rates:** edit base rates, the Top Deck surcharge, and the deposit setting (flat amount or percent; stored as the `deposit` settings row, seeded flat $100), stored in the DB tables from
      Phase 4. Quotes read from the DB, with config as the fallback. There is no inoperable or modified surcharge
      any more (those vehicles get a personalized quote), so the editor must not include them.
+   - **Weeks grid:** show top-deck usage per route and week (SUV slots and the car slot, taken and left) and allow a
+     per-week override. The columns `week_overrides.top_deck_suv_override` and `top_deck_car_override` already exist
+     and the capacity code honors them.
    - **Leads:** a list of quote requests with their `quote_reasons` (large vehicle, inoperable, modified,
      exotic, high value) and `modification_details`, filterable by reason, with the lead status.
+   - **Config values are defaults only; the database is the source of truth once seeded.** The seed
+     (`src/server/seed.ts`) only inserts rows that are missing and never updates an existing one, so a value the
+     client edits (route capacity, rates, deposit, surcharges) survives every deploy. Changing an existing value
+     for everyone ships as a one-time data migration in `drizzle/` (see `0005_data_capacity_and_deposit.sql`).
+     The editors must write to the DB, and quotes, holds and capacity must read from it, with config only as the
+     fallback for a missing row. A seed test (`src/server/seed.db.test.ts`) guards this.
    - Log every admin action (who/what/when) to an `admin_log` table.
 
 **Done when:** closing a week makes it show unavailable in the modal right away, cancelling frees the spot,

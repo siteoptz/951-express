@@ -33,7 +33,7 @@ export const routes = pgTable('routes', {
   name: text('name').notNull(),
   pickupRegion: regionEnum('pickup_region').notNull(),
   deliveryRegion: regionEnum('delivery_region').notNull(),
-  weeklyCapacity: integer('weekly_capacity').notNull().default(12),
+  weeklyCapacity: integer('weekly_capacity').notNull().default(6),
   active: boolean('active').notNull().default(true),
 });
 
@@ -45,6 +45,9 @@ export const weekOverrides = pgTable(
       .references(() => routes.id),
     weekStart: date('week_start', { mode: 'string' }).notNull(),
     capacityOverride: integer('capacity_override'),
+    /** Per-week top-deck slot overrides (null = the config default). Phase 8 sets these in the weeks grid. */
+    topDeckSuvOverride: integer('top_deck_suv_override'),
+    topDeckCarOverride: integer('top_deck_car_override'),
     closed: boolean('closed').notNull().default(false),
   },
   (t) => [primaryKey({ columns: [t.routeId, t.weekStart] })],

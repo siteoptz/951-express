@@ -147,7 +147,7 @@ test('4242 pays: the booking is marked paid, the modal advances, and a replayed 
   const avail = await (await request.get('/api/availability?route=west-to-east')).json();
   expect(avail.weeks.find((w: { start: string }) => w.start === week.start)).toMatchObject({
     taken: 1,
-    remaining: 11,
+    remaining: 5,
   });
 
   // Replay the real event, correctly signed, straight at the endpoint.
@@ -205,7 +205,7 @@ test('an expired session releases the spot (via the real expired webhook) @strip
   const before = await (await request.get('/api/availability?route=west-to-east')).json();
   expect(before.weeks.find((w: { start: string }) => w.start === week.start)).toMatchObject({
     taken: 1,
-    remaining: 11,
+    remaining: 5,
   });
 
   await stripe.checkout.sessions.expire(held.stripeSessionId!); // what happens at the end of the hold
@@ -215,7 +215,7 @@ test('an expired session releases the spot (via the real expired webhook) @strip
   const after = await (await request.get('/api/availability?route=west-to-east')).json();
   expect(after.weeks.find((w: { start: string }) => w.start === week.start)).toMatchObject({
     taken: 0,
-    remaining: 12,
+    remaining: 6,
   });
 });
 
@@ -239,7 +239,7 @@ test('closing the window mid-payment releases the hold at once @stripe', async (
   const avail = await (await request.get('/api/availability?route=west-to-east')).json();
   expect(avail.weeks.find((w: { start: string }) => w.start === week.start)).toMatchObject({
     taken: 0,
-    remaining: 12,
+    remaining: 6,
   });
 });
 

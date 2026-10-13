@@ -188,6 +188,20 @@ describe('persistence', () => {
   });
 });
 
+describe('top deck switch notice', () => {
+  it('is cleared when a load type is picked again', () => {
+    const switched = { ...filled, topDeck: false, topDeckSwitched: '2026-10-19|small-suv' };
+    expect(set(switched, 'topDeck', true).topDeckSwitched).toBe('');
+    expect(set(switched, 'topDeck', false).topDeckSwitched).toBe('');
+    expect(set(switched, 'weekStart', '2026-10-26').topDeckSwitched).toBe('2026-10-19|small-suv');
+  });
+  it('is never saved', () => {
+    const store = mem();
+    saveForm({ ...filled, topDeckSwitched: 'x|y' }, store);
+    expect(loadForm(store).topDeckSwitched).toBe('');
+  });
+});
+
 describe('personalized quote routing', () => {
   const lead = { ...filled, name: 'Lee', phone: '555-010-0199', email: 'lee@example.com' };
 

@@ -16,11 +16,11 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [x] Inoperable and modified vehicles no longer get an online price: they go to a personalized quote (Cal, 2026-10-13). The old +$150 and +$100 surcharges are retired.
 - [x] Deposit is a flat $100 on every booking (Cal, 2026-10-13). The balance is paid at delivery by Cash, Cashier's Check, or Zelle only; no credit cards.
 - [ ] Confirm the standard delivery estimate of 7–10 days after pickup (`deliveryWindowDays` in `src/config/booking.ts`).
-- [ ] Can inoperable vehicles go on the top deck?
-- [ ] Is there a limit on top-deck spots per truck?
+- [x] Inoperable vehicles no longer book online (personalized quote), so the top-deck question for them is moot.
+- [ ] **Top-deck limits** (defaults in `topDeckLimits`, `src/config/pricing.ts`): 3 SUV slots and 1 car slot per route per week, held together with the 6 main spots. Confirm: is it 3 SUVs **and** 1 car at the same time? Are minivans and small/midsize pickups allowed on top (default: yes, as SUV slots)? May a sedan use a free SUV slot when the car slot is taken (default: yes)?
 - [ ] Confirm the sedan and SUV class lists and the pickup year cutoffs (Ranger 2013-2018 is unclassified: those years were not sold in the U.S., so the customer picks).
 - [ ] Should full-size vans (Transit, Sprinter, Express, Savana, ProMaster) be quote-required? Savana was added as the Express twin.
-- [ ] Weekly capacity per route (placeholder: 12 per direction).
+- [x] Weekly capacity is 6 per direction per week (Cal, 2026-10-13).
 - [x] Public contact email: 951.dispatcher@gmail.com (the site shows no phone number). [ ] Street address.
 - [x] USDOT 4020917, MC-1516594, and the insurance wording (fully licensed and bonded, cargo limit of $250,000 per occurrence) are confirmed and shown. Nothing else is claimed: no crash record, no years in operation. Add a stat to `company.confirmedStats` only after the client confirms it.
 

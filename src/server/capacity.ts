@@ -7,6 +7,14 @@ import { booking as bookingConfig } from '@/config/booking';
 import type { Region } from '@/config/routes';
 import { bookings, routes, weekOverrides, type Vehicle } from '@/db/schema';
 import type { Db } from '@/db';
+import {
+  defaultTopDeckCapacity,
+  topDeckFits,
+  topDeckRemaining,
+  topDeckSlotFor,
+  usedFromClasses,
+  type SlotCounts,
+} from '@/lib/top-deck';
 import { bookableWeeks, findBookableWeek, weekNumber, type Week } from '@/lib/weeks';
 
 type Executor = Pick<Db, 'select' | 'execute'>;
@@ -35,12 +43,18 @@ export type HoldInput = {
 
 export type HoldResult =
   | { ok: true; bookingId: string; publicToken: string; holdExpiresAt: Date }
-  | { ok: false; reason: 'full'; nextAvailableWeek: Week | null }
+  | { ok: false; reason: 'full' | 'top_deck_full'; nextAvailableWeek: Week | null }
   | { ok: false; reason: 'week_unavailable' | 'route_unavailable' };
 
 const SPOT_STATUSES = ['paid', 'completed'] as const;
 
 /** Paid and completed bookings, plus held bookings whose hold has not expired. Stale holds are ignored. */
+const countsAsSpot = (now: Date) =>
+  or(
+    inArray(bookings.status, [...SPOT_STATUSES]),
+    and(eq(bookings.status, 'held'), gt(bookings.holdExpiresAt, now)),
+  );
+
 export async function spotsTaken(
   ex: Executor,
   routeId: number,
@@ -51,16 +65,60 @@ export async function spotsTaken(
     .select({ n: count() })
     .from(bookings)
     .where(
+      and(eq(bookings.routeId, routeId), eq(bookings.weekStart, weekStart), countsAsSpot(now)),
+    );
+  return row.n;
+}
+
+/** Top-deck bookings that count (held, paid, completed) for a route and week, by the slot each needs. */
+export async function topDeckUsed(
+  ex: Executor,
+  routeId: number,
+  weekStart: string,
+  now: Date = new Date(),
+): Promise<SlotCounts> {
+  const rows = await ex
+    .select({ sizeClass: bookings.sizeClass, n: count() })
+    .from(bookings)
+    .where(
       and(
         eq(bookings.routeId, routeId),
         eq(bookings.weekStart, weekStart),
-        or(
-          inArray(bookings.status, [...SPOT_STATUSES]),
-          and(eq(bookings.status, 'held'), gt(bookings.holdExpiresAt, now)),
-        ),
+        eq(bookings.topDeck, true),
+        countsAsSpot(now),
       ),
-    );
-  return row.n;
+    )
+    .groupBy(bookings.sizeClass);
+  return usedFromClasses(rows);
+}
+
+/** Top-deck slots for a week: the per-week override, else the config default. */
+export async function weekTopDeckCapacity(
+  ex: Executor,
+  routeId: number,
+  weekStart: string,
+): Promise<SlotCounts> {
+  const [o] = await ex
+    .select()
+    .from(weekOverrides)
+    .where(and(eq(weekOverrides.routeId, routeId), eq(weekOverrides.weekStart, weekStart)));
+  const base = defaultTopDeckCapacity();
+  return { suv: o?.topDeckSuvOverride ?? base.suv, car: o?.topDeckCarOverride ?? base.car };
+}
+
+/** Does a top-deck booking for this size class still fit in the week? */
+export async function topDeckHasRoom(
+  ex: Executor,
+  routeId: number,
+  weekStart: string,
+  sizeClass: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const [used, capacity] = await Promise.all([
+    topDeckUsed(ex, routeId, weekStart, now),
+    weekTopDeckCapacity(ex, routeId, weekStart),
+  ]);
+  return topDeckFits(topDeckSlotFor(sizeClass), used, capacity);
 }
 
 /** Capacity for a week: a closed week is 0, else the override, else the route default. */
@@ -106,6 +164,24 @@ export async function createHold(
       } as const;
     }
 
+    // A top-deck booking also needs a free top-deck slot, checked inside the same lock as the main spots.
+    if (
+      input.topDeck &&
+      !(await topDeckHasRoom(tx, route.id, input.weekStart, input.sizeClass, now))
+    ) {
+      return {
+        ok: false,
+        reason: 'top_deck_full',
+        nextAvailableWeek: await nextAvailableWeek(
+          tx,
+          route,
+          input.weekStart,
+          now,
+          input.sizeClass,
+        ),
+      } as const;
+    }
+
     const holdExpiresAt = new Date(now.getTime() + bookingConfig.holdMinutes * 60_000);
     const publicToken = randomBytes(24).toString('base64url');
     const [row] = await tx
@@ -144,13 +220,29 @@ async function nextAvailableWeek(
   route: { id: number; weeklyCapacity: number },
   after: string,
   now: Date,
+  /** When set, the week must also have a top-deck slot for this size class. */
+  topDeckFor?: string,
 ): Promise<Week | null> {
   for (const week of bookableWeeks(now)) {
     if (week.start <= after) continue;
     const { capacity } = await weekCapacity(ex, route, week.start);
-    if ((await spotsTaken(ex, route.id, week.start, now)) < capacity) return week;
+    if ((await spotsTaken(ex, route.id, week.start, now)) >= capacity) continue;
+    if (topDeckFor && !(await topDeckHasRoom(ex, route.id, week.start, topDeckFor, now))) continue;
+    return week;
   }
   return null;
+}
+
+/** The next bookable week after `after` that has a main spot and, for top deck, a slot for this size class. */
+export async function getNextTopDeckWeek(
+  db: Db,
+  routeSlug: string,
+  after: string,
+  sizeClass: string,
+  now: Date = new Date(),
+): Promise<Week | null> {
+  const route = await findRoute(db, routeSlug);
+  return route ? nextAvailableWeek(db, route, after, now, sizeClass) : null;
 }
 
 export type WeekAvailability = Week & {
@@ -158,6 +250,8 @@ export type WeekAvailability = Week & {
   taken: number;
   remaining: number;
   closed: boolean;
+  /** Top-deck slots this week, by the kind of slot a vehicle needs. `remaining.car` includes free SUV slots. */
+  topDeck: { capacity: SlotCounts; taken: SlotCounts; remaining: SlotCounts };
 };
 
 /** Each bookable week for a route with its capacity, spots taken, and spots remaining. */
@@ -172,7 +266,22 @@ export async function getAvailability(
     bookableWeeks(now).map(async (week) => {
       const { capacity, closed } = await weekCapacity(db, route, week.start);
       const taken = await spotsTaken(db, route.id, week.start, now);
-      return { ...week, capacity, taken, remaining: Math.max(capacity - taken, 0), closed };
+      const [used, tdCapacity] = await Promise.all([
+        topDeckUsed(db, route.id, week.start, now),
+        weekTopDeckCapacity(db, route.id, week.start),
+      ]);
+      return {
+        ...week,
+        capacity,
+        taken,
+        remaining: Math.max(capacity - taken, 0),
+        closed,
+        topDeck: {
+          capacity: tdCapacity,
+          taken: used,
+          remaining: topDeckRemaining(used, tdCapacity),
+        },
+      };
     }),
   );
 }

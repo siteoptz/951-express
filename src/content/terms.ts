@@ -41,7 +41,7 @@ export const termsSections: TermsSection[] = [
     title: '2. Quotes and pricing',
     body: [
       "Our online price depends on your vehicle's size class (small sedan, large sedan, small SUV, midsize SUV, small pickup, midsize pickup, or minivan) and the route direction you choose. We set the size class from the year, make, and model you enter. If we cannot match your vehicle, you pick the closest size and we confirm it before pickup.",
-      `Top Deck Load is an optional upgrade for ${topDeckPrice}. It places your vehicle on the upper deck of the trailer, which keeps it away from oil and fluid leaks from other vehicles and shields it from road debris. Top deck space is limited and we confirm it when we schedule your pickup.`,
+      `Top Deck Load is an optional upgrade for ${topDeckPrice}. It places your vehicle on the upper deck of the trailer, which keeps it away from oil and fluid leaks from other vehicles and shields it from road debris. Top deck space is limited each week, and we show you how much is left for the week you choose. Your top deck spot is held with your booking.`,
       "Vehicles that don't run, modified vehicles, exotic or high-value vehicles (over $100,000), and large SUVs, pickups and vans require a personalized quote. You can ask for a personalized quote online. A quote request is not a booking: no deposit is taken and no space is held until you accept a quote from us.",
       'The price you accept at booking is the price you pay, as long as the information you gave us is accurate (see section 6).',
     ],

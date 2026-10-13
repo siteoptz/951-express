@@ -45,7 +45,7 @@ test.beforeAll(async () => {
   const rows = await db
     .insert(bookings)
     .values(
-      Array.from({ length: 12 }, (_, i) => ({
+      Array.from({ length: 6 }, (_, i) => ({
         publicToken: `e2e-full-${Date.now()}-${i}`,
         status: 'paid' as const,
         routeId: route.id,
@@ -314,7 +314,7 @@ test('a full week is struck through and cannot be selected', async ({ page }) =>
   await enterRoute(page, WEST, EAST);
   await chooseVehicle(page, '2020', 'Honda', 'Civic');
   await fillOptions(page);
-  const full = d.getByRole('radio', { name: new RegExp(`${fullWeek.label}, FULL 12/12`) });
+  const full = d.getByRole('radio', { name: new RegExp(`${fullWeek.label}, FULL 6/6`) });
   await expect(full).toHaveAttribute('aria-disabled', 'true');
   await full.click({ force: true });
   await expect(full).toHaveAttribute('aria-checked', 'false');

@@ -44,7 +44,7 @@ export function SummaryStep({
   busy: boolean;
   error: string | null;
   /** Set when the week filled between the quote and the hold: next is the next open week, or null. */
-  weekFull: { next: NextWeek } | null;
+  weekFull: { next: NextWeek; reason: 'week_full' | 'top_deck_full' } | null;
   onUseNextWeek: (week: { start: string; label: string }) => void;
 }) {
   const c = bookingCopy.summary;
@@ -105,7 +105,9 @@ export function SummaryStep({
 
       {weekFull && (
         <div role="alert" className="mt-4 rounded-lg border-2 border-danger p-4">
-          <p className="font-bold text-danger">{c.weekFull}</p>
+          <p className="font-bold text-danger">
+            {weekFull.reason === 'top_deck_full' ? bookingCopy.topDeck.soldOut : c.weekFull}
+          </p>
           {weekFull.next ? (
             <>
               <p className="mt-1 text-sm">{c.nextWeek.replace('{label}', weekFull.next.label)}</p>

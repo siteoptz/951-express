@@ -16,8 +16,8 @@ One landing page with a booking modal:
    vehicles, and exotic or high-value vehicles (over $100,000) have no online price: they get a "Request a
    personalized quote" form that stores a lead with its reasons (no deposit, no hold; the server decides, see
    `src/lib/eligibility.ts`). Options: high-value, operable and modified radios, a Standard / Top Deck Load (+$150) radio, personal items radio (Yes shows "100 lbs included.
-   Anything over 100 lbs is at the driver's discretion."), a pickup-week calendar limited to 12 spots per route
-   per week, and a required Terms & Conditions checkbox linked to /terms.
+   Anything over 100 lbs is at the driver's discretion."), a pickup-week calendar limited to 6 spots per route
+   per week (Top Deck Load also has its own per-week limit), and a required Terms & Conditions checkbox linked to /terms.
 2. **Cart & Deposit:** price breakdown plus deposit paid through Stripe Embedded Checkout.
 3. **Customer details** (only after payment): name, phone, email, address, pickup and delivery addresses, notes.
 4. **Email:** full booking record to the 951 Express team, plus a confirmation to the customer.
@@ -43,7 +43,7 @@ password-protected /admin.
 - **The full ZIP lists are server-only.** Import `src/data/zips/{west,east}.json` only from server modules
   (`*.server.ts`, with `import 'server-only'`). Client code may use `coverage.json` only.
 - **Capacity must be race-safe.** Check and insert holds inside one DB transaction guarded by
-  `pg_advisory_xact_lock(route_id, week_number)`. A concurrency test (13 simultaneous holds, exactly 12
+  `pg_advisory_xact_lock(route_id, week_number)`. A concurrency test (7 simultaneous holds, exactly 6
   succeed) must stay green.
 - A booking is only "paid" when Stripe says so (webhook, or `checkout.sessions.retrieve` with
   `payment_status === 'paid'`). The client `onComplete` callback is UX only.

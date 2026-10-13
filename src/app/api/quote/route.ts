@@ -4,7 +4,10 @@ import { evaluateStep1 } from '@/lib/booking-quote';
 import { routeErrorMessage } from '@/lib/routing';
 import { regionOfZip } from '@/lib/routing.server';
 import { step1Schema } from '@/lib/schemas';
-import { getAvailability } from '@/server/capacity';
+import { bookingCopy } from '@/content/booking';
+import { getAvailability, getNextTopDeckWeek, topDeckHasRoom } from '@/server/capacity';
+import { routes } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Recomputes the route, size class, price, and week from the raw Step 1 answers. Nothing priced comes from the browser.
 export async function POST(request: Request) {
@@ -44,6 +47,22 @@ export async function POST(request: Request) {
       { error: 'That pickup week just filled up. Pick another week.', reason: 'week_full' },
       { status: 409 },
     );
+  }
+
+  // Top Deck Load has its own limit per route and week. A full slot type returns 409 with the next week that fits.
+  if (parsed.data.topDeck) {
+    const db = getDb();
+    const [route] = await db.select().from(routes).where(eq(routes.slug, r.route.id));
+    if (route && !(await topDeckHasRoom(db, route.id, r.week.start, r.sizeClass))) {
+      return Response.json(
+        {
+          error: bookingCopy.topDeck.soldOut,
+          reason: 'top_deck_full',
+          nextAvailableWeek: await getNextTopDeckWeek(db, r.route.id, r.week.start, r.sizeClass),
+        },
+        { status: 409 },
+      );
+    }
   }
 
   return Response.json({

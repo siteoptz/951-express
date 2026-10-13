@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { booking as bookingConfig } from '@/config/booking';
+import { bookingCopy } from '@/content/booking';
 import type { Db } from '@/db';
 import { bookings } from '@/db/schema';
 import { evaluateStep1 } from '@/lib/booking-quote';
@@ -21,7 +22,12 @@ export type CheckoutResult =
       holdExpiresAt: string;
       weekLabel: string;
     }
-  | { status: 409; error: string; reason: 'week_full'; nextAvailableWeek: Week | null }
+  | {
+      status: 409;
+      error: string;
+      reason: 'week_full' | 'top_deck_full';
+      nextAvailableWeek: Week | null;
+    }
   | { status: 422; error: string; reason: string; quoteRequired?: true; quoteReasons?: string[] }
   | { status: 502 | 503; error: string; reason: string };
 
@@ -91,6 +97,14 @@ export async function createCheckout(
         status: 409,
         error: 'That pickup week just filled up.',
         reason: 'week_full',
+        nextAvailableWeek: hold.nextAvailableWeek,
+      };
+    }
+    if (hold.reason === 'top_deck_full') {
+      return {
+        status: 409,
+        error: bookingCopy.topDeck.soldOut,
+        reason: 'top_deck_full',
         nextAvailableWeek: hold.nextAvailableWeek,
       };
     }

@@ -61,3 +61,16 @@ export const topDeck = {
     'Protects the vehicle from road debris due to its elevated position on the trailer',
   ],
 } as const;
+
+/**
+ * Top Deck Load limits per route per week (Cal, 2026-10-13). A top-deck booking uses one of the week's main spots
+ * as well as one of these slots. All of this is TODO(client) to confirm.
+ */
+export const topDeckLimits = {
+  suvSlots: 3,
+  carSlots: 1,
+  // A sedan may use a free SUV slot when the car slot is taken.
+  carMayUseSuvSlot: true,
+  suvClasses: ['small-suv', 'midsize-suv', 'minivan', 'small-pickup', 'midsize-pickup'],
+  carClasses: ['small-sedan', 'large-sedan'],
+} as const;
