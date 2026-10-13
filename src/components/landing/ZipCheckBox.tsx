@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/ui/Button';
 import { company, contactMailto } from '@/config/company';
 import { regionLabels, type Region } from '@/config/routes';
 import { landing } from '@/content/landing';
+import { zipInputAttrs } from '@/lib/zip-input';
 
 type Result =
   | { kind: 'served'; zip: string; place: string | null; region: Region; opposite: Region }
@@ -115,7 +116,7 @@ export function ZipCheckBox() {
           name="zip"
           value={zip}
           onChange={(e) => setZip(e.target.value)}
-          inputMode="numeric"
+          {...zipInputAttrs}
           autoComplete="postal-code"
           maxLength={10}
           aria-describedby={`${id}-result`}

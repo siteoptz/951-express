@@ -213,3 +213,25 @@ test('the accent is the logo orange, with navy text on filled buttons', async ({
   expect(css.bg).toBe('rgb(240, 106, 26)'); // #F06A1A
   expect(css.color).toBe('rgb(14, 26, 43)'); // navy #0E1A2B, never white
 });
+
+test('every rendered ZIP input opts out of password managers and keeps postal-code autocomplete', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('banner').getByRole('button', { name: 'Get My Quote' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Get My Instant Quote' });
+  await expect(dialog.getByLabel('Pickup ZIP')).toBeVisible();
+  const inputs = [
+    page.locator('#service-area input[name="zip"]'),
+    dialog.getByLabel('Pickup ZIP'),
+    dialog.getByLabel('Delivery ZIP'),
+  ];
+  for (const input of inputs) {
+    await expect(input).toHaveAttribute('data-1p-ignore', /.*/);
+    await expect(input).toHaveAttribute('data-lpignore', 'true');
+    await expect(input).toHaveAttribute('data-bwignore', /.*/);
+    await expect(input).toHaveAttribute('data-form-type', 'other');
+    await expect(input).toHaveAttribute('autocomplete', 'postal-code');
+    await expect(input).toHaveAttribute('inputmode', 'numeric');
+  }
+});

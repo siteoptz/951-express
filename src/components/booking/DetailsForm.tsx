@@ -8,6 +8,7 @@ import type { BookingView } from '@/lib/booking-view';
 import { digitsOnly } from '@/lib/booking-form';
 import { step3Schema } from '@/lib/schemas';
 import { useZipCheck } from './useZipCheck';
+import { zipInputAttrs } from '@/lib/zip-input';
 
 export type DetailsContext = {
   pickupZip: string;
@@ -154,7 +155,7 @@ function AddressFields({
         <input
           id={`${id}-zip`}
           {...base}
-          inputMode="numeric"
+          {...zipInputAttrs}
           autoComplete={`section-${prefix} postal-code`}
           value={value.zip}
           onChange={(e) => set({ zip: digitsOnly(e.target.value) })}

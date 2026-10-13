@@ -33,6 +33,7 @@ import { PaymentStep, type CheckoutInfo } from './PaymentStep';
 import { SummaryStep, type NextWeek, type QuoteResponse } from './SummaryStep';
 import { useZipCheck, type ZipStatus } from './useZipCheck';
 import { WeekPicker, type WeekRow } from './WeekPicker';
+import { zipInputAttrs } from '@/lib/zip-input';
 
 type Step = 'form' | 'summary' | 'payment' | 'details' | 'booked' | 'lead_done';
 type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; data: T };
@@ -489,7 +490,7 @@ export default function BookingModal({
                 <input
                   id="pickup-zip"
                   autoFocus
-                  inputMode="numeric"
+                  {...zipInputAttrs}
                   autoComplete="postal-code"
                   value={form.pickupZip}
                   onChange={(e) => set('pickupZip', digitsOnly(e.target.value))}
@@ -511,8 +512,8 @@ export default function BookingModal({
                 </label>
                 <input
                   id="delivery-zip"
-                  inputMode="numeric"
-                  autoComplete="off"
+                  {...zipInputAttrs}
+                  autoComplete="postal-code"
                   disabled={!pickupRegion}
                   value={form.deliveryZip}
                   onChange={(e) => set('deliveryZip', digitsOnly(e.target.value))}
