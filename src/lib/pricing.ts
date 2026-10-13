@@ -1,5 +1,6 @@
 import {
   pricing as defaultPricing,
+  type PricingConfig,
   sizeClasses,
   topDeck,
   type SizeClassId,
@@ -27,7 +28,7 @@ export type QuoteResult = Quote | { quoteRequired: true };
 
 export function calculateQuote(
   input: QuoteInput,
-  cfg: typeof defaultPricing = defaultPricing,
+  cfg: PricingConfig = defaultPricing,
 ): QuoteResult {
   if (input.sizeClass === 'large') return { quoteRequired: true };
   const base = sizeClasses.find((c) => c.id === input.sizeClass);
@@ -38,7 +39,10 @@ export function calculateQuote(
     surcharges.push({ id: 'topDeck', label: topDeck.label, cents: topDeck.surchargeCents });
 
   const totalCents = base.baseCents + surcharges.reduce((sum, s) => sum + s.cents, 0);
-  const depositCents = Math.round((totalCents * cfg.deposit.value) / 100);
+  const depositCents =
+    cfg.deposit.type === 'flat'
+      ? Math.min(cfg.deposit.amountCents, totalCents)
+      : Math.round((totalCents * cfg.deposit.value) / 100);
   return {
     baseCents: base.baseCents,
     surcharges,

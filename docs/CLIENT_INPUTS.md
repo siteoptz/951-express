@@ -14,7 +14,8 @@ Check items off as they arrive. Every placeholder in code is marked `TODO(client
 - [x] ZIP lists and direction rules (West ↔ East only), received. Confirm the East list is final: it is built from whole 3-digit ZIP blocks. Atlanta metro (30001–30400) was added on 2026-10-13 via `data/raw/east_additions.txt`. Charlotte (280-282), Birmingham (350-352), all of Florida, and the Northeast above Delaware are still outside the East list.
 - [x] Base rates per size class, received.
 - [x] Inoperable and modified vehicles no longer get an online price: they go to a personalized quote (Cal, 2026-10-13). The old +$150 and +$100 surcharges are retired.
-- [ ] Is the deposit still 25%?
+- [x] Deposit is a flat $100 on every booking (Cal, 2026-10-13). The balance is paid at delivery by Cash, Cashier's Check, or Zelle only; no credit cards.
+- [ ] Confirm the standard delivery estimate of 7–10 days after pickup (`deliveryWindowDays` in `src/config/booking.ts`).
 - [ ] Can inoperable vehicles go on the top deck?
 - [ ] Is there a limit on top-deck spots per truck?
 - [ ] Confirm the sedan and SUV class lists and the pickup year cutoffs (Ranger 2013-2018 is unclassified: those years were not sold in the U.S., so the customer picks).

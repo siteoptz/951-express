@@ -33,8 +33,8 @@ describe('evaluateStep1', () => {
       expect(r.lines).toEqual([{ id: 'base', label: 'Small sedan transport', cents: 140000 }]);
       expect(r.quote).toMatchObject({
         totalCents: 140000,
-        depositCents: 35000,
-        balanceCents: 105000,
+        depositCents: 10000,
+        balanceCents: 130000,
       });
     }
   });

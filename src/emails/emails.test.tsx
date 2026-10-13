@@ -80,6 +80,13 @@ describe('NewBookingEmail', () => {
     expect(out).not.toMatch(/Review needed/);
     expect(out).not.toMatch(/TOP DECK/);
   });
+  it('tells the team how the balance is collected', async () => {
+    const out = await text(<NewBookingEmail d={d} />);
+    expect(out).toContain("Cash, Cashier's Check, Zelle only. No credit cards.");
+    expect(teamText(d)).toContain(
+      "Balance payment: Cash, Cashier's Check, Zelle only. No credit cards.",
+    );
+  });
   it('the plain-text version carries the same facts', () => {
     const t = teamText(d);
     for (const s of [
@@ -130,6 +137,13 @@ describe('CustomerConfirmationEmail', () => {
   it('is a receipt with next steps and the 100 lb policy (snapshot)', async () => {
     expect(customerText(buildBookingEmailData(booking, ctx))).toMatchSnapshot();
   });
+  it('plain text carries the balance message and the delivery window', () => {
+    const t = customerText(buildBookingEmailData(booking, ctx));
+    expect(t).toContain(
+      "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+    );
+    expect(t).toContain('Estimated delivery: 7–10 days after pickup');
+  });
   it('includes the Top Deck benefits only when chosen', async () => {
     const without = await text(
       <CustomerConfirmationEmail d={buildBookingEmailData(booking, ctx)} />,
@@ -145,6 +159,11 @@ describe('CustomerConfirmationEmail', () => {
         "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
       );
       expect(out).toContain('Balance due at delivery');
+      expect(out).toContain(
+        "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+      );
+      expect(out).toContain('Estimated delivery');
+      expect(out).toContain('7–10 days after pickup');
       expect(out).toContain('951.dispatcher@gmail.com');
       expect(out).not.toMatch(/\(951\) 427/);
     }

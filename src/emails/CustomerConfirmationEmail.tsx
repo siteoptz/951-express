@@ -1,6 +1,8 @@
 import { Link, Text } from '@react-email/components';
+import { booking } from '@/config/booking';
 import { company, contactMailto } from '@/config/company';
 import { emailCopy } from '@/content/emails';
+import { deliveryWindowText } from '@/lib/delivery-window';
 import { money } from '@/lib/format';
 import type { BookingEmailData } from '@/lib/email-data';
 import { Banner, Block, colors, EmailLayout, Field, Heading, Paragraph } from './EmailLayout';
@@ -27,8 +29,13 @@ export function CustomerConfirmationEmail({ d }: { d: BookingEmailData }) {
         <Field label="Balance due at delivery" strong>
           {money(d.balanceCents)}
         </Field>
+        <Field label="Estimated delivery">{deliveryWindowText()}</Field>
       </Block>
-      <Paragraph muted>{c.balanceNote}</Paragraph>
+      <Banner tone="info">
+        <Paragraph>
+          <strong>{booking.balanceMessage}</strong>
+        </Paragraph>
+      </Banner>
 
       <Block title={c.nextStepsHeading}>
         {c.nextSteps.map((step, i) => (

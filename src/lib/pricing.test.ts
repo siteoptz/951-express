@@ -18,8 +18,8 @@ describe('base prices', () => {
     expect(r.baseCents).toBe(cents);
     expect(r.totalCents).toBe(cents);
     expect(r.surcharges).toEqual([]);
-    expect(r.depositCents).toBe(cents / 4);
-    expect(r.balanceCents).toBe(cents - cents / 4);
+    expect(r.depositCents).toBe(10000);
+    expect(r.balanceCents).toBe(cents - 10000);
     expect(r.needsReview).toBe(false);
   });
   it('covers every configured class', () => {
@@ -59,9 +59,41 @@ describe('surcharges', () => {
   });
 });
 
+describe('flat $100 deposit', () => {
+  it('is exactly $100 for every class, with and without top deck', () => {
+    for (const { id } of sizeClasses) {
+      for (const topDeck of [false, true]) {
+        const r = q(calculateQuote({ sizeClass: id, topDeck }));
+        expect(r.depositCents).toBe(10000);
+        expect(r.balanceCents).toBe(r.totalCents - 10000);
+        expect(r.depositCents + r.balanceCents).toBe(r.totalCents);
+      }
+    }
+  });
+  it('is configured as flat, in cents', () => {
+    expect(pricing.deposit).toEqual({ type: 'flat', amountCents: 10000 });
+  });
+  it('never exceeds the total', () => {
+    const cfg = { deposit: { type: 'flat' as const, amountCents: 999_999_99 } };
+    const r = q(calculateQuote({ sizeClass: 'small-sedan' }, cfg));
+    expect(r.depositCents).toBe(140000);
+    expect(r.balanceCents).toBe(0);
+  });
+});
+
+describe('percent deposit (still supported)', () => {
+  it('computes a percentage of the total', () => {
+    const r = q(
+      calculateQuote({ sizeClass: 'small-sedan' }, { deposit: { type: 'percent', value: 25 } }),
+    );
+    expect(r.depositCents).toBe(35000);
+    expect(r.balanceCents).toBe(105000);
+  });
+});
+
 describe('deposit rounding', () => {
   it('rounds to whole cents and always sums to the total', () => {
-    const cfg = { ...pricing, deposit: { type: 'percent' as const, value: 33 } };
+    const cfg = { deposit: { type: 'percent' as const, value: 33 } };
     for (const sizeClass of ['small-sedan', 'midsize-suv', 'minivan'] as const) {
       for (const topDeck of [false, true]) {
         const r = q(calculateQuote({ sizeClass, topDeck }, cfg));
@@ -70,10 +102,7 @@ describe('deposit rounding', () => {
       }
     }
     const r = q(
-      calculateQuote(
-        { sizeClass: 'small-sedan' },
-        { ...pricing, deposit: { type: 'percent', value: 33.333 } },
-      ),
+      calculateQuote({ sizeClass: 'small-sedan' }, { deposit: { type: 'percent', value: 33.333 } }),
     );
     expect(r.depositCents).toBe(46666);
   });

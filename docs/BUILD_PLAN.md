@@ -48,7 +48,7 @@ to start it.
      `weeklyCapacity: 12`. Each direction is its own route (for example `west-to-tx` and `tx-to-west`).
    - `pricing.ts`: size classes and base rates (sedan $850, mid-size SUV $975, pickup/full-size SUV/van
      $1,100, oversized $1,300), inoperable +$150, modified +$100 with `modifiedPolicy: 'surcharge' | 'review'`,
-     deposit `{ type: 'percent', value: 25 }`. All money is stored as integer cents.
+     deposit `{ type: 'flat', amountCents: 10000 }` (percent is still supported). All money is stored as integer cents.
    - `booking.ts`: `timezone: 'America/Los_Angeles'`, `weekStartsOn: 1` (Monday), `leadDays: 3`,
      `weeksShown: 8`, `holdMinutes: 30`, personal-items notice text, terms version string.
 6. **Create `.env.example`** with `DATABASE_URL`, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`,
@@ -135,7 +135,7 @@ performance and accessibility; there are no layout shifts from images.
   West → East" label and restricts the delivery ZIP to the opposite list. Routes: `west-to-east`, `east-to-west`,
   12 per week each.
 - **Pricing** (`src/lib/pricing.ts`, `src/config/pricing.ts`): seven classes from $1,400 to $1,900; large vehicles
-  return `{ quoteRequired: true }`. Top Deck Load +$150. Deposit 25%. (Changed 2026-10-13: inoperable and modified vehicles are no longer priced online; they go to a personalized quote.)
+  return `{ quoteRequired: true }`. Top Deck Load +$150. Deposit: a flat $100 (changed 2026-10-13 from 25%). (Changed 2026-10-13: inoperable and modified vehicles are no longer priced online; they go to a personalized quote.)
 - **Vehicle classes** (`src/lib/size-class.ts`, `src/config/vehicle-classes.ts`): longest-prefix model lists plus
   year rules for Ranger, Tacoma, and Frontier. Unknown returns `null`; `resolveSizeClass` is the server decision
   and never lets a customer pick a cheaper class than the table assigns.
@@ -383,7 +383,7 @@ dashboard; submitting details twice is rejected; the fallback link works.
    - **Capacity grid:** routes × the next 8 weeks, each cell showing taken/capacity. Actions: close or reopen
      a week, set a capacity override, and cancel a booking to release its spot. Cancelling does not refund in
      Stripe; refunds are done in the Stripe dashboard, as the proposal scopes it.
-   - **Rates:** edit base rates, the Top Deck surcharge, and the deposit setting, stored in the DB tables from
+   - **Rates:** edit base rates, the Top Deck surcharge, and the deposit setting (flat amount or percent; stored as the `deposit` settings row, seeded flat $100), stored in the DB tables from
      Phase 4. Quotes read from the DB, with config as the fallback. There is no inoperable or modified surcharge
      any more (those vehicles get a personalized quote), so the editor must not include them.
    - **Leads:** a list of quote requests with their `quote_reasons` (large vehicle, inoperable, modified,

@@ -1,7 +1,9 @@
 // Plain-text versions of the emails (the part email clients show when they do not render HTML).
+import { booking } from '@/config/booking';
 import { company } from '@/config/company';
 import { emailCopy } from '@/content/emails';
 import type { BookingEmailData, buildLeadEmailData } from '@/lib/email-data';
+import { deliveryWindowText } from '@/lib/delivery-window';
 import { money } from '@/lib/format';
 
 const line = (label: string, value: string) => `${label}: ${value}`;
@@ -50,6 +52,7 @@ export function teamText(d: BookingEmailData): string {
       line('Transport total', money(d.totalCents)),
       line('Deposit paid', money(d.depositCents)),
       line('Balance due at delivery', money(d.balanceCents)),
+      line('Balance payment', `${booking.balanceMethods.join(', ')} only. No credit cards.`),
       ...(d.paidAt ? [line('Paid', d.paidAt)] : []),
       line('Terms accepted', `Version ${d.termsVersion}, ${d.termsAcceptedAt}`),
       ...(d.stripeUrl ? [line('Stripe', d.stripeUrl)] : []),
@@ -74,8 +77,9 @@ export function customerText(d: BookingEmailData): string {
       line('Transport total', money(d.totalCents)),
       line('Deposit paid', money(d.depositCents)),
       line('Balance due at delivery', money(d.balanceCents)),
+      line('Estimated delivery', deliveryWindowText()),
     ]),
-    c.balanceNote,
+    booking.balanceMessage,
     section(
       c.nextStepsHeading,
       c.nextSteps.map((s, i) => `${i + 1}. ${s}`),

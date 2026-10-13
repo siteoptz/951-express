@@ -1,7 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { booking } from '@/config/booking';
 import { bookingCopy } from '@/content/booking';
+import { estimatedDeliveryLine } from '@/lib/delivery-window';
 
 export type QuoteResponse = {
   route: { id: string; name: string };
@@ -86,7 +88,13 @@ export function SummaryStep({
           <span>{c.balance}</span>
           <span className="font-bold">{money(quote.balanceCents)}</span>
         </div>
+        <p className="mt-2 text-sm font-semibold" data-testid="balance-message">
+          {booking.balanceMessageShort}
+        </p>
       </div>
+      <p className="mt-3 text-sm font-semibold" data-testid="delivery-estimate">
+        {estimatedDeliveryLine()}
+      </p>
 
       {quote.personalItemsNotice && (
         <p className="mt-3 rounded-lg bg-accent/20 px-4 py-3 text-sm font-semibold">

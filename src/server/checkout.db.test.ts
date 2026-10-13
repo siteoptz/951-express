@@ -129,8 +129,8 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
     });
     expect(p.line_items?.[0]).toMatchObject({
       quantity: 1,
-      price_data: { currency: 'usd', unit_amount: 37500 },
-    }); // 25% of $1,500 small SUV
+      price_data: { currency: 'usd', unit_amount: 10000 },
+    }); // the flat $100 deposit
     expect((p.line_items?.[0].price_data?.product_data as { name: string }).name).toBe(
       `Transport deposit: 2021 Toyota RAV4, West → East, week of ${weeks[4].label.split(' – ')[0]}`,
     );
@@ -140,8 +140,8 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
     expect(b).toMatchObject({
       status: 'held',
       totalCents: 150000,
-      depositCents: 37500,
-      balanceCents: 112500,
+      depositCents: 10000,
+      balanceCents: 140000,
       sizeClass: 'small-suv',
       sizeClassSource: 'table',
       routeId,
@@ -159,7 +159,7 @@ describe.skipIf(!url)('checkout and Stripe events (database)', () => {
       regionOfZip,
     );
     if (r.status === 200) created.push(r.bookingId);
-    expect(f.calls.create[0].line_items?.[0].price_data?.unit_amount).toBe(37500);
+    expect(f.calls.create[0].line_items?.[0].price_data?.unit_amount).toBe(10000);
   });
 
   it('releases the hold when Stripe fails', async () => {

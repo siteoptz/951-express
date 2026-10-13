@@ -14,7 +14,9 @@ describe('terms content', () => {
   it('states our actual rules', () => {
     for (const s of [
       'West region and our East region',
-      '25%',
+      'a flat deposit of $100',
+      "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+      'Standard delivery is estimated at 7–10 days after pickup. That is an estimate, not a guarantee',
       '$150',
       "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
       '7 or more days before the first day of your pickup week',
@@ -41,7 +43,7 @@ describe('terms content', () => {
     termsSections.forEach((s, i) => expect(s.title.startsWith(`${i + 1}. `)).toBe(true));
   });
   it('has a version and a last-updated date', () => {
-    expect(booking.termsVersion).toBe('2026-10-13');
+    expect(booking.termsVersion).toBe('2026-10-13.2');
     expect(booking.termsLastUpdated).toBe('October 13, 2026');
   });
 });

@@ -1,5 +1,5 @@
 // Seeds routes, rates, and settings from src/config. Idempotent: existing rows are left alone, so
-// re-running never overwrites a rate the admin has edited.
+// re-running never overwrites a rate the admin has edited. The one exception is the deposit setting.
 import { inArray } from 'drizzle-orm';
 import { createDb } from '../src/db';
 import { rates, routes, settings } from '../src/db/schema';
@@ -40,21 +40,26 @@ async function main() {
 
   await db
     .insert(settings)
-    .values([
-      { key: 'top_deck_surcharge_cents', value: topDeck.surchargeCents },
-      { key: 'deposit_percent', value: pricing.deposit.value },
-    ])
+    .values([{ key: 'top_deck_surcharge_cents', value: topDeck.surchargeCents }])
     .onConflictDoNothing({ target: settings.key });
-  // Inoperable and modified vehicles now go to a personalized quote, so these online surcharges are retired.
+  // The deposit is a flat $100 now. Unlike the rows above this one is UPDATED on every run, in every
+  // environment, so the stored setting always matches config until the Phase 8 rates editor owns it.
   await db
-    .delete(settings)
-    .where(
-      inArray(settings.key, [
-        'inoperable_surcharge_cents',
-        'modified_surcharge_cents',
-        'modified_policy',
-      ]),
-    );
+    .insert(settings)
+    .values({ key: 'deposit', value: pricing.deposit })
+    .onConflictDoUpdate({
+      target: settings.key,
+      set: { value: pricing.deposit, updatedAt: new Date() },
+    });
+  // Inoperable and modified vehicles now go to a personalized quote, so these online surcharges are retired.
+  await db.delete(settings).where(
+    inArray(settings.key, [
+      'inoperable_surcharge_cents',
+      'modified_surcharge_cents',
+      'modified_policy',
+      'deposit_percent', // replaced by the 'deposit' setting
+    ]),
+  );
 
   const [r, c, s] = await Promise.all([
     db.select().from(routes),

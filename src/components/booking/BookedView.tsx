@@ -1,4 +1,6 @@
+import { booking } from '@/config/booking';
 import { bookingCopy as t } from '@/content/booking';
+import { estimatedDeliveryLine } from '@/lib/delivery-window';
 import type { BookingView } from '@/lib/booking-view';
 import { money } from '@/lib/format';
 
@@ -39,6 +41,12 @@ export function BookedView({ view, actions }: { view: BookingView; actions: Reac
           <dd className="text-right text-lg font-extrabold">{money(view.balanceCents)}</dd>
         </div>
       </dl>
+      <p className="mt-3 text-sm font-semibold" data-testid="balance-message">
+        {booking.balanceMessage}
+      </p>
+      <p className="mt-2 text-sm font-semibold" data-testid="delivery-estimate">
+        {estimatedDeliveryLine()}
+      </p>
 
       <p className="mt-4 text-sm text-muted">
         {view.email ? c.emailNote.replace('{email}', view.email) : c.emailNoteGeneric}

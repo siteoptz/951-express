@@ -95,9 +95,18 @@ test('the cart shows the vehicle, totals, deposit, hold countdown, and embedded 
   const d = dialog(page);
   await expect(d.getByText('2020 Honda Civic')).toBeVisible();
   await expect(d.getByText('Transport total').locator('..')).toContainText('$1,400');
-  await expect(d.getByText('Balance due at delivery').locator('..')).toContainText('$1,050');
-  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$350');
+  await expect(d.getByText('Balance due at delivery', { exact: true }).locator('..')).toContainText(
+    '$1,300',
+  );
+  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$100');
   await expect(d.getByText('Secure checkout · processed by Stripe')).toBeVisible();
+  await expect(page.getByTestId('balance-message')).toHaveText(
+    "Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+  );
+  await expect(page.getByTestId('delivery-estimate')).toHaveText(
+    'Estimated delivery: 7–10 days after pickup',
+  );
+
   const timer = await d.getByRole('timer').innerText();
   const [m, s] = timer
     .match(/(\d+):(\d{2})/)!
@@ -108,12 +117,12 @@ test('the cart shows the vehicle, totals, deposit, hold countdown, and embedded 
 
   await expectAccessible(page, 'payment step (cart and countdown)', 'dialog[open]');
   const b = await latestBooking(week.start);
-  expect(b).toMatchObject({ status: 'held', depositCents: 35000 });
+  expect(b).toMatchObject({ status: 'held', depositCents: 10000 });
   const session = await stripe.checkout.sessions.retrieve(b.stripeSessionId!);
   expect(session).toMatchObject({
     ui_mode: 'embedded_page',
     mode: 'payment',
-    amount_total: 35000,
+    amount_total: 10000,
     metadata: { bookingId: b.id },
   });
   expect(session.expires_at).toBe(Math.floor(b.holdExpiresAt!.getTime() / 1000));
@@ -307,6 +316,13 @@ test('after paying, Step 3 finishes the booking inside the modal @stripe', async
   await fillDetails(d);
   await d.getByRole('button', { name: 'Finish my booking' }).click();
   await expect(d.getByText("✓ You're booked!")).toBeVisible();
+  await expect(d.getByTestId('balance-message')).toHaveText(
+    "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+  );
+  await expect(d.getByTestId('delivery-estimate')).toHaveText(
+    'Estimated delivery: 7–10 days after pickup',
+  );
+
   await expect(d.getByText('2020 Honda Civic')).toBeVisible();
   await expectAccessible(page, 'booked confirmation in the modal', 'dialog[open]');
   const done = await waitForStatus(week.start, 'completed');

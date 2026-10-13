@@ -11,7 +11,6 @@ export const emailCopy = {
       'Your driver calls you before pickup and before delivery.',
       'You pay the remaining balance to the driver at delivery.',
     ],
-    balanceNote: 'The balance is due at delivery.',
     personalItemsHeading: 'Personal items',
     topDeckHeading: 'Why Top Deck Load',
     questions: 'Questions? Reply to this email or write to',

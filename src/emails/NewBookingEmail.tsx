@@ -1,4 +1,5 @@
 import { Link, Text } from '@react-email/components';
+import { booking } from '@/config/booking';
 import { emailCopy } from '@/content/emails';
 import { money } from '@/lib/format';
 import type { BookingEmailData } from '@/lib/email-data';
@@ -95,6 +96,9 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
         </Field>
         <Field label="Balance due at delivery" strong>
           {money(d.balanceCents)}
+        </Field>
+        <Field label="Balance payment">
+          {booking.balanceMethods.join(', ')} only. No credit cards.
         </Field>
         {d.paidAt && <Field label="Paid">{d.paidAt}</Field>}
         <Field label="Terms accepted">

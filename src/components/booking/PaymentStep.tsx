@@ -4,7 +4,9 @@ import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe
 import { loadStripe } from '@stripe/stripe-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { booking } from '@/config/booking';
 import { bookingCopy as t } from '@/content/booking';
+import { estimatedDeliveryLine } from '@/lib/delivery-window';
 import { money, type QuoteResponse } from './SummaryStep';
 
 export type CheckoutInfo = {
@@ -104,6 +106,12 @@ export function PaymentStep({
             </div>
           ))}
         </dl>
+        <p className="mt-2 text-sm font-semibold" data-testid="balance-message">
+          {booking.balanceMessageShort}
+        </p>
+        <p className="mt-2 text-sm font-semibold" data-testid="delivery-estimate">
+          {estimatedDeliveryLine()}
+        </p>
       </div>
 
       <div className="mt-3 flex justify-between gap-4 rounded-lg bg-success-dark px-4 py-3 text-lg font-extrabold text-white">

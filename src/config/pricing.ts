@@ -43,8 +43,13 @@ export const largeVehicle = {
   example: 'Chevrolet Tahoe, Chevrolet Silverado 1500 and larger',
 } as const;
 
-export const pricing = {
-  deposit: { type: 'percent' as const, value: 25 }, // TODO(client)
+export type DepositConfig =
+  { type: 'flat'; amountCents: number } | { type: 'percent'; value: number };
+export type PricingConfig = { deposit: DepositConfig };
+
+export const pricing: PricingConfig = {
+  // A flat $100 on every booking (Cal, 2026-10-13). Percent is still supported: { type: 'percent', value: 25 }.
+  deposit: { type: 'flat', amountCents: 10000 },
 };
 
 export const topDeck = {

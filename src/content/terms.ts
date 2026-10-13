@@ -6,12 +6,16 @@
 import { booking } from '@/config/booking';
 import { company } from '@/config/company';
 import { pricing, topDeck } from '@/config/pricing';
+import { deliveryWindowText } from '@/lib/delivery-window';
 import { money } from '@/lib/format';
 
 export type TermsBlock = string | { list: string[] };
 export type TermsSection = { id: string; title: string; body: TermsBlock[] };
 
-const depositPercent = pricing.deposit.value;
+const depositText =
+  pricing.deposit.type === 'flat'
+    ? `a flat deposit of ${money(pricing.deposit.amountCents)}`
+    : `a deposit of ${pricing.deposit.value}% of the transport price`;
 const topDeckPrice = money(topDeck.surchargeCents);
 // TODO(client): cancellation window (days before the first day of the pickup week).
 const refundDays = 7;
@@ -46,10 +50,9 @@ export const termsSections: TermsSection[] = [
     id: 'deposit-and-payment',
     title: '3. Deposit and payment',
     body: [
-      `To reserve your spot you pay a deposit of ${depositPercent}% of the transport price when you book. We charge the deposit to your card at booking through our payment processor, Stripe. Your spot is held while you complete payment, and it is released if you do not finish in time.`,
+      `To reserve your spot you pay ${depositText} when you book. We charge the deposit to your card at booking through our payment processor, Stripe. Your spot is held while you complete payment, and it is released if you do not finish in time.`,
       'The remaining balance is due at delivery and is paid to the driver. The deposit is part of your price, not an extra charge.',
-      // TODO(client): list the forms of payment the driver accepts at delivery (for example cash, cashier's check, certified funds, money order, or card).
-      'We confirm the forms of payment the driver accepts with you before pickup. Please plan to have the balance ready when your vehicle arrives.',
+      `${booking.balanceMessage} Please plan to have the balance ready in one of these forms when your vehicle arrives.`,
     ],
   },
   {
@@ -74,7 +77,7 @@ export const termsSections: TermsSection[] = [
     id: 'pickup-and-delivery-timing',
     title: '5. Pickup and delivery timing',
     body: [
-      'When you book, you choose an estimated pickup week. That week is an estimate, not a guaranteed date. We contact you to confirm the pickup date within your week, and we confirm delivery timing once your vehicle is on the road.',
+      `When you book, you choose an estimated pickup week. That week is an estimate, not a guaranteed date. We contact you to confirm the pickup date within your week. Standard delivery is estimated at ${deliveryWindowText()}. That is an estimate, not a guarantee, and we confirm delivery timing once your vehicle is on the road.`,
       'Transport depends on things we do not control, including weather, road and traffic conditions, mechanical problems, and government rules such as driver hours-of-service limits. These can delay pickup or delivery. We will keep you informed and work to move your vehicle as soon as we can, but we are not responsible for delays that come from these causes.',
       'Someone you trust must be available to hand over and receive the vehicle at the agreed times and places. A large truck cannot always reach a residential street. The driver may ask to meet you at a nearby large, safe parking area.',
     ],

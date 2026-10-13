@@ -167,9 +167,25 @@ test('West → East happy path ends on the Step 2 summary', async ({ page }) => 
   await expect(d.getByText('Small sedan transport')).toBeVisible();
   const lines = d.getByRole('list', { name: 'Price breakdown' });
   await expect(lines).toContainText('$1,400');
-  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$350');
-  await expect(d.getByText('Balance due at delivery').locator('..')).toContainText('$1,050');
+  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$100');
+  await expect(d.getByText('Balance due at delivery', { exact: true }).locator('..')).toContainText(
+    '$1,300',
+  );
   await expect(d.getByRole('button', { name: 'Continue to secure payment' })).toBeEnabled(); // pays in the Stripe tests (npm run e2e:stripe)
+  await expect(page.getByTestId('balance-message')).toHaveText(
+    "Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+  );
+  await expect(page.getByTestId('delivery-estimate')).toHaveText(
+    'Estimated delivery: 7–10 days after pickup',
+  );
+  // The message sits directly under the "Balance due at delivery" row.
+  await expect(
+    d
+      .getByText('Balance due at delivery', { exact: true })
+      .locator('..')
+      .locator('..')
+      .getByTestId('balance-message'),
+  ).toBeVisible();
   await axeClean(page, 'step 2 summary');
 });
 
@@ -333,7 +349,7 @@ test('Top Deck Load adds exactly $150', async ({ page }) => {
   await expect(lines).toContainText('Top Deck Load');
   await expect(lines).toContainText('$150');
   await expect(lines).toContainText('$1,550');
-  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$387.50'); // 25% of $1,550
+  await expect(d.getByText('Deposit due today').locator('..')).toContainText('$100'); // flat, even with top deck
 });
 
 test('personal items show the 100 lb notice', async ({ page }) => {

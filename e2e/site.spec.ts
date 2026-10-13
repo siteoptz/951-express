@@ -109,7 +109,9 @@ test('the Terms page has the real terms, with a last-updated date and no draft w
 }) => {
   await page.goto('/terms');
   await expect(page.getByRole('heading', { level: 1, name: 'Terms & Conditions' })).toBeVisible();
-  await expect(page.getByText('Last updated October 13, 2026 · Version 2026-10-13')).toBeVisible();
+  await expect(
+    page.getByText('Last updated October 13, 2026 · Version 2026-10-13.2'),
+  ).toBeVisible();
   await expect(
     page.getByRole('banner').getByRole('img', { name: '951 Express Inc. logo' }),
   ).toBeVisible();
@@ -117,7 +119,9 @@ test('the Terms page has the real terms, with a last-updated date and no draft w
   const text = await page.locator('main').innerText();
   for (const s of [
     'open carriers',
-    '25%',
+    'a flat deposit of $100',
+    "Cash, Cashier's Check, or Zelle only",
+    '7–10 days after pickup',
     '$150',
     "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
     'Bill of Lading',

@@ -34,8 +34,8 @@ async function seed(status: 'paid' | 'held' | 'completed' = 'paid') {
       sizeClass: 'small-suv',
       sizeClassSource: 'table',
       totalCents: 165000,
-      depositCents: 41250,
-      balanceCents: 123750,
+      depositCents: 10000,
+      balanceCents: 155000,
       termsVersion: 'e2e',
       termsAcceptedAt: new Date(),
       paidAt: status === 'held' ? null : new Date(),
@@ -187,10 +187,17 @@ test('completing Step 3 books it, survives a failed email, and cannot be submitt
   await page.getByRole('button', { name: 'Finish my booking' }).click();
 
   await expect(page.getByText("✓ You're booked!")).toBeVisible();
+  await expect(page.getByTestId('balance-message')).toHaveText(
+    "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",
+  );
+  await expect(page.getByTestId('delivery-estimate')).toHaveText(
+    'Estimated delivery: 7–10 days after pickup',
+  );
+
   await expect(page.getByText(/Booking reference:/)).toBeVisible();
   await expect(page.getByText('2021 Toyota RAV4')).toBeVisible();
   await expect(page.getByText('Top Deck Load')).toBeVisible();
-  await expect(page.getByText('$1,237.50')).toBeVisible();
+  await expect(page.getByText('$1,550')).toBeVisible();
   await expect(page.getByText('A confirmation is on its way to payer@example.com.')).toBeVisible();
   await axeClean(page, 'booked confirmation');
 
