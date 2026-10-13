@@ -16,6 +16,7 @@
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "vercel-build": "npm run db:migrate && npm run db:seed && next build",
     "e2e:stripe": "E2E_STRIPE=1 playwright test --grep @stripe --grep-invert @email",
+    "e2e:stripe:api": "playwright test --grep @stripe-api",
     "e2e:email": "E2E_STRIPE=1 E2E_EMAIL=1 playwright test e2e/email.spec.ts",
     "email:preview": "tsx scripts/preview-emails.tsx"
   },

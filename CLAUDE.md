@@ -75,6 +75,7 @@ password-protected /admin.
 
 ## Commands
 - `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright; uses the DATABASE_URL in .env.local: a dev branch only)
+- `npm run e2e:stripe:api` (payment behavior with signed webhook events, no iframe: the stable gate) and `npm run e2e:stripe` (adds the two real-iframe payment tests; needs the Stripe CLI)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 

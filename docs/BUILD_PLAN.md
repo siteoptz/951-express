@@ -272,7 +272,7 @@ a full week can't be picked, and the modal passes axe checks.
   the bottom edge of Stripe's iframe sits in the window (about 830px from the top and below stalls). At the stall, Stripe
   asks its invisible hCaptcha for a challenge (`getcaptcha`) that never resolves, the captcha's frames sit offscreen
   (y about -9153), and Stripe's overlay frame stays hidden. The payment step is therefore capped at 700px high
-  (`BookingModal.tsx`), and `npm run e2e:stripe` pays at 390x844, 390x932, and 1280x1000 to guard it.
+  (`BookingModal.tsx`), and `npm run e2e:stripe` pays at 390x844 (and declines at 1280x900) through the real embedded checkout to guard it.
   Ruled out, each with a test (30-minute investigation, Oct 10):
   - Native modal top layer, the inert backdrop, and our focus handling: a non-modal dialog stalls identically.
   - Our dialog painting over Stripe's body-level helper frames: stacking the dialog beneath them still stalls.
@@ -285,7 +285,13 @@ a full week can't be picked, and the modal passes axe checks.
     yet found. Next step: pay on real phones (Phase 10), and if it shows up there, send Stripe support the repro.
   The stall also shows up as an occasional flake in automated runs after many test payments from one machine (a few
   failures in dozens of runs, never in the same test twice), so `npm run e2e:stripe` retries a failed test once.
-- `npm run e2e:stripe` runs real Stripe test-mode payments with `stripe listen` forwarding webhooks.
+- `npm run e2e:stripe` runs the Stripe suite in two parts. `@stripe-api` tests (`e2e/stripe-api.spec.ts`) never open Stripe's
+  iframe: they make holds through our own endpoints and send webhook events signed with the webhook secret (paid, replay,
+  expired, tampered signature, release, status backstop, full week). They are stable and are the gate
+  (`npm run e2e:stripe:api` runs only these, with no Stripe CLI). `@stripe-ui` tests (`e2e/payment.spec.ts`) are the only
+  ones that pay through the real embedded checkout: one success at 390x844 (cart, payment, Step 3, confirmation) and one
+  decline at 1280x900. They run one after the other with one retry, because Stripe's invisible captcha sometimes stalls in
+  automated browsers. Do not scan the page with axe while Stripe's frame is live: it makes the stall more frequent.
 - Link's "Save my information" is ticked by default and then asks for a phone number. Consider turning Link off in
   the Stripe Dashboard payment methods if the client prefers a shorter form.
 
