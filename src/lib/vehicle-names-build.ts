@@ -1,8 +1,13 @@
 // Builds the names-only list behind the Make and Model suggestions (src/data/vehicle-names.json). The browser gets
 // make names, their short names and model names, and nothing else from the size tables: no classes, no prices.
-// Regenerate with `npm run vehicle-names` after editing src/config/vehicle-classes.ts (a test fails if it is stale).
+// Makes come from three places: the size tables, the exotic list (src/config/eligibility.ts) and the U.S.-market list
+// (src/config/makes.ts). A make with no size table has no model suggestions. Regenerate with `npm run vehicle-names`
+// after editing any of them (a test fails if it is stale).
+import { exoticMakes } from '@/config/eligibility';
+import { allMakes } from '@/config/makes';
 import { classRules, makeAliases, unknownExceptions, yearRules } from '@/config/vehicle-classes';
 import { normalizeMakeName } from '@/lib/vehicle-normalize';
+import { squash } from '@/lib/size-class';
 
 export type VehicleNames = {
   makes: { name: string; key: string; aliases: string[] }[];
@@ -22,6 +27,7 @@ export function buildVehicleNames(): VehicleNames {
       for (const m of list) add(key, m);
     }
   for (const y of yearRules) add(y.make, y.model);
+  for (const name of [...allMakes, ...exoticMakes]) models[squash(name)] ??= [];
 
   const aliasesOf = (key: string) =>
     Object.entries(makeAliases)

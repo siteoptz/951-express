@@ -1,16 +1,61 @@
 import { describe, expect, it } from 'vitest';
+import { exoticMakes } from '@/config/eligibility';
+import { allMakes } from '@/config/makes';
+import { classRules } from '@/config/vehicle-classes';
 import names from '@/data/vehicle-names.json';
 import { buildVehicleNames } from '@/lib/vehicle-names-build';
 import { canonicalMake, canonicalModel, suggestMakes, suggestModels } from '@/lib/vehicle-suggest';
 
 describe('names list', () => {
-  it('is up to date with src/config/vehicle-classes.ts (run `npm run vehicle-names` if not)', () => {
+  it('is up to date with the size tables, the exotic list and src/config/makes.ts (run `npm run vehicle-names` if not)', () => {
     expect(names).toEqual(buildVehicleNames());
   });
   it('holds names only: no classes, prices or ids', () => {
     expect(Object.keys(names).sort()).toEqual(['makes', 'models']);
     for (const m of names.makes) expect(Object.keys(m).sort()).toEqual(['aliases', 'key', 'name']);
     expect(JSON.stringify(names)).not.toMatch(/small-|midsize|large-|cents|price|\$/i);
+  });
+});
+
+describe('make coverage', () => {
+  it('suggests every make in the exotic list, so a future addition there appears on its own', () => {
+    for (const make of exoticMakes) expect(names.makes.map((m) => m.name)).toContain(make);
+    for (const make of exoticMakes) expect(suggestMakes(make.slice(0, 3))).toContain(make);
+  });
+  it('suggests every make in the U.S.-market list and every make in the size tables', () => {
+    const listed = names.makes.map((m) => m.name);
+    // Compared ignoring case: makeDisplayNames writes "MINI", the list says "Mini".
+    for (const make of allMakes)
+      expect(listed.map((n) => n.toLowerCase())).toContain(make.toLowerCase());
+    for (const { models } of classRules)
+      for (const key of Object.keys(models)) expect(names.makes.map((m) => m.key)).toContain(key);
+  });
+  it('has the brands that were missing', () => {
+    expect(suggestMakes('mase')).toEqual(['Maserati']);
+    expect(suggestMakes('lot')).toEqual(['Lotus']);
+    expect(suggestMakes('bent')).toEqual(['Bentley']);
+    expect(suggestMakes('saa')).toEqual(['Saab']);
+    expect(suggestMakes('rolls')).toEqual(['Rolls-Royce']);
+    expect(suggestMakes('rolls royce')).toEqual(['Rolls-Royce']);
+  });
+  it('finds short names for the exotic and imported makes', () => {
+    expect(suggestMakes('rr')).toEqual(['Rolls-Royce']);
+    expect(suggestMakes('aston')).toEqual(['Aston Martin']);
+    expect(suggestMakes('alfa')).toEqual(['Alfa Romeo']);
+    expect(suggestMakes('range rover')).toEqual(['Land Rover']);
+    expect(suggestMakes('land r')).toEqual(['Land Rover']);
+  });
+  it('canonicalizes them on blur', () => {
+    expect(canonicalMake('rolls royce')).toBe('Rolls-Royce');
+    expect(canonicalMake('rr')).toBe('Rolls-Royce');
+    expect(canonicalMake('saab')).toBe('Saab');
+    expect(canonicalMake('aston')).toBe('Aston Martin');
+  });
+  it('gives a make with no size table make suggestions and no model suggestions', () => {
+    expect(suggestMakes('saa')).toEqual(['Saab']);
+    expect(suggestModels('Saab', '9')).toEqual([]);
+    expect(suggestModels('saab', '')).toEqual([]);
+    expect(canonicalModel('Saab', '9-3')).toBeNull();
   });
 });
 
@@ -25,13 +70,13 @@ describe('suggestMakes', () => {
   it('finds short names: chevy -> Chevrolet, vw -> Volkswagen, merc -> Mercedes-Benz', () => {
     expect(suggestMakes('chevy')).toEqual(['Chevrolet']);
     expect(suggestMakes('vw')).toEqual(['Volkswagen']);
-    expect(suggestMakes('merc')).toEqual(['Mercedes-Benz']);
+    expect(suggestMakes('merc')).toEqual(['Mercedes-Benz', 'Mercury']);
   });
   it('ranks a name prefix above a short-name match above a later word', () => {
-    // "d": Dodge and 'dodgeram' (Ram, short name) after the name prefix.
-    expect(suggestMakes('d')).toEqual(['Dodge', 'Ram']);
-    // "b": BMW, Buick (name prefixes), then Mercedes-Benz (later word / short name "benz").
-    expect(suggestMakes('b')).toEqual(['BMW', 'Buick', 'Mercedes-Benz']);
+    // "d": name prefixes in alphabetical order, then Ram (short name 'dodgeram').
+    expect(suggestMakes('d')).toEqual(['Daewoo', 'Datsun', 'DeLorean', 'Dodge', 'Ram']);
+    // "b": name prefixes first, then Mercedes-Benz (short name "benz").
+    expect(suggestMakes('b')).toEqual(['Bentley', 'BMW', 'Bugatti', 'Buick', 'Mercedes-Benz']);
   });
   it('ignores case, spaces and hyphens', () => {
     expect(suggestMakes('MERCEDES BENZ')).toEqual(['Mercedes-Benz']);

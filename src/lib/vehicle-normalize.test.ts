@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isExotic } from '@/lib/eligibility';
 import { classifyVehicle } from '@/lib/size-class';
 import {
   collapseSpaces,
@@ -46,6 +47,15 @@ describe('make aliases', () => {
     ['lambo', 'Lamborghini'],
     ['rolls royce', 'Rolls-Royce'],
     ['land rover', 'Land Rover'],
+    ['range rover', 'Land Rover'],
+    ['rolls', 'Rolls-Royce'],
+    ['rr', 'Rolls-Royce'],
+    ['aston', 'Aston Martin'],
+    ['alfa', 'Alfa Romeo'],
+    ['saab', 'Saab'],
+    ['MASERATI', 'Maserati'],
+    ['lotus', 'Lotus'],
+    ['BENTLEY', 'Bentley'],
     ['toyota', 'Toyota'],
     ['honda', 'Honda'],
     ['ferarri', 'Ferarri'], // a misspelling we do not know is kept as typed
@@ -56,6 +66,23 @@ describe('make aliases', () => {
     expect(cls('VW', 'Jetta')).toBe('small-sedan');
     expect(cls('merc', 'GLC')).toBe('small-suv');
   });
+});
+
+describe('exotic makes by any name', () => {
+  it.each([
+    'rolls royce',
+    'Rolls-Royce',
+    'rolls',
+    'rr',
+    'aston',
+    'lambo',
+    'Maserati',
+    'lotus',
+    'bentley',
+  ])('%s is exotic', (make) => expect(isExotic({ make, model: 'anything' })).toBe(true));
+  it.each(['saab', 'honda', 'chevy', 'alfa'])('%s is not', (make) =>
+    expect(isExotic({ make, model: 'anything' })).toBe(false),
+  );
 });
 
 describe('models ignore case, spaces and hyphens', () => {

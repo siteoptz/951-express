@@ -1,5 +1,7 @@
 // Turns what the customer typed into a clean vehicle. The browser sends the text exactly as typed; the server
 // normalizes it here, stores BOTH, and classifies from the normalized values. Nothing here trusts the browser.
+import { exoticMakes } from '@/config/eligibility';
+import { allMakes } from '@/config/makes';
 import { makeDisplayNames } from '@/config/vehicle-classes';
 import { maxVehicleYear, vehicleYears } from '@/config/vehicles';
 import { matchedModelName, normalizeMake, squash } from '@/lib/size-class';
@@ -29,10 +31,16 @@ export function tidyCase(s: string): string {
   return text;
 }
 
+/** Make key ("rollsroyce") -> the name we write ("Rolls-Royce"): the display names, then the U.S.-market and exotic lists. */
+export const knownMakeNames: Record<string, string> = Object.fromEntries(
+  [...allMakes, ...exoticMakes].map((name) => [squash(name), name]),
+);
+
 /** "chevy" -> "Chevrolet", "vw" -> "Volkswagen", "merc" -> "Mercedes-Benz", "bmw" -> "BMW", unknown -> Title Case. */
 export function normalizeMakeName(make: string): string {
   const key = normalizeMake(make);
-  if (makeDisplayNames[key]) return makeDisplayNames[key];
+  const known = makeDisplayNames[key] ?? knownMakeNames[key];
+  if (known) return known;
   // An alias was used ("chevy"): write the canonical make. Otherwise keep what was typed, tidied.
   return key !== squash(make) ? key.charAt(0).toUpperCase() + key.slice(1) : tidyCase(make);
 }

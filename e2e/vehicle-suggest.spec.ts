@@ -121,6 +121,26 @@ test('free text that matches nothing still goes on to the vehicle-type cards', a
   ).toBeVisible();
 });
 
+test('"mase" suggests Maserati, and "saab" (no model table) gets no model suggestions but still reaches the type cards', async ({
+  page,
+}) => {
+  await makeField(page).pressSequentially('mase');
+  await expect(options(page)).toHaveText(['Maserati']);
+  await makeField(page).fill('');
+  await makeField(page).pressSequentially('rolls royce');
+  await expect(options(page)).toHaveText(['Rolls-Royce']);
+  await makeField(page).fill('');
+  await makeField(page).pressSequentially('saa');
+  await expect(options(page)).toHaveText(['Saab']);
+  await options(page).first().click();
+  await expect(makeField(page)).toHaveValue('Saab');
+  await modelField(page).pressSequentially('9-3');
+  await expect(d(page).getByRole('listbox')).toBeHidden();
+  await expect(
+    d(page).getByText("We couldn't match your vehicle. Pick the closest size."),
+  ).toBeVisible();
+});
+
 test('the list is 44px+ per row, 16px text, never wider than the box, and passes the accessibility check', async ({
   page,
 }) => {

@@ -6,13 +6,43 @@
       "aliases": []
     },
     {
+      "name": "Alfa Romeo",
+      "key": "alfaromeo",
+      "aliases": ["alfa"]
+    },
+    {
+      "name": "AMC",
+      "key": "amc",
+      "aliases": []
+    },
+    {
+      "name": "Aston Martin",
+      "key": "astonmartin",
+      "aliases": ["aston"]
+    },
+    {
       "name": "Audi",
       "key": "audi",
       "aliases": []
     },
     {
+      "name": "Austin",
+      "key": "austin",
+      "aliases": []
+    },
+    {
+      "name": "Bentley",
+      "key": "bentley",
+      "aliases": []
+    },
+    {
       "name": "BMW",
       "key": "bmw",
+      "aliases": []
+    },
+    {
+      "name": "Bugatti",
+      "key": "bugatti",
       "aliases": []
     },
     {
@@ -36,13 +66,48 @@
       "aliases": []
     },
     {
+      "name": "Daewoo",
+      "key": "daewoo",
+      "aliases": []
+    },
+    {
+      "name": "Datsun",
+      "key": "datsun",
+      "aliases": []
+    },
+    {
+      "name": "DeLorean",
+      "key": "delorean",
+      "aliases": []
+    },
+    {
       "name": "Dodge",
       "key": "dodge",
       "aliases": []
     },
     {
+      "name": "Eagle",
+      "key": "eagle",
+      "aliases": []
+    },
+    {
+      "name": "Edsel",
+      "key": "edsel",
+      "aliases": []
+    },
+    {
+      "name": "Ferrari",
+      "key": "ferrari",
+      "aliases": []
+    },
+    {
       "name": "Fiat",
       "key": "fiat",
+      "aliases": []
+    },
+    {
+      "name": "Fisker",
+      "key": "fisker",
       "aliases": []
     },
     {
@@ -61,6 +126,11 @@
       "aliases": []
     },
     {
+      "name": "Geo",
+      "key": "geo",
+      "aliases": []
+    },
+    {
       "name": "GMC",
       "key": "gmc",
       "aliases": []
@@ -68,6 +138,16 @@
     {
       "name": "Honda",
       "key": "honda",
+      "aliases": []
+    },
+    {
+      "name": "Hudson",
+      "key": "hudson",
+      "aliases": []
+    },
+    {
+      "name": "Hummer",
+      "key": "hummer",
       "aliases": []
     },
     {
@@ -81,14 +161,49 @@
       "aliases": ["infinity"]
     },
     {
+      "name": "Isuzu",
+      "key": "isuzu",
+      "aliases": []
+    },
+    {
+      "name": "Jaguar",
+      "key": "jaguar",
+      "aliases": []
+    },
+    {
       "name": "Jeep",
       "key": "jeep",
+      "aliases": []
+    },
+    {
+      "name": "Kaiser",
+      "key": "kaiser",
+      "aliases": []
+    },
+    {
+      "name": "Karma",
+      "key": "karma",
       "aliases": []
     },
     {
       "name": "Kia",
       "key": "kia",
       "aliases": []
+    },
+    {
+      "name": "Koenigsegg",
+      "key": "koenigsegg",
+      "aliases": []
+    },
+    {
+      "name": "Lamborghini",
+      "key": "lamborghini",
+      "aliases": ["lambo"]
+    },
+    {
+      "name": "Land Rover",
+      "key": "landrover",
+      "aliases": ["rangerover"]
     },
     {
       "name": "Lexus",
@@ -101,14 +216,54 @@
       "aliases": []
     },
     {
+      "name": "Lotus",
+      "key": "lotus",
+      "aliases": []
+    },
+    {
+      "name": "Lucid",
+      "key": "lucid",
+      "aliases": []
+    },
+    {
+      "name": "Maserati",
+      "key": "maserati",
+      "aliases": []
+    },
+    {
+      "name": "Maybach",
+      "key": "maybach",
+      "aliases": []
+    },
+    {
       "name": "Mazda",
       "key": "mazda",
       "aliases": ["mazada"]
     },
     {
+      "name": "McLaren",
+      "key": "mclaren",
+      "aliases": []
+    },
+    {
       "name": "Mercedes-Benz",
       "key": "mercedesbenz",
       "aliases": ["benz", "mb", "merc", "mercedes"]
+    },
+    {
+      "name": "Mercury",
+      "key": "mercury",
+      "aliases": []
+    },
+    {
+      "name": "Merkur",
+      "key": "merkur",
+      "aliases": []
+    },
+    {
+      "name": "MG",
+      "key": "mg",
+      "aliases": []
     },
     {
       "name": "MINI",
@@ -121,8 +276,58 @@
       "aliases": []
     },
     {
+      "name": "Nash",
+      "key": "nash",
+      "aliases": []
+    },
+    {
       "name": "Nissan",
       "key": "nissan",
+      "aliases": []
+    },
+    {
+      "name": "Oldsmobile",
+      "key": "oldsmobile",
+      "aliases": ["olds"]
+    },
+    {
+      "name": "Opel",
+      "key": "opel",
+      "aliases": []
+    },
+    {
+      "name": "Packard",
+      "key": "packard",
+      "aliases": []
+    },
+    {
+      "name": "Pagani",
+      "key": "pagani",
+      "aliases": []
+    },
+    {
+      "name": "Peugeot",
+      "key": "peugeot",
+      "aliases": []
+    },
+    {
+      "name": "Plymouth",
+      "key": "plymouth",
+      "aliases": []
+    },
+    {
+      "name": "Polestar",
+      "key": "polestar",
+      "aliases": []
+    },
+    {
+      "name": "Pontiac",
+      "key": "pontiac",
+      "aliases": []
+    },
+    {
+      "name": "Porsche",
+      "key": "porsche",
       "aliases": []
     },
     {
@@ -131,8 +336,28 @@
       "aliases": ["dodgeram", "ramtrucks"]
     },
     {
+      "name": "Renault",
+      "key": "renault",
+      "aliases": []
+    },
+    {
       "name": "Rivian",
       "key": "rivian",
+      "aliases": []
+    },
+    {
+      "name": "Rolls-Royce",
+      "key": "rollsroyce",
+      "aliases": ["rolls", "rr"]
+    },
+    {
+      "name": "Saab",
+      "key": "saab",
+      "aliases": []
+    },
+    {
+      "name": "Saturn",
+      "key": "saturn",
       "aliases": []
     },
     {
@@ -146,9 +371,24 @@
       "aliases": []
     },
     {
+      "name": "Sterling",
+      "key": "sterling",
+      "aliases": []
+    },
+    {
+      "name": "Studebaker",
+      "key": "studebaker",
+      "aliases": []
+    },
+    {
       "name": "Subaru",
       "key": "subaru",
       "aliases": ["suburu"]
+    },
+    {
+      "name": "Suzuki",
+      "key": "suzuki",
+      "aliases": []
     },
     {
       "name": "Tesla",
@@ -161,6 +401,11 @@
       "aliases": ["toyata"]
     },
     {
+      "name": "Triumph",
+      "key": "triumph",
+      "aliases": []
+    },
+    {
       "name": "Volkswagen",
       "key": "volkswagen",
       "aliases": ["volkswagon", "vw"]
@@ -169,12 +414,23 @@
       "name": "Volvo",
       "key": "volvo",
       "aliases": []
+    },
+    {
+      "name": "Yugo",
+      "key": "yugo",
+      "aliases": []
     }
   ],
   "models": {
     "acura": ["MDX", "RDX"],
+    "alfaromeo": [],
+    "amc": [],
+    "astonmartin": [],
     "audi": ["Q7", "Q8", "Q3", "Q5", "A4", "A6", "A8"],
+    "austin": [],
+    "bentley": [],
     "bmw": ["X5", "X6", "X7", "X1", "X2", "X3", "X4", "3 Series", "5 Series", "7 Series"],
+    "bugatti": [],
     "buick": ["Enclave", "Encore", "Envision"],
     "cadillac": ["Escalade", "XT5", "XT6"],
     "chevrolet": [
@@ -199,6 +455,9 @@
       "Bolt"
     ],
     "chrysler": ["Pacifica", "Town & Country", "Voyager", "300"],
+    "daewoo": [],
+    "datsun": [],
+    "delorean": [],
     "dodge": [
       "Ram",
       "Grand Caravan",
@@ -209,7 +468,11 @@
       "Challenger",
       "Dart"
     ],
+    "eagle": [],
+    "edsel": [],
+    "ferrari": [],
     "fiat": [],
+    "fisker": [],
     "ford": [
       "F-150",
       "F-250",
@@ -239,6 +502,7 @@
     ],
     "freightliner": ["Sprinter"],
     "genesis": ["G70", "G80", "G90"],
+    "geo": [],
     "gmc": ["Sierra", "Yukon", "Savana", "Sonoma", "Canyon", "Acadia", "Terrain"],
     "honda": [
       "Odyssey",
@@ -253,6 +517,8 @@
       "Insight",
       "CR-Z"
     ],
+    "hudson": [],
+    "hummer": [],
     "hyundai": [
       "Santa Cruz",
       "Santa Fe",
@@ -268,6 +534,8 @@
       "Ioniq"
     ],
     "infiniti": ["QX80"],
+    "isuzu": [],
+    "jaguar": [],
     "jeep": [
       "Wagoneer",
       "Grand Wagoneer",
@@ -279,6 +547,8 @@
       "Renegade",
       "Patriot"
     ],
+    "kaiser": [],
+    "karma": [],
     "kia": [
       "Carnival",
       "Sedona",
@@ -295,8 +565,15 @@
       "Forte",
       "Rio"
     ],
+    "koenigsegg": [],
+    "lamborghini": [],
+    "landrover": [],
     "lexus": ["LX", "GX", "RX", "TX", "NX", "UX", "ES", "IS", "GS", "LS"],
     "lincoln": ["Navigator", "Aviator", "Nautilus"],
+    "lotus": [],
+    "lucid": [],
+    "maserati": [],
+    "maybach": [],
     "mazda": [
       "B-Series",
       "B2000",
@@ -318,6 +595,7 @@
       "Mazda2",
       "MX-5"
     ],
+    "mclaren": [],
     "mercedesbenz": [
       "Sprinter",
       "GLE",
@@ -330,8 +608,12 @@
       "E-Class",
       "S-Class"
     ],
+    "mercury": [],
+    "merkur": [],
+    "mg": [],
     "mini": ["Countryman", "Cooper", "Hardtop", "Clubman"],
     "mitsubishi": ["Outlander", "Outlander Sport", "RVR", "Mirage", "Lancer"],
+    "nash": [],
     "nissan": [
       "Titan",
       "Armada",
@@ -348,10 +630,25 @@
       "Leaf",
       "Frontier"
     ],
+    "oldsmobile": [],
+    "opel": [],
+    "packard": [],
+    "pagani": [],
+    "peugeot": [],
+    "plymouth": [],
+    "polestar": [],
+    "pontiac": [],
+    "porsche": [],
     "ram": [],
+    "renault": [],
     "rivian": ["R1S"],
+    "rollsroyce": [],
+    "saab": [],
+    "saturn": [],
     "scion": [],
     "smart": [],
+    "sterling": [],
+    "studebaker": [],
     "subaru": [
       "Ascent",
       "Forester",
@@ -363,6 +660,7 @@
       "WRX",
       "BRZ"
     ],
+    "suzuki": [],
     "tesla": ["Model X", "Model Y", "Model S", "Model 3"],
     "toyota": [
       "Tundra",
@@ -384,7 +682,9 @@
       "Matrix",
       "Tacoma"
     ],
+    "triumph": [],
     "volkswagen": ["Atlas", "Tiguan", "Taos", "Passat", "Arteon", "Jetta", "Golf", "Beetle", "GTI"],
-    "volvo": ["XC90", "XC60", "XC40"]
+    "volvo": ["XC90", "XC60", "XC40"],
+    "yugo": []
   }
 }

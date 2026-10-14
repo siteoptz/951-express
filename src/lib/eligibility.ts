@@ -6,7 +6,7 @@ import {
   quoteReasonIds,
   type QuoteReason,
 } from '@/config/eligibility';
-import { classifyVehicle, type VehicleInput } from '@/lib/size-class';
+import { classifyVehicle, normalizeMake, type VehicleInput } from '@/lib/size-class';
 
 const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 const exoticMakeKeys = exoticMakes.map(squash);
@@ -22,7 +22,7 @@ export type EligibilityInput = {
 };
 
 export function isExotic({ make, model }: { make: string; model: string }): boolean {
-  const mk = squash(make);
+  const mk = normalizeMake(make); // short names count: "rolls", "rr", "aston", "lambo"
   const md = squash(model);
   return (
     (mk !== '' && exoticMakeKeys.some((k) => mk === k || mk.startsWith(k))) ||

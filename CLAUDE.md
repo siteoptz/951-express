@@ -46,7 +46,7 @@ One landing page with a booking modal:
 - Stripe Embedded Checkout (`ui_mode: 'embedded_page'`, which is what the newest API calls `embedded`; `redirect_on_completion: 'never'`) + webhooks.
 - Resend + React Email for transactional email.
 - Vehicle entry is three plain typed fields (year, make, model): no dropdowns. Make and model also offer optional type-ahead
-  suggestions (`SuggestInput`, names only from `src/data/vehicle-names.json`, built by `npm run vehicle-names`; no network
+  suggestions (`SuggestInput`, names only from `src/data/vehicle-names.json`, built by `npm run vehicle-names` from the size tables, `exoticMakes` and the U.S.-market list `src/config/makes.ts`; no network
   calls; typing anything is always allowed). The server
   normalizes the text (`src/lib/vehicle-normalize.ts`: make aliases in `src/config/vehicle-classes.ts`, models
   matched ignoring case, spaces and hyphens) and stores both the typed text and the normalized vehicle. There is no

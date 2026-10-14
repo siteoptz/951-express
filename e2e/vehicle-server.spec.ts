@@ -97,3 +97,41 @@ test('the browser pick is used only for a vehicle we do not know, and the bookin
     needsReview: true,
   });
 });
+
+test('"rolls royce ghost" is exotic: a personalized quote, no checkout', async ({
+  request,
+}, info) => {
+  const data = body({ vehicle: { year: 2021, make: 'rolls royce', model: 'ghost' } });
+  const quote = await request.post('/api/quote', { data, headers: headers(info.workerIndex, 8) });
+  expect(await quote.json()).toMatchObject({ quoteRequired: true, quoteReasons: ['exotic'] });
+  const checkout = await request.post('/api/checkout', {
+    data,
+    headers: headers(info.workerIndex, 9),
+  });
+  expect(checkout.status()).not.toBe(200);
+  const short = await request.post('/api/quote', {
+    data: body({ vehicle: { year: 2021, make: 'rr', model: 'ghost' } }),
+    headers: headers(info.workerIndex, 10),
+  });
+  expect(await short.json()).toMatchObject({ quoteRequired: true, quoteReasons: ['exotic'] });
+});
+
+test('a make with no size table ("2008 Saab 9-3") asks for the vehicle type and is flagged for review', async ({
+  request,
+}, info) => {
+  const saab = { year: 2008, make: 'saab', model: '9-3' };
+  const missing = await request.post('/api/quote', {
+    data: body({ vehicle: saab }),
+    headers: headers(info.workerIndex, 11),
+  });
+  expect(missing.status()).toBe(422);
+  const picked = await request.post('/api/quote', {
+    data: body({ vehicle: saab, selectedClass: 'small-sedan' }),
+    headers: headers(info.workerIndex, 12),
+  });
+  expect(await picked.json()).toMatchObject({
+    vehicle: { make: 'Saab', model: '9-3' },
+    sizeClass: { id: 'small-sedan', source: 'customer' },
+    needsReview: true,
+  });
+});
