@@ -2,3 +2,7 @@ node_modules
 .next
 originals
 package-lock.json
+# Generated data files: rewritten by their scripts, never by formatting
+src/data/zips
+src/data/vehicle-names.json
+drizzle/meta

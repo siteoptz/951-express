@@ -20,7 +20,7 @@
     "e2e:stripe:api": "playwright test --grep @stripe-api",
     "e2e:email": "E2E_STRIPE=1 E2E_EMAIL=1 playwright test e2e/email.spec.ts",
     "email:preview": "tsx scripts/preview-emails.tsx",
-    "vehicle-names": "tsx scripts/build-vehicle-names.ts && prettier --write src/data/vehicle-names.json"
+    "vehicle-names": "tsx scripts/build-vehicle-names.ts && prettier --ignore-path /dev/null --write src/data/vehicle-names.json"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
