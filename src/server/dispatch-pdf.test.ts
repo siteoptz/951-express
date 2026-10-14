@@ -1,8 +1,14 @@
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { pdfText } from '../../test/pdf-text';
-import { buildDispatchData, dispatchFileName, dispatchPaymentLine } from '@/lib/dispatch-data';
+import { pdfText, pdftotextLayout } from '../../test/pdf-text';
+import {
+  buildDispatchData,
+  dispatchFileName,
+  dispatchPaymentLine,
+  superDispatchType,
+} from '@/lib/dispatch-data';
 import type { BookingForEmail, EmailContext } from '@/lib/email-data';
 import { renderDispatchPdf } from '@/server/dispatch-pdf';
 
@@ -69,10 +75,17 @@ const ctx: EmailContext = {
   spot: { n: 2, of: 6 },
   stripeTestMode: true,
 };
-const env = { VERCEL_PROJECT_PRODUCTION_URL: '951-express.vercel.app' };
+const env = { NEXT_PUBLIC_SITE_URL: 'https://951express.com' };
+
+const hasPdftotext = !spawnSync('pdftotext', ['-v']).error; // poppler: `brew install poppler`
+const layout = async (b: BookingForEmail) =>
+  pdftotextLayout((await renderDispatchPdf(b, ctx, env)).content) ?? '';
+/** One "Label: value" line, found anywhere on a line of the layout text (other columns may share the line). */
+const hasLine = (text: string, line: string) =>
+  text.split('\n').some((l) => l.replace(/\s+/g, ' ').includes(line));
 
 describe('dispatch sheet PDF', () => {
-  it('is a single US Letter page with every section, for a booking with all optional fields', async () => {
+  it('is a single US Letter page with real text, for a booking with all optional fields', async () => {
     const pdf = await renderDispatchPdf(full, ctx, env);
     expect(pdf.content.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.filename).toBe('951-Express-Dispatch-3F2B6C1E-2021-Chevrolet-Tahoe.pdf');
@@ -82,54 +95,138 @@ describe('dispatch sheet PDF', () => {
       const min = await renderDispatchPdf(base, { ...ctx, spot: { n: 1, of: 6 } }, env);
       writeFileSync(path.join(process.env.DISPATCH_SAMPLE_DIR, 'minimal.pdf'), min.content);
     }
-    const { pages, text: raw } = await pdfText(pdf.content);
-    const text = raw.replace(/\s+/g, ' ');
+    const { pages, text } = await pdfText(pdf.content);
     expect(pages).toBe(1);
-    for (const want of [
-      'Dispatch Sheet',
-      'Order ID: 3F2B6C1E',
-      'SHIPPER (CUSTOMER)',
-      'Pat Driver',
-      'USDOT 4020917',
-      'MC-1516594',
-      '2108 Collett Ave Apt 204, Corona, CA 92879',
-      'Estimated pickup',
-      'Oct 19 – 25',
-      'Estimated delivery',
-      'Oct 26 – Nov 4',
-      'OPEN',
-      'TOP DECK LOAD',
-      '$1,750',
-      '$100',
-      'Balance to collect at delivery',
-      "Payment method: Cash, Cashier's Check, or Zelle only. No credit cards.",
-      '2021 Chevrolet Tahoe',
-      'Typed by customer: 2021 chevy tahoe',
-      'Midsize SUV',
-      'Midnight blue',
-      '1GNSKCKD5MR123456',
-      'Lee Neighbor',
-      'Sam Receiver',
-      '9 Pier Rd, Unit 2, Parrs Ridge, MD 21771',
-      'Gate code 4412',
-      "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
-      'NEEDS REVIEW BEFORE DISPATCH',
-      'city/ZIP mismatch',
-      'does not match ZIP 21771 (Mount Airy, MD)',
-      '951-express.vercel.app/terms',
-    ])
-      expect(text, want).toContain(want);
+    expect(text).toContain('Dispatch Sheet');
+    // Letter size: 612 x 792 points
+    expect(pdf.content.toString('latin1')).toMatch(/\/MediaBox\s*\[\s*0\s+0\s+612\s+792\s*\]/);
+    expect(pdf.content.toString('latin1')).toContain('Helvetica');
   });
 
-  it('still fits one page, and says "Same as customer", when every optional field is empty', async () => {
+  it.skipIf(!hasPdftotext)(
+    'reads back with pdftotext -layout as one "Label: value" line per field',
+    async () => {
+      const text = await layout(full);
+      for (const line of [
+        'Order ID: 3F2B6C1E',
+        'Dispatch Sheet',
+        'Pat Driver',
+        'Shipper',
+        '1 Main St',
+        'Corona, CA 92881',
+        'Co. Phone: 9515550100',
+        'Email: pat@example.com',
+        'Carrier: 951 Express Inc',
+        'USDOT: 4020917',
+        '2108 Collett Ave Apt 204, Corona, CA 92879',
+        'Contact: Jesse Calzada',
+        'Email: 951.dispatcher@gmail.com',
+        'Dispatch Date: 10/13/2026',
+        'Carrier Pickup Estimated: 10/19/2026',
+        'Carrier Delivery Estimated: 10/26/2026',
+        'Ship Via: OPEN',
+        'Condition: Operable',
+        'Total Payment to Carrier: $1850.00',
+        'Payment terms: On delivery',
+        'Payment method: COD',
+        'Carrier owes Shipper: $ 0.00',
+        'Total Vehicles: 1',
+        'Name: Lee Neighbor',
+        'Name: Sam Receiver',
+        '1 Main St',
+        'Corona, CA 92882',
+        '9 Pier Rd, Unit 2',
+        'Parrs Ridge, MD 21771',
+        'Phone: 9515550111',
+        'Mobile: 9515550111',
+        'Phone: 3015550122',
+        'Mobile: 3015550122',
+        'Customer notes: Gate code 4412 at pickup.',
+        'Delivery window: 7–10 days after pickup',
+        'Top Deck Load: load on the top deck.',
+        "Deposit $100.00 paid by card. Balance due at delivery: $1750.00. Cash, Cashier's Check, or Zelle only. No credit cards.",
+        "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+        'Typed by customer: 2021 chevy tahoe',
+        'NEEDS REVIEW BEFORE DISPATCH',
+        'city/ZIP mismatch',
+      ])
+        expect(hasLine(text, line), line).toBe(true);
+      // The section titles, exactly as Super Dispatch spells them.
+      for (const title of [
+        'Carrier Information',
+        'Order Information',
+        'Vehicle Information',
+        'Pickup Information',
+        'Delivery Information',
+        'DISPATCH INSTRUCTIONS',
+      ])
+        expect(text, title).toContain(title);
+      // The vehicle table: header, then the row.
+      expect(text).toMatch(/#\s+Vehicle\s+Type\s+Color\s+VIN\s+Lot #/);
+      expect(text).toMatch(/1\s+2021 Chevrolet Tahoe\s+SUV\s+Midnight blue\s+1GNSKCKD5MR123456/);
+    },
+  );
+
+  it.skipIf(!hasPdftotext)(
+    'header: shipper on the left, Order ID centered, "Dispatch Sheet" on the right, and a blank carrier "Phone:"',
+    async () => {
+      const text = await layout(full);
+      const top = text.split('\n').slice(0, 8);
+      const orderLine = top.find((l) => l.includes('Order ID: 3F2B6C1E'))!;
+      expect(orderLine).toBeDefined();
+      expect(orderLine.indexOf('Order ID')).toBeGreaterThan(20);
+      const titleLine = top.find((l) => l.includes('Dispatch Sheet'))!;
+      expect(titleLine.indexOf('Dispatch Sheet')).toBeGreaterThan(orderLine.indexOf('Order ID'));
+      expect(top.join('\n')).toContain('Pat Driver');
+      // One shipper block, top left: name, then the word "Shipper", then address, Co. Phone and Email.
+      const left = text
+        .split('\n')
+        .slice(0, 8)
+        .filter((l) => l.trim() && !l.startsWith(' ')) // lines that start in the left column
+        .map((l) => l.trim().split(/\s{3,}/)[0]);
+      expect(left).toEqual([
+        'Pat Driver',
+        'Shipper',
+        '1 Main St',
+        'Corona, CA 92881',
+        'Co. Phone: 9515550100',
+        'Email: pat@example.com',
+      ]);
+      expect(text.match(/Co\. Phone:/g)).toHaveLength(1); // no second shipper section
+      expect(text.match(/^\s*Shipper\s*$/gm)).toHaveLength(1);
+      // The carrier's phone is blank: the label has nothing after it.
+      expect(text.split('\n').some((l) => /(^|\s)Phone:\s*$/.test(l))).toBe(true);
+      expect(text).not.toMatch(/\(\d{3}\)|\d{3}-\d{3}-\d{4}/); // phone numbers are digits only
+    },
+  );
+
+  it.skipIf(!hasPdftotext)(
+    'uses MM/DD/YYYY dates, "$1500.00" money, and no Super Dispatch branding',
+    async () => {
+      const text = await layout(full);
+      const body = text.replace(/Terms version \S+/, ''); // the footer's version is a label, not a date
+      expect(body).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+      expect(text).not.toMatch(/\$\d{1,3},\d{3}/);
+      expect(text).toContain('$1850.00');
+      expect(text.toLowerCase()).not.toContain('super dispatch');
+      expect(text.toLowerCase()).not.toContain('powered by');
+      expect(text).toContain('https://951express.com/terms');
+      expect(text).not.toContain('vercel.app');
+    },
+  );
+
+  it('still fits one page when every optional field is empty, and leaves optional values blank', async () => {
     const pdf = await renderDispatchPdf(base, ctx, env);
     const { pages, text } = await pdfText(pdf.content);
     expect(pages).toBe(1);
-    expect(text).toContain('Same as customer');
     expect(text).not.toContain('NEEDS REVIEW');
-    expect(text).not.toContain('TOP DECK');
-    expect(text).toContain('Standard');
+    expect(text).not.toContain('Top Deck');
     expect(text).not.toContain('Typed by customer'); // 2021 Chevrolet Tahoe typed as such
+    if (hasPdftotext) {
+      const lt = await layout(base);
+      expect(hasLine(lt, 'Name: Pat Driver')).toBe(true); // contacts are the customer
+      expect(lt).toMatch(/1\s+2021 Chevrolet Tahoe\s+SUV\s*$/m);
+    }
   });
 
   it('stays on one page with the longest realistic notes', async () => {
@@ -141,20 +238,43 @@ describe('dispatch sheet PDF', () => {
 });
 
 describe('dispatch data', () => {
-  it('shows the estimated delivery as pickup week start + 7 to pickup week end + 10', () => {
+  it('builds each field as one "Label: value" string, blank values as "Label:"', () => {
     const d = buildDispatchData(base, ctx, 'https://x.test');
-    expect(d.order.delivery).toBe('Oct 26 – Nov 4 (estimate)');
-    // A week that stays inside one month: Nov 2 – 8 gives Nov 9 – 18.
-    expect(
-      buildDispatchData({ ...base, weekStart: '2026-11-02' }, ctx, 'https://x.test').order.delivery,
-    ).toBe('Nov 9 – 18 (estimate)');
+    expect(d.carrier).toContain('Phone:');
+    expect(d.order).toContain('Ship Via: OPEN');
+    expect(d.order).toContain('Carrier owes Shipper: $ 0.00');
+    expect(d.order).toContain('Total Payment to Carrier: $1700.00');
+    expect(d.shipper.slice(0, 2)).toEqual(['Pat Driver', 'Shipper']);
+    expect(d.shipper).toContain('Co. Phone: 9515550100');
+    expect(d.carrier).toContain('Contact: Jesse Calzada');
+    expect(d.order).toContain('Payment terms: On delivery');
+    expect(d.order).toContain('Payment method: COD');
+  });
+  it('dates: dispatch date is the booking date, pickup the first day of the week, delivery that + 7', () => {
+    const d = buildDispatchData(base, ctx, 'https://x.test');
+    expect(d.order).toContain('Dispatch Date: 10/13/2026');
+    expect(d.order).toContain('Carrier Pickup Estimated: 10/19/2026');
+    expect(d.order).toContain('Carrier Delivery Estimated: 10/26/2026');
+    // across a month and a year
+    const y = buildDispatchData({ ...base, weekStart: '2026-12-28' }, ctx, 'https://x.test');
+    expect(y.order).toContain('Carrier Delivery Estimated: 01/04/2027');
+  });
+  it('maps size classes to Sedan, SUV, Pickup or Van', () => {
+    expect(superDispatchType('small-sedan')).toBe('Sedan');
+    expect(superDispatchType('large-sedan')).toBe('Sedan');
+    expect(superDispatchType('midsize-suv')).toBe('SUV');
+    expect(superDispatchType('small-pickup')).toBe('Pickup');
+    expect(superDispatchType('minivan')).toBe('Van');
+  });
+  it('shows an inoperable vehicle, and a top deck booking only in the instructions', () => {
+    const d = buildDispatchData({ ...full, operable: false }, ctx, 'https://x.test');
+    expect(d.order).toContain('Condition: Inoperable');
+    expect(d.order).toContain('Ship Via: OPEN');
+    expect(d.instructions).toContain('Top Deck Load: load on the top deck.');
   });
   it('states the balance method as the dispatch sheet line', () => {
     expect(dispatchPaymentLine()).toBe(
       "Payment method: Cash, Cashier's Check, or Zelle only. No credit cards.",
-    );
-    expect(buildDispatchData(base, ctx, 'https://x.test').payment.note).toContain(
-      'Balance due at delivery',
     );
   });
   it('builds the file name from the reference and the vehicle', () => {

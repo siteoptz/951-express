@@ -1,9 +1,8 @@
 // What the dispatch sheet says, as plain data. Pure, so the wording is easy to test; src/pdf draws it.
 import { booking as bookingConfig } from '@/config/booking';
 import { company } from '@/config/company';
-import { topDeck } from '@/config/pricing';
 import type { Address, Contact } from '@/db/schema';
-import { estimatedDeliveryRange } from '@/lib/delivery-window';
+import { deliveryWindowText } from '@/lib/delivery-window';
 import {
   reviewReasons,
   typedVehicleText,
@@ -11,10 +10,7 @@ import {
   type BookingForEmail,
   type EmailContext,
 } from '@/lib/email-data';
-import { bookingRef, formatAddress, money } from '@/lib/format';
-import { weekLabel } from '@/lib/weeks';
-
-export type DispatchParty = { name: string; phone: string; address: string; contactNote: string };
+import { bookingRef } from '@/lib/format';
 
 /** "Cash, Cashier's Check, or Zelle" from the configured list. */
 const methodList = (m: readonly string[]): string =>
@@ -26,23 +22,66 @@ export const dispatchPaymentLine = (): string =>
 // Keeps the sheet on one page: longer notes are cut, and the booking email carries them in full.
 const NOTES_ON_SHEET = 500;
 
-const dateOnly = (d: Date): string =>
+// Super Dispatch reads each field as one "Label: value" line, so every field here is a single string, and a field with
+// no value is just "Label:". Dates are MM/DD/YYYY, money is "$1500.00" and phone numbers are digits only.
+export const field = (label: string, value?: string | null): string =>
+  value ? `${label}: ${value}` : `${label}:`;
+
+export const phoneDigits = (phone?: string | null): string => (phone ?? '').replace(/\D/g, '');
+
+/** 150000 -> "$1500.00" (no thousands separator) */
+export const plainMoney = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+
+/** "10/13/2026", the date in the business time zone. */
+const slashDate = (d: Date): string =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: bookingConfig.timezone,
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     year: 'numeric',
   }).format(d);
 
-export function buildDispatchData(b: BookingForEmail, ctx: EmailContext, siteUrl: string) {
+/** "2026-10-19" plus days -> "10/26/2026". The date alone, so no time zone shifts it. */
+const slashDay = (isoDay: string, plusDays = 0): string => {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + plusDays));
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${two(t.getUTCMonth() + 1)}/${two(t.getUTCDate())}/${t.getUTCFullYear()}`;
+};
+
+/** Super Dispatch's vehicle types: Sedan, SUV, Pickup or Van. */
+export function superDispatchType(sizeClass: string): string {
+  if (sizeClass.includes('pickup')) return 'Pickup';
+  if (sizeClass.includes('suv')) return 'SUV';
+  if (sizeClass.includes('van')) return 'Van';
+  return 'Sedan';
+}
+
+const streetLine = (a: Address): string => [a.street, a.street2].filter(Boolean).join(', ');
+const cityLine = (a: Address): string => `${a.city}, ${a.state} ${a.zip}`;
+
+export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUrl: string) {
   const c = b.customer;
   const customerName = `${c.firstName} ${c.lastName}`.trim();
-  const party = (address: Address, contact: Contact | null | undefined): DispatchParty => ({
-    name: contact?.name ?? customerName,
-    phone: contact?.phone ?? c.phone,
-    address: formatAddress(address),
-    contactNote: contact ? 'On-site contact' : 'Same as customer',
-  });
+  const phone = phoneDigits(c.phone);
+  // One block, top left, like Cal's sample: the name, the word "Shipper", then the address and contact lines.
+  const shipper = [
+    customerName,
+    'Shipper',
+    ...(c.address ? [streetLine(c.address), cityLine(c.address)] : []),
+    field('Co. Phone', phone),
+    field('Email', c.email),
+  ];
+  const party = (address: Address, contact: Contact | null | undefined) => {
+    const digits = phoneDigits(contact?.phone ?? c.phone);
+    return [
+      field('Name', contact?.name ?? customerName),
+      streetLine(address),
+      cityLine(address),
+      field('Phone', digits),
+      field('Mobile', digits),
+    ];
+  };
   const typed = typedVehicleText(b.vehicleTyped);
   const name = vehicleName(b.vehicle);
   const flags = [...reviewReasons(b), ...(b.addressFlags ?? [])];
@@ -56,52 +95,51 @@ export function buildDispatchData(b: BookingForEmail, ctx: EmailContext, siteUrl
       }`,
     );
   instructions.push(
+    `Deposit ${plainMoney(b.depositCents)} paid by card. Balance due at delivery: ${plainMoney(b.balanceCents)}. ${dispatchPaymentLine().replace('Payment method: ', '')}`,
+  );
+  instructions.push(`Delivery window: ${deliveryWindowText()}`);
+  if (b.topDeck) instructions.push('Top Deck Load: load on the top deck.');
+  instructions.push(
     b.personalItems
       ? `Personal items: Yes. ${bookingConfig.personalItemsNotice}`
       : 'Personal items: None declared.',
   );
   if (!b.operable) instructions.push('Vehicle is NOT operable.');
   if (b.modified) instructions.push('Vehicle has been modified.');
-  if (b.topDeck) instructions.push('Top Deck Load: load on the top deck.');
+  if (typed && typed.toLowerCase() !== name.toLowerCase())
+    instructions.push(`Typed by customer: ${typed}`);
 
   return {
     ref: bookingRef(b.id),
     title: 'Dispatch Sheet',
-    shipper: {
-      name: customerName,
-      phone: c.phone,
-      email: c.email,
-      address: c.address ? formatAddress(c.address) : null,
-    },
-    carrier: {
-      name: company.name,
-      usdot: `USDOT ${company.usdot}`,
-      mc: company.mc,
-      address: company.dispatchAddress,
-      email: company.contactEmail,
-    },
-    order: {
-      booked: dateOnly(b.paidAt ?? b.termsAcceptedAt),
-      route: ctx.routeName.replace('→', 'to'), // the PDF's built-in font has no arrow
-      pickup: `${weekLabel(b.weekStart)} (pickup week)`,
-      delivery: `${estimatedDeliveryRange(b.weekStart)} (estimate)`,
-      shipVia: 'OPEN',
-      loadType: b.topDeck ? `${topDeck.label.toUpperCase()} (top deck)` : topDeck.standardLabel,
-      topDeck: b.topDeck,
-    },
-    payment: {
-      total: money(b.totalCents),
-      deposit: `${money(b.depositCents)}${b.paidAt ? ` (paid online ${dateOnly(b.paidAt)})` : ''}`,
-      balance: money(b.balanceCents),
-      method: dispatchPaymentLine(),
-      note: bookingConfig.balanceMessage,
-    },
+    shipper,
+    carrier: [
+      field('Carrier', company.name),
+      field('USDOT', company.usdot),
+      company.dispatchAddress,
+      field('Contact', company.dispatchContact),
+      field('Phone'), // blank on purpose: there is no phone number on our side
+      field('Email', company.contactEmail),
+    ],
+    order: [
+      field('Dispatch Date', slashDate(b.paidAt ?? b.termsAcceptedAt)),
+      field('Carrier Pickup Estimated', slashDay(b.weekStart)),
+      field(
+        'Carrier Delivery Estimated',
+        slashDay(b.weekStart, bookingConfig.deliveryWindowDays.min),
+      ),
+      field('Ship Via', 'OPEN'),
+      field('Condition', b.operable ? 'Operable' : 'Inoperable'),
+      field('Total Payment to Carrier', plainMoney(b.totalCents)),
+      field('Payment terms', 'On delivery'),
+      field('Payment method', 'COD'),
+      field('Carrier owes Shipper', '$ 0.00'),
+    ],
+    totalVehicles: field('Total Vehicles', '1'),
     vehicle: {
-      n: 1,
+      n: '1',
       name,
-      typedNote:
-        typed && typed.toLowerCase() !== name.toLowerCase() ? `Typed by customer: ${typed}` : null,
-      type: ctx.sizeClassLabel,
+      type: superDispatchType(b.sizeClass),
       color: b.vehicleColor ?? '',
       vin: b.vehicleVin ?? '',
       lot: '',
