@@ -1,0 +1,390 @@
+{
+  "makes": [
+    {
+      "name": "Acura",
+      "key": "acura",
+      "aliases": []
+    },
+    {
+      "name": "Audi",
+      "key": "audi",
+      "aliases": []
+    },
+    {
+      "name": "BMW",
+      "key": "bmw",
+      "aliases": []
+    },
+    {
+      "name": "Buick",
+      "key": "buick",
+      "aliases": []
+    },
+    {
+      "name": "Cadillac",
+      "key": "cadillac",
+      "aliases": ["caddy"]
+    },
+    {
+      "name": "Chevrolet",
+      "key": "chevrolet",
+      "aliases": ["chev", "chevy"]
+    },
+    {
+      "name": "Chrysler",
+      "key": "chrysler",
+      "aliases": []
+    },
+    {
+      "name": "Dodge",
+      "key": "dodge",
+      "aliases": []
+    },
+    {
+      "name": "Fiat",
+      "key": "fiat",
+      "aliases": []
+    },
+    {
+      "name": "Ford",
+      "key": "ford",
+      "aliases": []
+    },
+    {
+      "name": "Freightliner",
+      "key": "freightliner",
+      "aliases": []
+    },
+    {
+      "name": "Genesis",
+      "key": "genesis",
+      "aliases": []
+    },
+    {
+      "name": "GMC",
+      "key": "gmc",
+      "aliases": []
+    },
+    {
+      "name": "Honda",
+      "key": "honda",
+      "aliases": []
+    },
+    {
+      "name": "Hyundai",
+      "key": "hyundai",
+      "aliases": ["hundai"]
+    },
+    {
+      "name": "Infiniti",
+      "key": "infiniti",
+      "aliases": ["infinity"]
+    },
+    {
+      "name": "Jeep",
+      "key": "jeep",
+      "aliases": []
+    },
+    {
+      "name": "Kia",
+      "key": "kia",
+      "aliases": []
+    },
+    {
+      "name": "Lexus",
+      "key": "lexus",
+      "aliases": []
+    },
+    {
+      "name": "Lincoln",
+      "key": "lincoln",
+      "aliases": []
+    },
+    {
+      "name": "Mazda",
+      "key": "mazda",
+      "aliases": ["mazada"]
+    },
+    {
+      "name": "Mercedes-Benz",
+      "key": "mercedesbenz",
+      "aliases": ["benz", "mb", "merc", "mercedes"]
+    },
+    {
+      "name": "MINI",
+      "key": "mini",
+      "aliases": []
+    },
+    {
+      "name": "Mitsubishi",
+      "key": "mitsubishi",
+      "aliases": []
+    },
+    {
+      "name": "Nissan",
+      "key": "nissan",
+      "aliases": []
+    },
+    {
+      "name": "Ram",
+      "key": "ram",
+      "aliases": ["dodgeram", "ramtrucks"]
+    },
+    {
+      "name": "Rivian",
+      "key": "rivian",
+      "aliases": []
+    },
+    {
+      "name": "Scion",
+      "key": "scion",
+      "aliases": []
+    },
+    {
+      "name": "Smart",
+      "key": "smart",
+      "aliases": []
+    },
+    {
+      "name": "Subaru",
+      "key": "subaru",
+      "aliases": ["suburu"]
+    },
+    {
+      "name": "Tesla",
+      "key": "tesla",
+      "aliases": []
+    },
+    {
+      "name": "Toyota",
+      "key": "toyota",
+      "aliases": ["toyata"]
+    },
+    {
+      "name": "Volkswagen",
+      "key": "volkswagen",
+      "aliases": ["volkswagon", "vw"]
+    },
+    {
+      "name": "Volvo",
+      "key": "volvo",
+      "aliases": []
+    }
+  ],
+  "models": {
+    "acura": ["MDX", "RDX"],
+    "audi": ["Q7", "Q8", "Q3", "Q5", "A4", "A6", "A8"],
+    "bmw": ["X5", "X6", "X7", "X1", "X2", "X3", "X4", "3 Series", "5 Series", "7 Series"],
+    "buick": ["Enclave", "Encore", "Envision"],
+    "cadillac": ["Escalade", "XT5", "XT6"],
+    "chevrolet": [
+      "Silverado",
+      "Tahoe",
+      "Suburban",
+      "Express",
+      "S-10",
+      "Colorado",
+      "Traverse",
+      "Blazer",
+      "Equinox",
+      "Trax",
+      "Trailblazer",
+      "Malibu",
+      "Impala",
+      "Camaro",
+      "Cruze",
+      "Spark",
+      "Sonic",
+      "Cobalt",
+      "Bolt"
+    ],
+    "chrysler": ["Pacifica", "Town & Country", "Voyager", "300"],
+    "dodge": [
+      "Ram",
+      "Grand Caravan",
+      "Caravan",
+      "Dakota",
+      "Durango",
+      "Charger",
+      "Challenger",
+      "Dart"
+    ],
+    "fiat": [],
+    "ford": [
+      "F-150",
+      "F-250",
+      "F-350",
+      "F-450",
+      "F-550",
+      "F-650",
+      "F-750",
+      "Expedition",
+      "Transit",
+      "Maverick",
+      "Explorer",
+      "Edge",
+      "Bronco",
+      "Flex",
+      "Escape",
+      "Bronco Sport",
+      "EcoSport",
+      "Kuga",
+      "Fusion",
+      "Taurus",
+      "Mustang",
+      "Focus",
+      "Fiesta",
+      "Transit Connect",
+      "Ranger"
+    ],
+    "freightliner": ["Sprinter"],
+    "genesis": ["G70", "G80", "G90"],
+    "gmc": ["Sierra", "Yukon", "Savana", "Sonoma", "Canyon", "Acadia", "Terrain"],
+    "honda": [
+      "Odyssey",
+      "Ridgeline",
+      "Pilot",
+      "Passport",
+      "HR-V",
+      "CR-V",
+      "Accord",
+      "Civic",
+      "Fit",
+      "Insight",
+      "CR-Z"
+    ],
+    "hyundai": [
+      "Santa Cruz",
+      "Santa Fe",
+      "Palisade",
+      "Tucson",
+      "Kona",
+      "Venue",
+      "Sonata",
+      "Azera",
+      "Elantra",
+      "Accent",
+      "Veloster",
+      "Ioniq"
+    ],
+    "infiniti": ["QX80"],
+    "jeep": [
+      "Wagoneer",
+      "Grand Wagoneer",
+      "Gladiator",
+      "Grand Cherokee",
+      "Cherokee",
+      "Wrangler",
+      "Compass",
+      "Renegade",
+      "Patriot"
+    ],
+    "kia": [
+      "Carnival",
+      "Sedona",
+      "Telluride",
+      "Sorento",
+      "Sportage",
+      "Seltos",
+      "Soul",
+      "Niro",
+      "Optima",
+      "K5",
+      "Cadenza",
+      "Stinger",
+      "Forte",
+      "Rio"
+    ],
+    "lexus": ["LX", "GX", "RX", "TX", "NX", "UX", "ES", "IS", "GS", "LS"],
+    "lincoln": ["Navigator", "Aviator", "Nautilus"],
+    "mazda": [
+      "B-Series",
+      "B2000",
+      "B2200",
+      "B2300",
+      "B2500",
+      "B3000",
+      "B4000",
+      "CX-9",
+      "CX-90",
+      "CX-5",
+      "CX-30",
+      "CX-3",
+      "CX-50",
+      "Mazda6",
+      "6",
+      "Mazda3",
+      "3",
+      "Mazda2",
+      "MX-5"
+    ],
+    "mercedesbenz": [
+      "Sprinter",
+      "GLE",
+      "GLS",
+      "G-Class",
+      "GLA",
+      "GLB",
+      "GLC",
+      "C-Class",
+      "E-Class",
+      "S-Class"
+    ],
+    "mini": ["Countryman", "Cooper", "Hardtop", "Clubman"],
+    "mitsubishi": ["Outlander", "Outlander Sport", "RVR", "Mirage", "Lancer"],
+    "nissan": [
+      "Titan",
+      "Armada",
+      "Quest",
+      "Pathfinder",
+      "Murano",
+      "Rogue",
+      "Kicks",
+      "Juke",
+      "Altima",
+      "Maxima",
+      "Sentra",
+      "Versa",
+      "Leaf",
+      "Frontier"
+    ],
+    "ram": [],
+    "rivian": ["R1S"],
+    "scion": [],
+    "smart": [],
+    "subaru": [
+      "Ascent",
+      "Forester",
+      "Outback",
+      "Crosstrek",
+      "XV",
+      "Legacy",
+      "Impreza",
+      "WRX",
+      "BRZ"
+    ],
+    "tesla": ["Model X", "Model Y", "Model S", "Model 3"],
+    "toyota": [
+      "Tundra",
+      "Sequoia",
+      "Land Cruiser",
+      "Sienna",
+      "Highlander",
+      "Grand Highlander",
+      "4Runner",
+      "Venza",
+      "RAV4",
+      "Corolla Cross",
+      "C-HR",
+      "Camry",
+      "Avalon",
+      "Corolla",
+      "Yaris",
+      "Prius",
+      "Matrix",
+      "Tacoma"
+    ],
+    "volkswagen": ["Atlas", "Tiguan", "Taos", "Passat", "Arteon", "Jetta", "Golf", "Beetle", "GTI"],
+    "volvo": ["XC90", "XC60", "XC40"]
+  }
+}

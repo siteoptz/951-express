@@ -12,7 +12,8 @@ import {
   typeVehicle,
 } from './helpers';
 
-// The vehicle is three plain typed fields (no dropdowns, no autocomplete list). Aliases and spellings are fixed on
+// The vehicle is three plain typed fields (no dropdowns). Make and model also offer optional type-ahead suggestions
+// (see vehicle-suggest.spec.ts). Aliases and spellings are fixed on
 // the server; the typed text and the normalized vehicle are both stored. These run at a phone width.
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -55,9 +56,7 @@ async function answers(page: Page, opts: { highValue?: 'Yes' | 'No' } = {}) {
     .click();
 }
 
-test('three plain labeled inputs, no dropdowns and no list, 48px tall with 16px text', async ({
-  page,
-}) => {
+test('three plain labeled text boxes, no dropdowns, 48px tall with 16px text', async ({ page }) => {
   await expect(d(page).getByRole('heading', { name: 'Tell us about your vehicle' })).toBeVisible();
   for (const field of [yearField(page), makeField(page), modelField(page)]) {
     await expect(field).toBeVisible();
@@ -72,10 +71,11 @@ test('three plain labeled inputs, no dropdowns and no list, 48px tall with 16px 
   await expect(yearField(page)).toHaveAttribute('inputmode', 'numeric');
   await expect(yearField(page)).toHaveAttribute('maxlength', '4');
   await expect(d(page).locator('select')).toHaveCount(0);
-  await expect(d(page).getByRole('combobox')).toHaveCount(0);
-  await makeField(page).fill('toy');
-  await expect(d(page).getByRole('listbox')).toHaveCount(0);
-  await expect(d(page).getByRole('option')).toHaveCount(0);
+  // Make and model are still typed text; they just offer suggestions as you type. The year never does.
+  await expect(d(page).getByRole('combobox')).toHaveCount(2);
+  await expect(yearField(page)).not.toHaveAttribute('role', 'combobox');
+  await yearField(page).fill('2021');
+  await expect(d(page).getByRole('listbox')).toBeHidden();
 });
 
 test('the next empty field gets the orange ring', async ({ page }) => {
@@ -169,10 +169,33 @@ test('a misspelled exotic with "worth over $100,000" = Yes goes to the quote for
   );
 });
 
+test('lowercase text shows as the cleaned-up vehicle in the summary and the cart', async ({
+  page,
+}) => {
+  await typeVehicle(d(page), '2021', 'chevy', 'malibu');
+  await expect(chip(page)).toHaveText('Vehicle size: Large sedan');
+  await answers(page);
+  await d(page).getByRole('radio', { name: 'Standard', exact: true }).check({ force: true });
+  await d(page)
+    .getByRole('group', { name: 'Any personal items in the vehicle?' })
+    .getByText('No', { exact: true })
+    .click();
+  await d(page)
+    .getByRole('radio', { name: /spots left/ })
+    .first()
+    .click();
+  await d(page)
+    .getByRole('checkbox', { name: /I agree to the Terms/ })
+    .check({ force: true });
+  await d(page).getByRole('button', { name: 'See My Price & Deposit →' }).click();
+  await expect(d(page).getByText('2021 Chevrolet Malibu (Large sedan)')).toBeVisible();
+  await expect(d(page).getByText(/chevy|malibu$/)).toHaveCount(0); // the raw typed text is not echoed
+});
+
 test('an unrecognized vehicle shows the type cards, then books with a review note', async ({
   page,
 }) => {
-  await typeVehicle(d(page), '2020', 'Zzzmake', 'Thing');
+  await typeVehicle(d(page), '2020', 'zzzmake', 'thing');
   await expect(
     d(page).getByText("We couldn't match your vehicle. Pick the closest size."),
   ).toBeVisible();
@@ -227,7 +250,8 @@ test('a quote request stores the typed text and the normalized vehicle', async (
   await expect(d(page).getByText('Thank you!')).toBeVisible();
   const [row] = await db.select().from(leads).where(eq(leads.name, NAME));
   expect(row.vehicle).toEqual({ year: 2021, make: 'Chevrolet', model: 'Tahoe' });
-  expect(row.vehicleTyped).toEqual({ year: '2021', make: ' chevy ', model: 'TAHOE' });
+  // Leaving each box tidies an exact match, so the typed text kept is the tidied text ("chevy" -> "Chevrolet").
+  expect(row.vehicleTyped).toEqual({ year: '2021', make: 'Chevrolet', model: 'Tahoe' });
 });
 
 test('nothing is classified while the customer is still typing', async ({ page }) => {

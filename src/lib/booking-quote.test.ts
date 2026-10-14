@@ -133,3 +133,38 @@ describe('evaluateStep1 quote routing', () => {
     });
   });
 });
+
+describe('what the customer sees is the cleaned-up vehicle', () => {
+  // The quote's `vehicle` feeds the summary, the cart, the Stripe line, the saved booking, the confirmation page
+  // and the customer email. The typed text rides along separately for the team.
+  it('writes "chevy malibu" as 2022 Chevrolet Malibu and keeps what was typed', () => {
+    const r = evaluateStep1(
+      { ...base, vehicle: { year: 2022, make: 'chevy', model: 'malibu' } },
+      regionOf,
+      now,
+    );
+    expect(r).toMatchObject({
+      ok: true,
+      vehicle: { year: 2022, make: 'Chevrolet', model: 'Malibu' },
+      vehicleTyped: { year: '2022', make: 'chevy', model: 'malibu' },
+      needsReview: false,
+    });
+  });
+  it('writes an unrecognized vehicle in title case, flagged for review', () => {
+    const r = evaluateStep1(
+      {
+        ...base,
+        vehicle: { year: 2022, make: 'zzz motors', model: 'thing xl' },
+        selectedClass: 'small-sedan',
+      },
+      regionOf,
+      now,
+    );
+    expect(r).toMatchObject({
+      ok: true,
+      vehicle: { year: 2022, make: 'Zzz Motors', model: 'Thing Xl' },
+      vehicleTyped: { make: 'zzz motors', model: 'thing xl' },
+      needsReview: true,
+    });
+  });
+});

@@ -37,6 +37,8 @@ import { WeekPicker, type WeekRow } from './WeekPicker';
 import { zipInputAttrs } from '@/lib/zip-input';
 import { maxVehicleYear, vehicleYears } from '@/config/vehicles';
 import { parseYear } from '@/lib/vehicle-normalize';
+import { canonicalMake, canonicalModel, suggestMakes, suggestModels } from '@/lib/vehicle-suggest';
+import { SuggestInput } from '@/components/booking/SuggestInput';
 
 type Step = 'form' | 'summary' | 'payment' | 'details' | 'booked' | 'lead_done';
 type Load<T> = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; data: T };
@@ -631,27 +633,54 @@ export default function BookingModal({
                     >
                       {label}
                     </label>
-                    <input
-                      id={`vehicle-${field}`}
-                      type="text"
-                      inputMode={mode}
-                      maxLength={max}
-                      autoComplete="off"
-                      autoCapitalize={field === 'year' ? 'off' : 'words'}
-                      spellCheck={false}
-                      placeholder={placeholder}
-                      value={form[field]}
-                      onChange={(e) =>
-                        set(field, field === 'year' ? digitsOnly4(e.target.value) : e.target.value)
-                      }
-                      aria-invalid={field === 'year' && yearError ? true : undefined}
-                      aria-describedby={
-                        field === 'year' && yearError ? 'vehicle-year-error' : undefined
-                      }
-                      className={`${inputClass} min-h-12 ${
-                        nextField === field ? '!border-accent-text ring-4 ring-accent/40' : ''
-                      }`}
-                    />
+                    {field === 'year' ? (
+                      <input
+                        id="vehicle-year"
+                        type="text"
+                        inputMode={mode}
+                        maxLength={max}
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        placeholder={placeholder}
+                        value={form.year}
+                        onChange={(e) => set('year', digitsOnly4(e.target.value))}
+                        aria-invalid={yearError ? true : undefined}
+                        aria-describedby={yearError ? 'vehicle-year-error' : undefined}
+                        className={`${inputClass} min-h-12 ${
+                          nextField === 'year' ? '!border-accent-text ring-4 ring-accent/40' : ''
+                        }`}
+                      />
+                    ) : (
+                      <SuggestInput
+                        id={`vehicle-${field}`}
+                        inputMode={mode}
+                        maxLength={max}
+                        autoCapitalize="words"
+                        spellCheck={false}
+                        placeholder={placeholder}
+                        value={form[field]}
+                        onChange={(v) => set(field, v)}
+                        // Leaving the box tidies an exact match ("chevy" -> "Chevrolet", "crv" -> "CR-V").
+                        // Text that matches nothing is never changed.
+                        onBlur={() => {
+                          const fixed =
+                            field === 'make'
+                              ? canonicalMake(form.make)
+                              : canonicalModel(form.make, form.model);
+                          if (fixed && fixed !== form[field]) set(field, fixed);
+                        }}
+                        suggestions={
+                          field === 'make'
+                            ? suggestMakes(form.make)
+                            : suggestModels(form.make, form.model)
+                        }
+                        countLabel={t.vehicle.suggestionsCount}
+                        className={`${inputClass} min-h-12 ${
+                          nextField === field ? '!border-accent-text ring-4 ring-accent/40' : ''
+                        }`}
+                      />
+                    )}
                     {field === 'year' && yearError && (
                       <p
                         id="vehicle-year-error"
