@@ -5,17 +5,21 @@ import { bookings, leads, routes } from '@/db/schema';
 import { CustomerConfirmationEmail } from '@/emails/CustomerConfirmationEmail';
 import { NewBookingEmail } from '@/emails/NewBookingEmail';
 import { NewLeadEmail } from '@/emails/NewLeadEmail';
+import { QuoteReceivedEmail } from '@/emails/QuoteReceivedEmail';
 import {
   buildBookingEmailData,
   buildLeadEmailData,
+  buildQuoteReceivedData,
   customerSubject,
   leadSubject,
+  quoteReceivedSubject,
   teamSubject,
   type BookingForEmail,
 } from '@/lib/email-data';
 import { customerReplyTo } from '@/config/email';
 import { sizeClasses } from '@/config/pricing';
-import { customerText, leadText, teamText } from '@/emails/text';
+import { customerText, leadText, quoteReceivedText, teamText } from '@/emails/text';
+import { zipPlace } from '@/lib/address.server';
 import { renderDispatchPdf, type DispatchPdf } from '@/server/dispatch-pdf';
 import { sendEmail, teamRecipients, type EmailResult } from '@/server/email';
 import { weekCapacity } from '@/server/capacity';
@@ -153,7 +157,18 @@ export async function sendBookingEmails(
   }
 }
 
-/** Tells the team about a personalized-quote request. Same rule: log it, record it, never throw. */
+/** "Corona, CA 92881" for a ZIP we know, "CA 92881" when only the state is known, else just the ZIP. */
+export function placeLabel(zip: string): string {
+  const p = zipPlace(zip);
+  if (!p) return zip;
+  return p.city ? `${p.city}, ${p.state} ${zip}` : `${p.state} ${zip}`;
+}
+
+/**
+ * Tells the team about a personalized-quote request, then confirms it to the customer. The two emails are
+ * independent: a failure of either is logged and recorded on the lead and never undoes the lead or the other email.
+ * Returns the team email's result (null when it could not be attempted).
+ */
 export async function sendLeadEmail(
   db: Db,
   leadId: string,
@@ -161,25 +176,51 @@ export async function sendLeadEmail(
 ): Promise<EmailResult | null> {
   const env = deps.env ?? process.env;
   const send = deps.send ?? sendEmail;
+  const pause = deps.pause ?? sleep;
   try {
     const [l] = await db.select().from(leads).where(eq(leads.id, leadId));
     if (!l) return null;
     const [route] = await db.select().from(routes).where(eq(routes.id, l.routeId));
-    const d = buildLeadEmailData(l, route.name);
-    const team = teamRecipients(env);
-    const mail = await rendered(<NewLeadEmail d={d} />, leadText(d));
-    const result: EmailResult = team.length
-      ? await send({ to: team, subject: leadSubject(d), ...mail, replyTo: l.email }, env)
-      : { sent: false, reason: 'not_configured', error: 'BOOKINGS_EMAIL_TO is not set' };
-    if (!result.sent) console.error(`[lead email] ${leadId}: ${result.error}`);
+
+    let teamResult: EmailResult | null = null;
+    const errors: string[] = [];
+    try {
+      const d = buildLeadEmailData(l, route.name);
+      const team = teamRecipients(env);
+      const mail = await rendered(<NewLeadEmail d={d} />, leadText(d));
+      teamResult = team.length
+        ? await send({ to: team, subject: leadSubject(d), ...mail, replyTo: l.email }, env)
+        : { sent: false, reason: 'not_configured', error: 'BOOKINGS_EMAIL_TO is not set' };
+      if (!teamResult.sent) errors.push(teamResult.error);
+    } catch (e) {
+      errors.push(`Email step failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    try {
+      await pause(700); // stay under Resend's 2 requests a second
+      const q = buildQuoteReceivedData(l, route.name, {
+        pickup: placeLabel(l.pickupZip),
+        delivery: placeLabel(l.deliveryZip),
+      });
+      const mail = await rendered(<QuoteReceivedEmail d={q} />, quoteReceivedText(q));
+      const result = await send(
+        { to: l.email, subject: quoteReceivedSubject(q), ...mail, replyTo: customerReplyTo(env) },
+        env,
+      );
+      if (!result.sent) errors.push(`customer: ${result.error}`);
+    } catch (e) {
+      errors.push(`customer: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    if (errors.length) console.error(`[lead email] ${leadId}: ${errors.join(' | ')}`);
     await db
       .update(leads)
       .set({
-        emailSentAt: result.sent ? new Date() : null,
-        emailError: result.sent ? null : result.error.slice(0, 500),
+        emailSentAt: teamResult?.sent ? new Date() : null,
+        emailError: errors.length ? errors.join(' | ').slice(0, 500) : null,
       })
       .where(eq(leads.id, leadId));
-    return result;
+    return teamResult;
   } catch (e) {
     const message = `Email step failed: ${e instanceof Error ? e.message : String(e)}`;
     console.error(`[lead email] ${leadId}: ${message}`);

@@ -239,19 +239,30 @@ test('picking "Large SUV / Full-size pickup / Van" for an unrecognized vehicle o
   await expect(quoteHeading(page)).toBeVisible();
 });
 
-test('a quote request stores the typed text and the normalized vehicle', async ({ page }) => {
+test('a quote request stores the raw typed text and the normalized vehicle, even though the boxes got tidied', async ({
+  page,
+}) => {
   await typeVehicle(d(page), '2021', ' chevy ', 'TAHOE');
   await answers(page);
+  // Leaving each box tidied what is shown...
+  await expect(makeField(page)).toHaveValue('Chevrolet');
+  await expect(modelField(page)).toHaveValue('Tahoe');
   await d(page).getByLabel('Full name').fill(NAME);
   await d(page).getByLabel('Phone').fill('951-555-0100');
   await d(page).getByLabel('Email').fill('e2e-vehicle@example.com');
   await d(page).getByLabel('Preferred pickup week (optional)').selectOption(week.start);
+  const sent = page.waitForRequest((r) => r.url().endsWith('/api/leads') && r.method() === 'POST');
   await d(page).getByRole('button', { name: 'Request my quote' }).click();
+  // ...but what is sent and stored is exactly what was typed.
+  expect((await sent).postDataJSON().vehicle).toEqual({
+    year: 2021,
+    make: ' chevy ',
+    model: 'TAHOE',
+  });
   await expect(d(page).getByText('Thank you!')).toBeVisible();
   const [row] = await db.select().from(leads).where(eq(leads.name, NAME));
   expect(row.vehicle).toEqual({ year: 2021, make: 'Chevrolet', model: 'Tahoe' });
-  // Leaving each box tidies an exact match, so the typed text kept is the tidied text ("chevy" -> "Chevrolet").
-  expect(row.vehicleTyped).toEqual({ year: '2021', make: 'Chevrolet', model: 'Tahoe' });
+  expect(row.vehicleTyped).toEqual({ year: '2021', make: ' chevy ', model: 'TAHOE' });
 });
 
 test('nothing is classified while the customer is still typing', async ({ page }) => {

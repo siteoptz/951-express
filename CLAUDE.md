@@ -32,6 +32,8 @@ One landing page with a booking modal:
 4. **Email:** full booking record to the 951 Express team with the one-page dispatch sheet PDF attached
    (`src/pdf/DispatchSheet.tsx`, 951 Express branding only; if it cannot be made the email still goes out), plus a
    confirmation to the customer.
+   A quote request emails the team the lead and confirms it to the customer (`src/emails/QuoteReceivedEmail.tsx`, no phone,
+   no price); each email can fail without affecting the lead or the other email.
    Also: service-area map (from `src/data/zips/coverage.json`), company sections with real photography, /terms page,
    password-protected /admin.
 
@@ -96,12 +98,14 @@ One landing page with a booking modal:
 
 ## Commands
 
-- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage), `npm run e2e` (Playwright; uses the DATABASE_URL in .env.local: a dev branch only)
+- `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest + coverage, no database), `npm run test:db` (the full suite on the dev branch), `npm run e2e` (Playwright; uses the DATABASE_URL in .env.local: a dev branch only)
 - `npm run e2e:stripe:api` (payment behavior with signed webhook events, no iframe: the stable gate) and `npm run e2e:stripe` (adds the two real-iframe payment tests; needs the Stripe CLI)
 - `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit)
 - Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 
 ## Definition of done for any change
 
-`npm run lint && npm run typecheck && npm test && npm run build` all pass, and the affected screen has been
-viewed at 390px and 1280px widths.
+`npm run lint && npm run typecheck && npm test && npm run test:db && npm run build` all pass, and the affected screen has
+been viewed at 390px and 1280px widths. `npm test` skips the database tests; `npm run test:db` runs the full suite
+including them (and the 7→6 and 5→3 concurrency tests). It loads `.env.local`, aborts unless the database host is the
+Neon dev branch (`ep-dawn-snow`), and never prints the connection string.

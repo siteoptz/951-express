@@ -20,6 +20,20 @@ export const emailCopy = {
     preview: 'Deposit paid. Full booking record inside.',
     reviewBanner: 'Review needed',
   },
+  // Sent to the customer after a personalized-quote request. No phone number and no price, on purpose.
+  quoteReceived: {
+    subject: 'We received your quote request: {vehicle}',
+    preview: 'Our dispatcher will reply by email with your personalized quote.',
+    heading: 'We received your quote request',
+    intro:
+      'Thanks for choosing 951 Express. Your vehicle needs a personalized quote, so we price it by hand.',
+    detailsHeading: 'Your request',
+    noPreference: 'No preference',
+    // TODO(client): confirm the reply time.
+    reply: 'Our dispatcher will reply by email within 1 business day.',
+    noCharge: 'No deposit was taken and no spot is held yet.',
+    questions: 'Questions? Reply to this email or write to',
+  },
   lead: {
     subject: 'Quote request ({reasons}): {vehicle} · {route}',
     preview: 'A customer asked for a personalized quote. No deposit, no spot held.',

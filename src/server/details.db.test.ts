@@ -8,6 +8,7 @@ import { bookings, leads, routes } from '@/db/schema';
 import { regionOfZip } from '@/lib/routing.server';
 import type { Step3 } from '@/lib/schemas';
 import { bookableWeeks } from '@/lib/weeks';
+import { company } from '@/config/company';
 import { sendBookingEmails, sendLeadEmail, spotNumber } from '@/server/booking-emails';
 import { submitDetails } from '@/server/details';
 import type { EmailMessage, EmailResult } from '@/server/email';
@@ -624,7 +625,10 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
     it('emails the team and records it', async () => {
       const l = await lead();
       const f = fakeSend();
-      expect(await sendLeadEmail(db, l.id, { send: f.send, env })).toMatchObject({ sent: true });
+      expect(await sendLeadEmail(db, l.id, { send: f.send, env, pause })).toMatchObject({
+        sent: true,
+      });
+      expect(f.sent).toHaveLength(2);
       expect(f.sent[0]).toMatchObject({
         to: [TEAM, 'other@example.com'],
         subject: 'Quote request (large vehicle, modified): 2021 Chevrolet Tahoe · West → East',
@@ -635,12 +639,58 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
       expect((await leadRow(l.id)).emailSentAt).toBeInstanceOf(Date);
     });
 
+    it('confirms the request to the customer, with the cleaned-up vehicle and no phone or price', async () => {
+      const l = await lead();
+      const f = fakeSend();
+      await sendLeadEmail(db, l.id, { send: f.send, env, pause });
+      const customer = f.sent[1];
+      expect(customer.to).toBe('lee@example.com');
+      expect(customer.subject).toBe('We received your quote request: 2021 Chevrolet Tahoe');
+      expect(customer.replyTo).toEqual([TEAM, 'other@example.com']);
+      expect(customer.text).toContain('Vehicle: 2021 Chevrolet Tahoe');
+      expect(customer.text).toContain('Pickup: Los Angeles, CA 90001');
+      expect(customer.text).toContain('Delivery: Baltimore, MD 21201');
+      expect(customer.text).toContain('Our dispatcher will reply by email within 1 business day.');
+      for (const body of [customer.text, customer.html]) {
+        expect(body.replace(company.insurance, '')).not.toMatch(/\$\s?\d|\(\d{3}\)|\d{3}-\d{4}/);
+      }
+    });
+
+    it('a failed customer email never undoes the lead or the team email', async () => {
+      const l = await lead();
+      const f = fakeSend([
+        { sent: true, id: 'em_team' },
+        { sent: false, reason: 'failed', error: 'Resend 422: bad address' },
+      ]);
+      expect(await sendLeadEmail(db, l.id, { send: f.send, env, pause })).toMatchObject({
+        sent: true,
+      });
+      const row = await leadRow(l.id);
+      expect(row.emailSentAt).toBeInstanceOf(Date); // the team email went out
+      expect(row.emailError).toBe('customer: Resend 422: bad address');
+      expect(row.status).toBe('new'); // the lead is still saved
+      // A customer send that throws is recorded the same way.
+      const g = fakeSend([{ sent: true, id: 'em_team' }, new Error('network down')]);
+      await sendLeadEmail(db, l.id, { send: g.send, env, pause });
+      expect((await leadRow(l.id)).emailError).toBe('customer: network down');
+    });
+
+    it('still emails the customer when the team email fails', async () => {
+      const l = await lead();
+      const f = fakeSend([new Error('boom')]);
+      expect(await sendLeadEmail(db, l.id, { send: f.send, env, pause })).toBeNull();
+      expect(f.sent).toHaveLength(2);
+      expect(f.sent[1].to).toBe('lee@example.com');
+      expect((await leadRow(l.id)).emailError).toBe('Email step failed: boom');
+    });
+
     it('keeps the lead and records the error when sending fails or throws', async () => {
       const l = await lead();
       await sendLeadEmail(db, l.id, {
         send: fakeSend([{ sent: false, reason: 'failed', error: 'Resend 500: request failed' }])
           .send,
         env,
+        pause,
       });
       expect(await leadRow(l.id)).toMatchObject({
         emailSentAt: null,
@@ -648,11 +698,11 @@ describe.skipIf(!url)('Step 3 details and booking emails (database)', () => {
         status: 'new',
       });
       expect(
-        await sendLeadEmail(db, l.id, { send: fakeSend([new Error('boom')]).send, env }),
+        await sendLeadEmail(db, l.id, { send: fakeSend([new Error('boom')]).send, env, pause }),
       ).toBeNull();
       expect((await leadRow(l.id)).emailError).toBe('Email step failed: boom');
       expect(
-        await sendLeadEmail(db, l.id, { env: { RESEND_API_KEY: '', EMAIL_FROM: '' } }),
+        await sendLeadEmail(db, l.id, { env: { RESEND_API_KEY: '', EMAIL_FROM: '' }, pause }),
       ).toMatchObject({ sent: false });
       expect(
         await sendLeadEmail(db, '00000000-0000-4000-8000-000000000000', {

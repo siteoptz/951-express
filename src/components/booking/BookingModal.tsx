@@ -660,7 +660,10 @@ export default function BookingModal({
                         spellCheck={false}
                         placeholder={placeholder}
                         value={form[field]}
-                        onChange={(v) => set(field, v)}
+                        onChange={(v) => {
+                          set(field, v);
+                          set(field === 'make' ? 'makeTyped' : 'modelTyped', v); // the raw text, kept for the record
+                        }}
                         // Leaving the box tidies an exact match ("chevy" -> "Chevrolet", "crv" -> "CR-V").
                         // Text that matches nothing is never changed.
                         onBlur={() => {

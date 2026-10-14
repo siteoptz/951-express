@@ -12,6 +12,9 @@ export type FormState = {
   year: string;
   make: string;
   model: string;
+  /** Make and model exactly as typed. Leaving a box may tidy `make`/`model` ("chevy" -> "Chevrolet"); these never change. */
+  makeTyped: string;
+  modelTyped: string;
   selectedClass: string;
   operable: boolean | null;
   modified: boolean | null;
@@ -36,6 +39,8 @@ export const initialForm: FormState = {
   year: '',
   make: '',
   model: '',
+  makeTyped: '',
+  modelTyped: '',
   selectedClass: '',
   operable: null,
   modified: null,
@@ -113,11 +118,14 @@ export function formQuoteReasons(f: FormState): QuoteReason[] {
   });
 }
 
-/** The vehicle exactly as typed. The server normalizes it, stores both, and classifies from the normalized text. */
+/**
+ * The vehicle exactly as typed, before any tidy-up on blur. The server normalizes it, stores both, and classifies
+ * from the normalized text. A form saved before these fields existed falls back to the visible text.
+ */
 const typedVehicle = (f: FormState) => ({
   year: parseYear(f.year) ?? Number.NaN,
-  make: f.make,
-  model: f.model,
+  make: f.makeTyped || f.make,
+  model: f.modelTyped || f.model,
 });
 
 /** Body for POST /api/quote, or null while anything is missing or the vehicle needs a quote. */

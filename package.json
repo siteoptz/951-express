@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --coverage",
+    "test:db": "node --env-file=.env.local scripts/test-db.mjs",
     "e2e": "playwright test --grep-invert \"@stripe|@email\"",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
