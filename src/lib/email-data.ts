@@ -193,3 +193,25 @@ export const leadSubject = (
     .replace('{reasons}', d.reasons.join(', '))
     .replace('{vehicle}', d.vehicle)
     .replace('{route}', d.routeName);
+
+/** The quote-request confirmation for the customer: the cleaned-up vehicle, where and when, and nothing about price. */
+export function buildQuoteReceivedData(
+  l: LeadForEmail,
+  routeName: string,
+  places: { pickup: string; delivery: string },
+) {
+  return {
+    ref: bookingRef(l.id),
+    vehicle: vehicleName(l.vehicle),
+    routeName,
+    pickup: places.pickup,
+    delivery: places.delivery,
+    preferredWeek: l.preferredWeekStart
+      ? weekLabel(l.preferredWeekStart)
+      : emailCopy.quoteReceived.noPreference,
+  };
+}
+
+export const quoteReceivedSubject = (
+  d: Pick<ReturnType<typeof buildQuoteReceivedData>, 'vehicle'>,
+): string => emailCopy.quoteReceived.subject.replace('{vehicle}', d.vehicle);

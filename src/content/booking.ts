@@ -32,6 +32,7 @@ export const bookingCopy = {
     makePlaceholder: 'Toyota',
     model: 'Type the model (e.g. Camry)',
     modelPlaceholder: 'Camry',
+    suggestionsCount: '{n} suggestions. Use the up and down arrows, or keep typing.',
     chip: 'Vehicle size: {label}',
     unknownHeading: "We couldn't match your vehicle. Pick the closest size.",
     unknownNote: 'We confirm your size before pickup.',

@@ -2,7 +2,11 @@
 import { booking } from '@/config/booking';
 import { company } from '@/config/company';
 import { emailCopy } from '@/content/emails';
-import type { BookingEmailData, buildLeadEmailData } from '@/lib/email-data';
+import type {
+  BookingEmailData,
+  buildLeadEmailData,
+  buildQuoteReceivedData,
+} from '@/lib/email-data';
 import { deliveryWindowText } from '@/lib/delivery-window';
 import { money } from '@/lib/format';
 
@@ -105,6 +109,24 @@ export function customerText(d: BookingEmailData): string {
     footer,
   ];
   return parts.join('\n\n');
+}
+
+export function quoteReceivedText(d: ReturnType<typeof buildQuoteReceivedData>): string {
+  const c = emailCopy.quoteReceived;
+  return [
+    `${c.heading}\n${c.intro}`,
+    section(c.detailsHeading, [
+      line('Request', d.ref),
+      line('Vehicle', d.vehicle),
+      line('Route', d.routeName),
+      line('Pickup', d.pickup),
+      line('Delivery', d.delivery),
+      line('Preferred pickup week', d.preferredWeek),
+    ]),
+    `${c.reply} ${c.noCharge}`,
+    `${c.questions} ${company.contactEmail}`,
+    footer,
+  ].join('\n\n');
 }
 
 export function leadText(d: ReturnType<typeof buildLeadEmailData>): string {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { booking } from '@/config/booking';
-import { deliveryWindowText, estimatedDeliveryLine, estimatedDeliveryRange } from '@/lib/delivery-window';
+import {
+  deliveryWindowText,
+  estimatedDeliveryLine,
+  estimatedDeliveryRange,
+} from '@/lib/delivery-window';
 
 describe('delivery window', () => {
   it('is 7–10 days after pickup, from config', () => {

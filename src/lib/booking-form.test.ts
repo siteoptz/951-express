@@ -311,6 +311,28 @@ describe('typed vehicle fields', () => {
     const ok = step1Payload(typed({ make: ' Honda ', model: 'civic  lx' }))!;
     expect(ok.vehicle).toEqual({ year: 2020, make: ' Honda ', model: 'civic  lx' });
   });
+  it('sends the raw typed text even after leaving a box tidied what is shown', () => {
+    // The box now shows "Honda" and "CR-V", but the customer typed "honda" and "crv".
+    const ok = step1Payload(
+      typed({ make: 'Honda', model: 'CR-V', makeTyped: 'honda', modelTyped: 'crv' }),
+    )!;
+    expect(ok.vehicle).toEqual({ year: 2020, make: 'honda', model: 'crv' });
+    const lead = leadPayload(
+      typed({
+        make: 'Chevrolet',
+        model: 'Tahoe',
+        makeTyped: 'chevy',
+        modelTyped: 'tahoe',
+        operable: true,
+        modified: false,
+        highValue: false,
+        name: 'Lee',
+        phone: '555',
+        email: 'lee@example.com',
+      }),
+    )!;
+    expect(lead.vehicle).toMatchObject({ make: 'chevy', model: 'tahoe' });
+  });
   it.each(['', '20', '202', '1949', '2028', '20a0', '20200'])(
     'year "%s" is not accepted',
     (year) => {

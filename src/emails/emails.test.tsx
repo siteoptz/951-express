@@ -3,8 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { CustomerConfirmationEmail } from '@/emails/CustomerConfirmationEmail';
 import { NewBookingEmail } from '@/emails/NewBookingEmail';
 import { NewLeadEmail } from '@/emails/NewLeadEmail';
-import { customerText, leadText, teamText } from '@/emails/text';
-import { buildBookingEmailData, buildLeadEmailData, type BookingForEmail } from '@/lib/email-data';
+import { QuoteReceivedEmail } from '@/emails/QuoteReceivedEmail';
+import { customerText, leadText, quoteReceivedText, teamText } from '@/emails/text';
+import {
+  buildBookingEmailData,
+  buildLeadEmailData,
+  buildQuoteReceivedData,
+  leadSubject,
+  quoteReceivedSubject,
+  type BookingForEmail,
+} from '@/lib/email-data';
+import { company } from '@/config/company';
+import { normalizeVehicle } from '@/lib/vehicle-normalize';
 
 // Fixed data, so the snapshots only change when the emails do.
 const addr = { street: '1 Main St', city: 'Corona', state: 'CA', zip: '92881' };
@@ -199,27 +209,43 @@ describe('CustomerConfirmationEmail', () => {
 });
 
 describe('NewLeadEmail', () => {
-  const lead = buildLeadEmailData(
-    {
-      id: booking.id,
-      createdAt: new Date('2026-10-10T20:05:00Z'),
-      name: 'Lee Large',
-      phone: '555-0100',
-      email: 'lee@example.com',
-      vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' },
-      pickupZip: '90001',
-      deliveryZip: '21201',
-      operable: false,
-      modified: true,
-      highValue: false,
-      quoteReasons: ['large_vehicle', 'inoperable', 'modified'],
-      modificationDetails: '5-inch lift, 35-inch tires',
-      topDeck: false,
-      preferredWeekStart: '2026-10-26',
-      notes: 'Lifted',
-    },
-    'West → East',
-  );
+  const leadRow = {
+    id: booking.id,
+    createdAt: new Date('2026-10-10T20:05:00Z'),
+    name: 'Lee Large',
+    phone: '555-0100',
+    email: 'lee@example.com',
+    vehicle: { year: 2021, make: 'Chevrolet', model: 'Tahoe' },
+    pickupZip: '90001',
+    deliveryZip: '21201',
+    operable: false,
+    modified: true,
+    highValue: false,
+    quoteReasons: ['large_vehicle', 'inoperable', 'modified'],
+    modificationDetails: '5-inch lift, 35-inch tires',
+    topDeck: false,
+    preferredWeekStart: '2026-10-26',
+    notes: 'Lifted',
+  };
+  const lead = buildLeadEmailData(leadRow, 'West → East');
+  it('shows the cleaned-up vehicle and what the customer typed, for "2022 chevy tahoe"', async () => {
+    const typed = { year: '2022', make: 'chevy', model: 'tahoe' };
+    const d = buildLeadEmailData(
+      {
+        ...leadRow,
+        vehicle: normalizeVehicle({ year: 2022, make: 'chevy', model: 'tahoe' }),
+        vehicleTyped: typed,
+      },
+      'West → East',
+    );
+    expect(d.vehicle).toBe('2022 Chevrolet Tahoe');
+    expect(d.vehicleTyped).toBe('2022 chevy tahoe');
+    const body = leadText(d);
+    expect(body).toContain('Vehicle: 2022 Chevrolet Tahoe');
+    expect(body).toContain('As typed by the customer: 2022 chevy tahoe');
+    expect(leadSubject(d)).toContain('2022 Chevrolet Tahoe');
+    expect(leadSubject(d)).not.toMatch(/chevy/i);
+  });
   it('asks the team to quote (snapshot)', async () => {
     expect(leadText(lead)).toMatchSnapshot();
   });
@@ -249,5 +275,56 @@ describe('NewLeadEmail', () => {
     expect(out).toContain('No preference');
     expect(out).toContain('Top Deck Load');
     expect(out).not.toContain('Lifted');
+  });
+});
+
+describe('QuoteReceivedEmail (to the customer)', () => {
+  const row = {
+    id: booking.id,
+    createdAt: new Date('2026-10-10T20:05:00Z'),
+    name: 'Lee Large',
+    phone: '555-0100',
+    email: 'lee@example.com',
+    vehicle: normalizeVehicle({ year: 2022, make: 'chevy', model: 'tahoe' }),
+    vehicleTyped: { year: '2022', make: 'chevy', model: 'tahoe' },
+    pickupZip: '90001',
+    deliveryZip: '21201',
+    operable: true,
+    modified: false,
+    highValue: false,
+    quoteReasons: ['large_vehicle' as const],
+    modificationDetails: null,
+    topDeck: false,
+    preferredWeekStart: '2026-10-26',
+    notes: 'private note',
+  };
+  const places = { pickup: 'Los Angeles, CA 90001', delivery: 'Baltimore, MD 21201' };
+  const d = buildQuoteReceivedData(row, 'West → East', places);
+
+  it('has the agreed subject with the cleaned-up vehicle', () => {
+    expect(quoteReceivedSubject(d)).toBe('We received your quote request: 2022 Chevrolet Tahoe');
+  });
+  it('shows the vehicle, ZIPs with cities, week and the reply promise (snapshot)', () => {
+    expect(quoteReceivedText(d)).toMatchSnapshot();
+  });
+  it('says no preference when no week was chosen', () => {
+    expect(
+      buildQuoteReceivedData({ ...row, preferredWeekStart: null }, 'West → East', places)
+        .preferredWeek,
+    ).toBe('No preference');
+  });
+  it('renders the same facts in HTML, with the contact email and no phone, price or typed text', async () => {
+    const html = await render(<QuoteReceivedEmail d={d} />);
+    const text = quoteReceivedText(d);
+    for (const body of [html, text]) {
+      expect(body).toContain('2022 Chevrolet Tahoe');
+      expect(body).toContain('Los Angeles, CA 90001');
+      expect(body).toContain('Baltimore, MD 21201');
+      expect(body).toContain('Our dispatcher will reply by email within 1 business day.');
+      expect(body).toContain(company.contactEmail);
+      expect(body.replace(company.insurance, '')).not.toMatch(/\$\s?\d/); // no price (the footer's cargo limit is not one)
+      expect(body).not.toMatch(/\(\d{3}\)|\d{3}-\d{4}/); // no phone number
+      expect(body).not.toMatch(/chevy|555-0100|private note/i); // nothing the customer typed or sent is echoed
+    }
   });
 });

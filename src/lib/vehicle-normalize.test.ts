@@ -24,6 +24,7 @@ describe('spaces and case', () => {
     expect(tidyCase('grand-cherokee')).toBe('Grand-Cherokee');
     expect(tidyCase('F-150 XLT')).toBe('F-150 XLT');
     expect(tidyCase('  CR-V ')).toBe('CR-V');
+    expect(tidyCase('SILVERADO 1500 GTI')).toBe('Silverado 1500 GTI'); // long ALL-CAPS words soften, short ones stay
   });
 });
 

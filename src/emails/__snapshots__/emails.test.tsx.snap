@@ -105,3 +105,24 @@ Received Oct 10, 2026, 1:05 PM PDT (Pacific).
 Fully licensed and bonded with a cargo limit of $250,000 per occurrence
 951.dispatcher@gmail.com"
 `;
+
+exports[`QuoteReceivedEmail (to the customer) > shows the vehicle, ZIPs with cities, week and the reply promise (snapshot) 1`] = `
+"We received your quote request
+Thanks for choosing 951 Express. Your vehicle needs a personalized quote, so we price it by hand.
+
+YOUR REQUEST
+Request: 3F2B6C1E
+Vehicle: 2022 Chevrolet Tahoe
+Route: West → East
+Pickup: Los Angeles, CA 90001
+Delivery: Baltimore, MD 21201
+Preferred pickup week: Oct 26 – Nov 1
+
+Our dispatcher will reply by email within 1 business day. No deposit was taken and no spot is held yet.
+
+Questions? Reply to this email or write to 951.dispatcher@gmail.com
+
+951 Express Inc · USDOT 4020917 · MC-1516594
+Fully licensed and bonded with a cargo limit of $250,000 per occurrence
+951.dispatcher@gmail.com"
+`;

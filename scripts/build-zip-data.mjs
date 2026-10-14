@@ -16,7 +16,12 @@ const outDir = `${root}src/data/zips/`;
 const reportOnly = process.argv.includes('--report-only');
 
 const decode = (s) =>
-  s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
 
 /** Returns the text cells of the first column of the first sheet, in row order. */
 function readXlsxCells(path) {
@@ -31,7 +36,11 @@ function readXlsxCells(path) {
   for (const m of sheet.matchAll(/<c r="([A-Z]+)(\d+)"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
     const v = m[4]?.match(/<v>([\s\S]*?)<\/v>/)?.[1];
     if (v === undefined) continue;
-    cells.push({ ref: m[1] + m[2], numeric: !/t="s"/.test(m[3]) && !/t="str"/.test(m[3]), text: /t="s"/.test(m[3]) ? shared[Number(v)] : decode(v) });
+    cells.push({
+      ref: m[1] + m[2],
+      numeric: !/t="s"/.test(m[3]) && !/t="str"/.test(m[3]),
+      text: /t="s"/.test(m[3]) ? shared[Number(v)] : decode(v),
+    });
   }
   return cells;
 }
@@ -91,8 +100,10 @@ const eastBase = normalize(parseTokens([eastText]));
 
 // Real ZIPs per state in the zipcodes package, used to tint partly covered states on the map.
 const packageTotals = {};
-for (const info of Object.values(zipcodes.codes)) packageTotals[info.state] = (packageTotals[info.state] ?? 0) + 1;
-const totalsFor = (byState) => Object.fromEntries(Object.keys(byState).map((s) => [s, packageTotals[s]]));
+for (const info of Object.values(zipcodes.codes))
+  packageTotals[info.state] = (packageTotals[info.state] ?? 0) + 1;
+const totalsFor = (byState) =>
+  Object.fromEntries(Object.keys(byState).map((s) => [s, packageTotals[s]]));
 
 function lookup(zips) {
   const byState = {};
@@ -117,14 +128,35 @@ const both = west.zips.filter((z) => eastSet.has(z));
 
 const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 console.log('=== ZIP REPORT ===');
-console.log(`west_zip_codes.xlsx: ${westCells.length} non-empty cells in column A (rows ${westCells[0]?.ref}–${westCells.at(-1)?.ref}), all text: ${westCells.every((c) => !c.numeric)}, header row: ${/^\d/.test(westTexts[0] ?? '') ? 'none' : 'YES: ' + westTexts[0]}`);
-console.log(`east_zip_codes.txt: ${eastText.length} chars, ${eastText.split('\n').length} line(s), comma-separated, header row: ${/^\d/.test(eastText.trim()) ? 'none' : 'YES'}`);
-for (const [name, r, l] of [['WEST', west, w], ['EAST', east, e]]) {
-  console.log(`\n${name}: ${r.stats.tokens} raw tokens → ${r.zips.length} unique ZIPs (${r.stats.duplicates} duplicates removed)`);
-  console.log(`  leading-zero repairs: ${r.stats.padded.length}${r.stats.padded.length ? ' e.g. ' + r.stats.padded.slice(0, 8).join(', ') : ''}`);
-  console.log(`  invalid tokens: ${r.stats.invalid.length}${r.stats.invalid.length ? ' ' + JSON.stringify(r.stats.invalid) : ''}`);
-  console.log(`  unrecognized by zipcodes pkg: ${l.unknown.length}${l.unknown.length ? ' ' + l.unknown.join(', ') : ''}`);
-  console.log(`  states (${Object.keys(l.byState).length}, ${sum(l.byState)} ZIPs recognized): ${Object.entries(l.byState).map(([s, n]) => `${s}:${n}`).join(' ')}`);
+console.log(
+  `west_zip_codes.xlsx: ${westCells.length} non-empty cells in column A (rows ${westCells[0]?.ref}–${westCells.at(-1)?.ref}), all text: ${westCells.every((c) => !c.numeric)}, header row: ${/^\d/.test(westTexts[0] ?? '') ? 'none' : 'YES: ' + westTexts[0]}`,
+);
+console.log(
+  `east_zip_codes.txt: ${eastText.length} chars, ${eastText.split('\n').length} line(s), comma-separated, header row: ${/^\d/.test(eastText.trim()) ? 'none' : 'YES'}`,
+);
+for (const [name, r, l] of [
+  ['WEST', west, w],
+  ['EAST', east, e],
+]) {
+  console.log(
+    `\n${name}: ${r.stats.tokens} raw tokens → ${r.zips.length} unique ZIPs (${r.stats.duplicates} duplicates removed)`,
+  );
+  console.log(
+    `  leading-zero repairs: ${r.stats.padded.length}${r.stats.padded.length ? ' e.g. ' + r.stats.padded.slice(0, 8).join(', ') : ''}`,
+  );
+  console.log(
+    `  invalid tokens: ${r.stats.invalid.length}${r.stats.invalid.length ? ' ' + JSON.stringify(r.stats.invalid) : ''}`,
+  );
+  console.log(
+    `  unrecognized by zipcodes pkg: ${l.unknown.length}${l.unknown.length ? ' ' + l.unknown.join(', ') : ''}`,
+  );
+  console.log(
+    `  states (${Object.keys(l.byState).length}, ${sum(l.byState)} ZIPs recognized): ${Object.entries(
+      l.byState,
+    )
+      .map(([s, n]) => `${s}:${n}`)
+      .join(' ')}`,
+  );
 }
 {
   const baseSet = new Set(eastBase.zips);
@@ -132,14 +164,18 @@ for (const [name, r, l] of [['WEST', west, w], ['EAST', east, e]]) {
   const already = addUnique.filter((z) => baseSet.has(z)).length;
   const recognized = addUnique.filter((z) => zipcodes.lookup(z)).length;
   const westSet = new Set(west.zips);
-  console.log(`\neast_additions.txt (${eastAdd.ranges.join(', ') || 'no ranges'}): ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${already} already in the original list, ${addUnique.filter((z) => westSet.has(z)).length} also in West`);
+  console.log(
+    `\neast_additions.txt (${eastAdd.ranges.join(', ') || 'no ranges'}): ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${already} already in the original list, ${addUnique.filter((z) => westSet.has(z)).length} also in West`,
+  );
 }
 {
   const baseSet = new Set(westBase.zips);
   const eastAll = new Set(east.zips);
   const addUnique = [...new Set(westAdd.tokens)];
   const recognized = addUnique.filter((z) => zipcodes.lookup(z)).length;
-  console.log(`\nwest_additions.txt: ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${addUnique.filter((z) => baseSet.has(z)).length} already in the original list, ${addUnique.filter((z) => eastAll.has(z)).length} also in East`);
+  console.log(
+    `\nwest_additions.txt: ${addUnique.length} ZIPs, ${recognized} recognized, ${addUnique.length - recognized} unrecognized (still routed), ${addUnique.filter((z) => baseSet.has(z)).length} already in the original list, ${addUnique.filter((z) => eastAll.has(z)).length} also in East`,
+  );
 }
 console.log(`\nZIPs in BOTH lists: ${both.length}${both.length ? ' ' + both.join(', ') : ''}`);
 
@@ -170,8 +206,22 @@ writeFileSync(
     // stateTotals = all real ZIPs the zipcodes package has for that state (the tint denominator).
     // total = ZIPs in the client list; states = ZIPs the zipcodes package recognizes; total = sum(states) + unrecognized.
     // points are [lat, lng, zipCount] per 0.25° cell
-    west: { total: west.zips.length, unrecognized: w.unknown.length, states: w.byState, stateTotals: totalsFor(w.byState), points: grid(w.points) },
-    east: { total: east.zips.length, unrecognized: e.unknown.length, states: e.byState, stateTotals: totalsFor(e.byState), points: grid(e.points) },
+    west: {
+      total: west.zips.length,
+      unrecognized: w.unknown.length,
+      states: w.byState,
+      stateTotals: totalsFor(w.byState),
+      points: grid(w.points),
+    },
+    east: {
+      total: east.zips.length,
+      unrecognized: e.unknown.length,
+      states: e.byState,
+      stateTotals: totalsFor(e.byState),
+      points: grid(e.points),
+    },
   }) + '\n',
 );
-console.log(`\nWrote west.json (${west.zips.length}), east.json (${east.zips.length}), coverage.json to src/data/zips/`);
+console.log(
+  `\nWrote west.json (${west.zips.length}), east.json (${east.zips.length}), coverage.json to src/data/zips/`,
+);

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --coverage",
+    "test:db": "node --env-file=.env.local scripts/test-db.mjs",
     "e2e": "playwright test --grep-invert \"@stripe|@email\"",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
@@ -18,7 +19,8 @@
     "e2e:stripe": "E2E_STRIPE=1 playwright test --grep @stripe --grep-invert @email",
     "e2e:stripe:api": "playwright test --grep @stripe-api",
     "e2e:email": "E2E_STRIPE=1 E2E_EMAIL=1 playwright test e2e/email.spec.ts",
-    "email:preview": "tsx scripts/preview-emails.tsx"
+    "email:preview": "tsx scripts/preview-emails.tsx",
+    "vehicle-names": "tsx scripts/build-vehicle-names.ts && prettier --write src/data/vehicle-names.json"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

@@ -13,12 +13,20 @@ export type CleanVehicle = { year: number; make: string; model: string };
 /** Trim and collapse runs of spaces: "  chevy   tahoe " -> "chevy tahoe". */
 export const collapseSpaces = (s: string): string => s.trim().replace(/\s+/g, ' ');
 
-/** Capitalize each word of all-lowercase text ("silverado 1500" -> "Silverado 1500"); mixed case is kept as typed. */
+/**
+ * Capitalize each word of all-lowercase text ("silverado 1500" -> "Silverado 1500"). ALL-CAPS text keeps short
+ * words ("GTI", "XLT") and softens long ones ("SILVERADO" -> "Silverado"). Mixed case is kept as typed.
+ */
 export function tidyCase(s: string): string {
   const text = collapseSpaces(s);
-  return text === text.toLowerCase()
-    ? text.replace(/(^|[\s-])([a-z])/g, (_, sep: string, ch: string) => sep + ch.toUpperCase())
-    : text;
+  if (text === text.toLowerCase())
+    return text.replace(
+      /(^|[\s-])([a-z])/g,
+      (_, sep: string, ch: string) => sep + ch.toUpperCase(),
+    );
+  if (text === text.toUpperCase())
+    return text.replace(/[A-Z]{5,}/g, (w) => w.charAt(0) + w.slice(1).toLowerCase());
+  return text;
 }
 
 /** "chevy" -> "Chevrolet", "vw" -> "Volkswagen", "merc" -> "Mercedes-Benz", "bmw" -> "BMW", unknown -> Title Case. */
