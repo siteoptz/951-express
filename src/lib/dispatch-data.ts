@@ -1,4 +1,5 @@
 // What the dispatch sheet says, as plain data. Pure, so the wording is easy to test; src/pdf draws it.
+// The layout follows the grid Super Dispatch imports: a label above its value, two sub-columns per half.
 import { booking as bookingConfig } from '@/config/booking';
 import { company } from '@/config/company';
 import type { Address, Contact } from '@/db/schema';
@@ -22,19 +23,26 @@ export const dispatchPaymentLine = (): string =>
 // Keeps the sheet on one page: longer notes are cut, and the booking email carries them in full.
 const NOTES_ON_SHEET = 500;
 
-// Super Dispatch reads each field as one "Label: value" line, so every field here is a single string, and a field with
-// no value is left out. Dates are MM/DD/YYYY, money is "$1500.00" and phone numbers are digits only.
-export const field = (label: string, value?: string | null): string =>
-  value ? `${label}: ${value}` : `${label}:`;
-
-/** A field with no value is left out entirely (Super Dispatch imports a bare "Phone:" badly). */
-const present = (label: string, value?: string | null): string[] =>
-  value ? [field(label, value)] : [];
+/** What the sheet prints for a value we do not have. */
+export const EMPTY = '--';
 
 export const phoneDigits = (phone?: string | null): string => (phone ?? '').replace(/\D/g, '');
 
+/** "9515550111" -> "(951) 555-0111" (anything that is not 10 digits is printed as digits only). */
+export const phoneText = (phone?: string | null): string => {
+  const d = phoneDigits(phone);
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : d;
+};
+
 /** 150000 -> "$1500.00" (no thousands separator) */
 export const plainMoney = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+
+/** 175000 -> "$1,750"; 175050 -> "$1,750.50" */
+export const priceText = (cents: number): string =>
+  `$${(cents / 100).toLocaleString('en-US', {
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 /** "10/13/2026", the date in the business time zone. */
 const slashDate = (d: Date): string =>
@@ -53,110 +61,99 @@ const slashDay = (isoDay: string, plusDays = 0): string => {
   return `${two(t.getUTCMonth() + 1)}/${two(t.getUTCDate())}/${t.getUTCFullYear()}`;
 };
 
-/** Super Dispatch's vehicle types: Sedan, SUV, Pickup or Van. */
+/** Super Dispatch's vehicle types: Car, SUV, Pickup or Van. */
 export function superDispatchType(sizeClass: string): string {
   if (sizeClass.includes('pickup')) return 'Pickup';
   if (sizeClass.includes('suv')) return 'SUV';
   if (sizeClass.includes('van')) return 'Van';
-  return 'Sedan';
+  return 'Car';
 }
 
 const streetLine = (a: Address): string => [a.street, a.street2].filter(Boolean).join(', ');
 const cityLine = (a: Address): string => `${a.city}, ${a.state} ${a.zip}`;
 
+/** "2108 Collett Ave Apt 204, Corona, CA 92879" -> ["2108 Collett Ave, Apt 204", "Corona, CA 92879"] */
+function companyAddressLines(): string[] {
+  const [street, ...rest] = company.dispatchAddress.split(', ');
+  return [street.replace(/ (Apt|Unit|Suite|Ste) /, ', $1 '), rest.join(', ')];
+}
+
+export type DispatchParty = { name: string; street: string; city: string; phone: string };
+
 export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUrl: string) {
   const c = b.customer;
   const customerName = `${c.firstName} ${c.lastName}`.trim();
-  const phone = phoneDigits(c.phone);
-  // 951 Express is the shipper (Cal's sample): the name, the word "Shipper", then (after the Order ID line) our address
-  // and email. The customer is the pickup and delivery contact and is named in the dispatch instructions.
-  const [companyStreet, ...companyRest] = company.dispatchAddress.split(', ');
-  const addressLines = [companyStreet, companyRest.join(', ')];
-  const shipper = {
-    name: company.name,
-    role: 'Shipper',
-    lines: [...addressLines, field('Email', company.contactEmail)],
-  };
-  const party = (address: Address, contact: Contact | null | undefined) => {
-    const digits = phoneDigits(contact?.phone ?? c.phone);
-    return [
-      field('Name', contact?.name ?? customerName),
-      streetLine(address),
-      cityLine(address),
-      ...present('Phone', digits),
-      ...present('Mobile', digits),
-    ];
-  };
+  const customerPhone = phoneDigits(c.phone);
+  const [companyStreet, companyCity] = companyAddressLines();
+  const companyLines = [company.name, companyStreet, companyCity];
+  // The pickup or delivery contact if given, otherwise the customer.
+  const party = (address: Address, contact: Contact | null | undefined): DispatchParty => ({
+    name: contact?.name ?? customerName,
+    street: streetLine(address),
+    city: cityLine(address),
+    phone: phoneText(contact?.phone ?? c.phone) || EMPTY,
+  });
   const typed = typedVehicleText(b.vehicleTyped);
   const name = vehicleName(b.vehicle);
   const flags = [...reviewReasons(b), ...(b.addressFlags ?? [])];
-  // The first lines land in Super Dispatch's driver instructions, so the money comes first. Amounts are the
-  // booking's own, as the server recorded them.
-  const instructions: string[] = [
+
+  // Load-Specific Terms: the money comes first. Amounts are the booking's own, as the server recorded them.
+  const terms = [
     `DEPOSIT PAID: ${plainMoney(b.depositCents)} (already deducted from the total)`,
     `COLLECT AT DELIVERY: ${plainMoney(b.balanceCents)} — ${methodList(bookingConfig.balanceMethods)} only. No credit cards.`,
     `Total booking price: ${plainMoney(b.totalCents)}`,
-    `Customer: ${customerName}, ${phone}, ${c.email}`,
   ];
-  if (b.notes)
-    instructions.push(
-      `Customer notes: ${
-        b.notes.length > NOTES_ON_SHEET
-          ? `${b.notes.slice(0, NOTES_ON_SHEET).trimEnd()}… (full notes are in the booking email)`
-          : b.notes
-      }`,
-    );
-  instructions.push(`Delivery window: ${deliveryWindowText()}`);
-  if (b.topDeck) instructions.push('Top Deck Load: load on the top deck.');
-  instructions.push(
+  const special: string[] = [`Customer: ${customerName}, ${customerPhone}, ${c.email}`];
+  special.push(`Delivery window: ${deliveryWindowText()}`);
+  if (b.topDeck) special.push('Top Deck Load: load on the top deck.');
+  special.push(
     b.personalItems
       ? `Personal items: Yes. ${bookingConfig.personalItemsNotice}`
       : 'Personal items: None declared.',
   );
-  if (!b.operable) instructions.push('Vehicle is NOT operable.');
-  if (b.modified) instructions.push('Vehicle has been modified.');
+  if (!b.operable) special.push('Vehicle is NOT operable.');
+  if (b.modified) special.push('Vehicle has been modified.');
   if (typed && typed.toLowerCase() !== name.toLowerCase())
-    instructions.push(`Typed by customer: ${typed}`);
+    special.push(`Typed by customer: ${typed}`);
 
   return {
     ref: bookingRef(b.id),
     title: 'Dispatch Sheet',
-    shipper,
-    // No "Phone:" line: there is no phone number on our side.
-    carrier: [
-      field('Carrier', company.name),
-      field('USDOT', company.usdot),
-      ...addressLines,
-      ...present('Contact', company.dispatchContact),
-      field('Email', company.contactEmail),
-    ],
-    order: [
-      field('Dispatch Date', slashDate(b.paidAt ?? b.termsAcceptedAt)),
-      field('Carrier Pickup Estimated', slashDay(b.weekStart)),
-      field(
-        'Carrier Delivery Estimated',
-        slashDay(b.weekStart, bookingConfig.deliveryWindowDays.min),
-      ),
-      field('Ship Via', 'OPEN'),
-      field('Condition', b.operable ? 'Operable' : 'Inoperable'),
-      // Super Dispatch uses this as the amount to collect (COD), so it is the balance, not the booking total.
-      field('Total Payment to Carrier', plainMoney(b.balanceCents)),
-      field('Payment method', 'Cash'),
-      field('Payment terms', 'COD'),
-      field('Carrier owes Shipper', '$ 0.00'),
-    ],
-    totalVehicles: field('Total Vehicles', '1'),
-    vehicle: {
-      n: '1',
-      name,
-      type: superDispatchType(b.sizeClass),
-      color: b.vehicleColor ?? '',
-      vin: b.vehicleVin ?? '',
-      lot: '',
+    // 951 Express is both the shipper and the carrier. The shipper's special number is left empty so it does not repeat
+    // the carrier's MC number (Super Dispatch read the repeat as a mismatch).
+    shipper: {
+      lines: companyLines,
+      contact: [company.dispatchContact, company.contactEmail],
+      special: EMPTY,
     },
-    pickup: party(b.pickupAddress, b.pickupContact),
-    delivery: party(b.deliveryAddress, b.deliveryContact),
-    instructions,
+    // No phone number for the carrier: there is none on our side.
+    carrier: {
+      lines: companyLines,
+      contact: [company.dispatchContact],
+      special: company.mc.replace('-', ''),
+    },
+    origin: party(b.pickupAddress, b.pickupContact),
+    destination: party(b.deliveryAddress, b.deliveryContact),
+    locationType: bookingConfig.dispatchLocationType,
+    dispatchDate: slashDate(b.paidAt ?? b.termsAcceptedAt),
+    pickupDate: slashDay(b.weekStart),
+    deliveryDate: slashDay(b.weekStart, bookingConfig.deliveryWindowDays.min),
+    // What Super Dispatch collects: the balance, by the one method it names.
+    totalPrice: priceText(b.balanceCents),
+    paymentTerms: `Carrier will receive ${priceText(b.balanceCents)} via ${bookingConfig.dispatchPaymentTerms}.`,
+    vehicle: {
+      name,
+      vin: b.vehicleVin ?? EMPTY,
+      type: superDispatchType(b.sizeClass),
+      color: b.vehicleColor ?? EMPTY,
+    },
+    terms,
+    notes: b.notes
+      ? b.notes.length > NOTES_ON_SHEET
+        ? `${b.notes.slice(0, NOTES_ON_SHEET).trimEnd()}… (full notes are in the booking email)`
+        : b.notes
+      : EMPTY,
+    special,
     flags,
     footer: `${siteUrl}/terms  ·  Terms version ${b.termsVersion}`,
   };

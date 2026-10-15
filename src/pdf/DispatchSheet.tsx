@@ -1,76 +1,51 @@
-// The dispatch sheet: one US Letter page per vehicle, 951 Express branding only. The structure follows Super Dispatch's
-// dispatch sheet so it imports there: every field is ONE <Text> run, "Label: value", never a label and a value in
-// separate columns. Real text in Helvetica, no images for data. Server-only: rendered with @react-pdf/renderer.
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
-import type { DispatchData } from '@/lib/dispatch-data';
+// The dispatch sheet: one US Letter page, 951 Express branding only. The layout is a grid Super Dispatch imports: a
+// label above its value, two sub-columns per half, "--" for a value we do not have. Real text in Helvetica, no images
+// for data. Server-only: rendered with @react-pdf/renderer. Every value comes from DispatchData (booking and config).
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { EMPTY, type DispatchData, type DispatchParty } from '@/lib/dispatch-data';
 
 const NAVY = '#0E1A2B';
-const ORANGE = '#F06A1A';
 const GREY = '#5B6573';
 const LINE = '#D5DAE1';
-const SOFT = '#F3F5F8';
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 22,
-    paddingHorizontal: 32,
-    paddingBottom: 34,
+    paddingVertical: 28,
+    paddingHorizontal: 34,
     fontFamily: 'Helvetica',
-    fontSize: 8.5,
+    fontSize: 9,
     color: NAVY,
-    lineHeight: 1.2,
   },
-  header: {
+  head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    borderBottomWidth: 3,
-    borderBottomColor: ORANGE,
+    borderBottomWidth: 2,
+    borderBottomColor: NAVY,
     paddingBottom: 6,
-    marginBottom: 6,
+    marginBottom: 10,
   },
-  // One line of three Text runs, all the same size and weight so they share a baseline: name, Order ID, title.
-  headItem: { width: '33.3%' },
-  headName: { fontSize: 12, fontFamily: 'Helvetica-Bold' },
-  headRole: { fontSize: 8.5, marginTop: 2 },
-  headMid: { fontSize: 12, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
-  headEnd: { fontSize: 12, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
-  logo: { position: 'absolute', top: 4, right: 6, width: 59, height: 25 },
-  bold: { fontFamily: 'Helvetica-Bold' },
-  row: { flexDirection: 'row', gap: 10 },
-  col: { flex: 1 },
-  section: { marginBottom: 5 },
+  title: { fontSize: 15, fontFamily: 'Helvetica-Bold' },
+  page1: { fontSize: 9, color: GREY, marginTop: 2 },
+  row: { flexDirection: 'row', gap: 16, marginBottom: 8 },
+  half: { flex: 1 },
   h: {
-    fontSize: 8.5,
     fontFamily: 'Helvetica-Bold',
-    backgroundColor: NAVY,
-    color: '#FFFFFF',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-  },
-  hRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  box: {
-    borderWidth: 1,
-    borderColor: LINE,
-    borderTopWidth: 0,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  th: { flexDirection: 'row', backgroundColor: SOFT, borderWidth: 1, borderColor: LINE },
-  tr: {
-    flexDirection: 'row',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    fontSize: 10.5,
     borderBottomWidth: 1,
-    borderColor: LINE,
+    borderBottomColor: LINE,
+    paddingBottom: 2,
+    marginBottom: 4,
   },
-  cell: { padding: 4 },
-  review: { borderWidth: 1.5, borderColor: ORANGE, padding: 5, marginTop: 4 },
+  subs: { flexDirection: 'row', gap: 8 },
+  sub: { flex: 1 },
+  label: { fontFamily: 'Helvetica-Bold', fontSize: 8.5, color: GREY, marginTop: 4 },
+  value: { fontSize: 9.5 },
   footer: {
     position: 'absolute',
     bottom: 18,
-    left: 32,
-    right: 32,
+    left: 34,
+    right: 34,
     borderTopWidth: 1,
     borderTopColor: LINE,
     paddingTop: 5,
@@ -80,121 +55,147 @@ const s = StyleSheet.create({
   },
 });
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <View style={[s.section, s.col]}>
-    <Text style={s.h}>{title}</Text>
-    <View style={s.box}>{children}</View>
-  </View>
-);
-
-/** Each line is one Text run, so "Co. Phone: 9515550100" is read as one line. The first line of a block is bold. */
-const Lines = ({ lines, boldFirst = false }: { lines: string[]; boldFirst?: boolean }) => (
+const Lbl = ({ t }: { t: string }) => <Text style={s.label}>{t}</Text>;
+const Val = ({ lines }: { lines: string | string[] }) => (
   <>
-    {lines.map((line, i) => (
-      <Text key={`${i}-${line}`} style={i === 0 && boldFirst ? s.bold : undefined}>
-        {line}
+    {(Array.isArray(lines) ? lines : [lines]).map((l, i) => (
+      <Text key={`${i}-${l}`} style={s.value}>
+        {l}
       </Text>
     ))}
   </>
 );
+/** A label above its value lines. */
+const Item = ({ label, lines }: { label: string; lines: string | string[] }) => (
+  <View wrap={false}>
+    <Lbl t={label} />
+    <Val lines={lines} />
+  </View>
+);
+/** Two sub-columns side by side, each a label over its lines. */
+const Pair = ({ a, b }: { a: [string, string | string[]]; b: [string, string | string[]] }) => (
+  <View style={s.subs} wrap={false}>
+    <View style={s.sub}>
+      <Item label={a[0]} lines={a[1]} />
+    </View>
+    <View style={s.sub}>
+      <Item label={b[0]} lines={b[1]} />
+    </View>
+  </View>
+);
+const Half = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <View style={s.half}>
+    <Text style={s.h}>{title}</Text>
+    {children}
+  </View>
+);
 
-const widths = { n: '6%', v: '34%', t: '14%', c: '14%', vin: '24%', lot: '8%' } as const;
+/** The left sub-column of a party: who and where. The right one: a contact name we do not have, then the phone. */
+const where = (p: DispatchParty) => [p.name, p.street, p.city];
+const contact = (p: DispatchParty) => [EMPTY, p.phone];
 
-export function DispatchSheet({ d, logo }: { d: DispatchData; logo?: string }) {
+export function DispatchSheet({ d }: { d: DispatchData }) {
   return (
-    <Document title={`Dispatch Sheet ${d.ref}`} author="951 Express Inc" creator="951 Express Inc">
+    <Document title={`Dispatch Sheet ${d.ref}`} author="951 Express Inc">
       <Page size="LETTER" style={s.page}>
-        {/* Reading order matters (Super Dispatch reads the text in drawing order): name, "Shipper", Order ID, title,
-            then the shipper's address lines. */}
-        <View style={s.header}>
-          <View style={s.headItem}>
-            <Text style={s.headName}>{d.shipper.name}</Text>
-            <Text style={s.headRole}>{d.shipper.role}</Text>
+        <View style={s.head}>
+          <View>
+            <Text style={s.title}>Dispatch Sheet</Text>
+            <Text style={s.page1}>Page 1 of 1</Text>
           </View>
-          <Text style={[s.headItem, s.headMid]}>{`Order ID: ${d.ref}`}</Text>
-          <Text style={[s.headItem, s.headEnd]}>{d.title}</Text>
-        </View>
-        <View style={{ marginBottom: 6 }}>
-          <Lines lines={d.shipper.lines} />
+          <Text style={s.title}>{`Load ${d.ref}`}</Text>
         </View>
 
         <View style={s.row}>
-          <Section title="Carrier Information">
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- a react-pdf Image, not an HTML img */}
-            {logo ? <Image src={logo} style={s.logo} /> : null}
-            <Lines lines={d.carrier} />
-          </Section>
+          <Half title="Shipper Info">
+            <Pair a={['Shipper', d.shipper.lines]} b={['Contact Info', d.shipper.contact]} />
+            <Pair a={['Special Number', d.shipper.special]} b={['Load Contact Info', EMPTY]} />
+          </Half>
+          <Half title="Carrier Info">
+            <Pair a={['Carrier', d.carrier.lines]} b={['Contact Info', d.carrier.contact]} />
+            <Pair a={['Special Number', d.carrier.special]} b={['Driver', EMPTY]} />
+          </Half>
         </View>
 
         <View style={s.row}>
-          <Section title="Order Information">
-            <Lines lines={d.order} />
-          </Section>
+          <Half title="Origin Info">
+            <Pair a={['Origin', where(d.origin)]} b={['Contact Info', contact(d.origin)]} />
+            <Pair a={['Location Type', d.locationType]} b={['Buyer Reference Number', EMPTY]} />
+          </Half>
+          <Half title="Destination Info">
+            <Pair
+              a={['Destination', where(d.destination)]}
+              b={['Contact Info', contact(d.destination)]}
+            />
+            <Pair a={['Location Type', d.locationType]} b={['Buyer Reference Number', EMPTY]} />
+          </Half>
         </View>
 
-        <View style={s.section}>
-          <View style={[s.h, s.hRow]}>
-            <Text>Vehicle Information</Text>
-            <Text style={{ fontFamily: 'Helvetica' }}>{d.totalVehicles}</Text>
-          </View>
-          <View style={s.th}>
+        <View style={s.row}>
+          <Half title="Dates">
+            <Item label="Dispatch Date" lines={d.dispatchDate} />
+            <View style={s.subs} wrap={false}>
+              <View style={s.sub}>
+                <Lbl t="Requested Pick Up" />
+                <Text style={s.label}>Estimated</Text>
+                <Val lines={d.pickupDate} />
+              </View>
+              <View style={s.sub}>
+                <Lbl t="Requested Delivery" />
+                <Text style={s.label}>Estimated</Text>
+                <Val lines={d.deliveryDate} />
+              </View>
+            </View>
+          </Half>
+          <Half title="Load Info">
+            <Item label="Load ID" lines={d.ref} />
+            <Item label="Total Price" lines={d.totalPrice} />
+            <Item label="Payment Terms" lines={d.paymentTerms} />
+          </Half>
+        </View>
+
+        <View style={{ marginBottom: 8 }}>
+          <Text style={s.h}>Vehicle Info (1 Total)</Text>
+          <View style={s.subs}>
             {(
               [
-                ['#', widths.n],
-                ['Vehicle', widths.v],
-                ['Type', widths.t],
-                ['Color', widths.c],
-                ['VIN', widths.vin],
-                ['Lot #', widths.lot],
+                ['Vehicle Year/Make/Model', d.vehicle.name, 2.2],
+                ['VIN', d.vehicle.vin, 1.7],
+                ['Max Weight', EMPTY, 1],
+                ['Max Dimensions', EMPTY, 1.4],
+                ['Critical Notes', EMPTY, 1.2],
               ] as const
-            ).map(([label, w]) => (
-              <Text key={label} style={[s.cell, s.bold, { width: w }]}>
-                {label}
-              </Text>
-            ))}
-          </View>
-          <View style={s.tr}>
-            <Text style={[s.cell, { width: widths.n }]}>{d.vehicle.n}</Text>
-            <Text style={[s.cell, { width: widths.v }]}>{d.vehicle.name}</Text>
-            <Text style={[s.cell, { width: widths.t }]}>{d.vehicle.type}</Text>
-            <Text style={[s.cell, { width: widths.c }]}>{d.vehicle.color}</Text>
-            <Text style={[s.cell, { width: widths.vin }]}>{d.vehicle.vin}</Text>
-            <Text style={[s.cell, { width: widths.lot }]}>{d.vehicle.lot}</Text>
-          </View>
-        </View>
-
-        {/* Two separate column blocks, each heading over its own box: the layout Super Dispatch reads as Origin and
-            Destination. Do not merge the two headings into one row. */}
-        <View style={s.row}>
-          <Section title="Pickup Information">
-            <Lines lines={d.pickup} />
-          </Section>
-          <Section title="Delivery Information">
-            <Lines lines={d.delivery} />
-          </Section>
-        </View>
-
-        <View style={s.section}>
-          <Text style={s.h}>DISPATCH INSTRUCTIONS</Text>
-          <View style={s.box}>
-            {d.instructions.map((line) => (
-              <Text key={line} style={{ marginBottom: 1 }}>
-                {line}
-              </Text>
-            ))}
-            {d.flags.length > 0 ? (
-              <View style={s.review}>
-                <Text style={s.bold}>NEEDS REVIEW BEFORE DISPATCH</Text>
-                {d.flags.map((f) => (
-                  <Text key={f} style={{ marginTop: 2 }}>
-                    {`• ${f}`}
-                  </Text>
-                ))}
+            ).map(([l, v, flex]) => (
+              <View key={l} style={{ flex }}>
+                <Item label={l} lines={v} />
               </View>
-            ) : null}
+            ))}
+          </View>
+          <View style={s.subs}>
+            {(
+              [
+                ['Vehicle Type', d.vehicle.type, 2.2],
+                ['Color', d.vehicle.color, 1.7],
+                ['License State/#', EMPTY, 1],
+                ['Lot #', EMPTY, 2.6],
+              ] as const
+            ).map(([l, v, flex]) => (
+              <View key={l} style={{ flex }}>
+                <Item label={l} lines={v} />
+              </View>
+            ))}
           </View>
         </View>
 
+        <View>
+          <Text style={s.h}>Additional Info</Text>
+          <Item label="Load-Specific Terms" lines={d.terms} />
+          <Item label="Pre-Dispatch Notes from Customer" lines={d.notes} />
+          <Item
+            label="Transport Special Instructions"
+            lines={[...d.special, ...d.flags.map((f) => `Needs review: ${f}`)]}
+          />
+        </View>
         <Text style={s.footer} fixed>
           {d.footer}
         </Text>
