@@ -18,3 +18,9 @@ export function pdftotextLayout(buf: Buffer): string | null {
   const r = spawnSync('pdftotext', ['-layout', '-', '-'], { input: buf, encoding: 'utf8' });
   return r.error || r.status !== 0 ? null : r.stdout;
 }
+
+/** What Super Dispatch's importer sees: text in the order it was drawn (`pdftotext -raw`), or null without poppler. */
+export function pdftotextRaw(buf: Buffer): string | null {
+  const r = spawnSync('pdftotext', ['-raw', '-', '-'], { input: buf, encoding: 'utf8' });
+  return r.error || r.status !== 0 ? null : r.stdout;
+}

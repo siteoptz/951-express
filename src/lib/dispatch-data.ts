@@ -23,9 +23,13 @@ export const dispatchPaymentLine = (): string =>
 const NOTES_ON_SHEET = 500;
 
 // Super Dispatch reads each field as one "Label: value" line, so every field here is a single string, and a field with
-// no value is just "Label:". Dates are MM/DD/YYYY, money is "$1500.00" and phone numbers are digits only.
+// no value is left out. Dates are MM/DD/YYYY, money is "$1500.00" and phone numbers are digits only.
 export const field = (label: string, value?: string | null): string =>
   value ? `${label}: ${value}` : `${label}:`;
+
+/** A field with no value is left out entirely (Super Dispatch imports a bare "Phone:" badly). */
+const present = (label: string, value?: string | null): string[] =>
+  value ? [field(label, value)] : [];
 
 export const phoneDigits = (phone?: string | null): string => (phone ?? '').replace(/\D/g, '');
 
@@ -64,28 +68,36 @@ export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUr
   const c = b.customer;
   const customerName = `${c.firstName} ${c.lastName}`.trim();
   const phone = phoneDigits(c.phone);
-  // One block, top left, like Cal's sample: the name, the word "Shipper", then the address and contact lines.
-  const shipper = [
-    customerName,
-    'Shipper',
-    ...(c.address ? [streetLine(c.address), cityLine(c.address)] : []),
-    field('Co. Phone', phone),
-    field('Email', c.email),
-  ];
+  // 951 Express is the shipper (Cal's sample): the name, the word "Shipper", then (after the Order ID line) our address
+  // and email. The customer is the pickup and delivery contact and is named in the dispatch instructions.
+  const [companyStreet, ...companyRest] = company.dispatchAddress.split(', ');
+  const addressLines = [companyStreet, companyRest.join(', ')];
+  const shipper = {
+    name: company.name,
+    role: 'Shipper',
+    lines: [...addressLines, field('Email', company.contactEmail)],
+  };
   const party = (address: Address, contact: Contact | null | undefined) => {
     const digits = phoneDigits(contact?.phone ?? c.phone);
     return [
       field('Name', contact?.name ?? customerName),
       streetLine(address),
       cityLine(address),
-      field('Phone', digits),
-      field('Mobile', digits),
+      ...present('Phone', digits),
+      ...present('Mobile', digits),
     ];
   };
   const typed = typedVehicleText(b.vehicleTyped);
   const name = vehicleName(b.vehicle);
   const flags = [...reviewReasons(b), ...(b.addressFlags ?? [])];
-  const instructions: string[] = [];
+  // The first lines land in Super Dispatch's driver instructions, so the money comes first. Amounts are the
+  // booking's own, as the server recorded them.
+  const instructions: string[] = [
+    `DEPOSIT PAID: ${plainMoney(b.depositCents)} (already deducted from the total)`,
+    `COLLECT AT DELIVERY: ${plainMoney(b.balanceCents)} — ${methodList(bookingConfig.balanceMethods)} only. No credit cards.`,
+    `Total booking price: ${plainMoney(b.totalCents)}`,
+    `Customer: ${customerName}, ${phone}, ${c.email}`,
+  ];
   if (b.notes)
     instructions.push(
       `Customer notes: ${
@@ -94,9 +106,6 @@ export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUr
           : b.notes
       }`,
     );
-  instructions.push(
-    `Deposit ${plainMoney(b.depositCents)} paid by card. Balance due at delivery: ${plainMoney(b.balanceCents)}. ${dispatchPaymentLine().replace('Payment method: ', '')}`,
-  );
   instructions.push(`Delivery window: ${deliveryWindowText()}`);
   if (b.topDeck) instructions.push('Top Deck Load: load on the top deck.');
   instructions.push(
@@ -113,12 +122,12 @@ export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUr
     ref: bookingRef(b.id),
     title: 'Dispatch Sheet',
     shipper,
+    // No "Phone:" line: there is no phone number on our side.
     carrier: [
       field('Carrier', company.name),
       field('USDOT', company.usdot),
-      company.dispatchAddress,
-      field('Contact', company.dispatchContact),
-      field('Phone'), // blank on purpose: there is no phone number on our side
+      ...addressLines,
+      ...present('Contact', company.dispatchContact),
       field('Email', company.contactEmail),
     ],
     order: [
@@ -130,9 +139,10 @@ export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUr
       ),
       field('Ship Via', 'OPEN'),
       field('Condition', b.operable ? 'Operable' : 'Inoperable'),
-      field('Total Payment to Carrier', plainMoney(b.totalCents)),
-      field('Payment terms', 'On delivery'),
-      field('Payment method', 'COD'),
+      // Super Dispatch uses this as the amount to collect (COD), so it is the balance, not the booking total.
+      field('Total Payment to Carrier', plainMoney(b.balanceCents)),
+      field('Payment method', 'Cash'),
+      field('Payment terms', 'COD'),
       field('Carrier owes Shipper', '$ 0.00'),
     ],
     totalVehicles: field('Total Vehicles', '1'),
