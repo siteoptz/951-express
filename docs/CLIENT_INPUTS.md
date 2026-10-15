@@ -58,6 +58,53 @@ Items are grouped as: decisions, content and files, accounts and launch.
 - [ ] **Real-device check:** pay a test-mode deposit on a real iPhone and Android phone (Stripe's checkout can stall in automated browsers).
 - [ ] **Production data:** confirm the production database has the final routes, rates and the $100 deposit; client edits made in the admin (Phase 8) survive deploys.
 
+## Go-live checklist (Stripe live mode)
+
+Do these in order, on a quiet day, with Antonio. Live keys go in **Vercel Production only**; Preview and Development keep
+test keys. Never paste a key into chat, a commit, or a screenshot.
+
+**The three Stripe variables** (names from `.env.example`). Production changes all three. (The Stripe API version is not an env
+var: it is pinned in `src/config/stripe.ts`.)
+
+| Variable                             | Test now                           | Live value                                    | Changes for live? |
+| ------------------------------------ | ---------------------------------- | --------------------------------------------- | ----------------- |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_...`                      | `pk_live_...`                                 | Yes               |
+| `STRIPE_SECRET_KEY`                  | `sk_test_...`                      | `sk_live_...` (or a restricted `rk_live_...`) | Yes               |
+| `STRIPE_WEBHOOK_SECRET`              | `whsec_...` from the test endpoint | `whsec_...` from the new live endpoint        | Yes               |
+
+Everything else (`DATABASE_URL`, `RESEND_API_KEY`, `EMAIL_FROM`, `BOOKINGS_EMAIL_TO`, `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`,
+and so on) stays as it is. The publishable and secret keys must match: if they are from different modes, `/api/checkout`
+answers 503 ("Online booking is temporarily unavailable") and logs `[checkout] Stripe keys are from different modes`.
+
+1. [ ] **Account ready:** the Stripe account is activated in Cal's name (business details, bank account for payouts).
+2. [ ] **Clean the test data first** (optional but recommended): run `scripts/sql/prod-inventory.sql` in the Neon SQL editor
+       on the main branch, review it, then `scripts/sql/prod-cleanup-test-data.sql` (it rolls back until you change the last
+       line to `COMMIT`). This frees test holds so they do not take real spots. Do it before switching keys, because after the
+       switch the app can no longer expire a test session.
+3. [ ] **Live API keys:** in the Stripe Dashboard, switch to live mode and copy the publishable key and create or reveal the
+       secret (a restricted key with Checkout Sessions write and PaymentIntents read is better than the full secret).
+4. [ ] **Live webhook:** Dashboard (live mode) → Developers → Webhooks → add endpoint `https://951express.com/api/stripe/webhook`,
+       events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, API
+       version pinned to the one in `src/config/stripe.ts`. Copy its signing secret (`whsec_...`).
+5. [ ] **Payment-method domain:** Dashboard (live mode) → Settings → Payment method domains → add `951express.com` and
+       confirm it verifies, so Apple Pay and Google Pay appear in Embedded Checkout. Check that cards are enabled in the live
+       payment method settings.
+6. [ ] **Set the three variables in Vercel Production only** (Settings → Environment Variables, scope: Production). Do not
+       touch Preview or Development.
+7. [ ] **Redeploy Production.** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is baked in at build time, so changing it without a
+       new build leaves the browser on the old key. Redeploy from the Vercel dashboard (without the build cache) or push a commit.
+8. [ ] **Real-card test:** on https://951express.com book a real route with a real card you own (the flat $100 deposit).
+       Check: checkout opens with no mode error, the payment succeeds, the details step opens, the team email arrives with
+       the dispatch sheet, the customer email arrives, and the booking shows as paid in the database. In the Stripe Dashboard
+       (live mode) confirm the payment and that the webhook endpoint shows delivered events with 200 responses.
+9. [ ] **Refund the test payment:** Dashboard (live mode) → Payments → the $100 payment → Refund. The app has no refund
+       button (refunds are done in Stripe). Then free the spot: cancel or delete that test booking so it does not take one of
+       the 6 weekly spots (ask Antonio; until the Phase 8 admin exists this is a database change).
+10. [ ] **Watch the first real booking:** check the webhook deliveries and both emails, and keep the test keys in Preview so
+        later changes can still be tested safely.
+
+Rollback: put the three test values back in Production and redeploy. Bookings already paid with live cards stay valid.
+
 ## Done (for the record)
 
 - [x] Logo, accent color (#F06A1A), ZIP lists, base rates, USDOT 4020917 and MC-1516594 wording received.

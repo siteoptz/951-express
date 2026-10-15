@@ -3,6 +3,7 @@ import { getDb } from '@/db';
 import { clientIp, createRateLimiter } from '@/lib/rate-limit';
 import { regionOfZip } from '@/lib/routing.server';
 import { step1Schema } from '@/lib/schemas';
+import { stripeKeyMismatch } from '@/lib/stripe-mode';
 import { releaseHold } from '@/server/bookings';
 import { createCheckout } from '@/server/checkout';
 import { getStripe } from '@/server/stripe';
@@ -17,6 +18,21 @@ export async function POST(request: Request) {
     return Response.json(
       { error: 'Too many requests. Please wait a minute or email us.' },
       { status: 429, headers: { 'Retry-After': String(limited.retryAfterSeconds) } },
+    );
+  }
+  // Test and live keys must not be mixed: refuse before any hold or Stripe session exists.
+  const mismatch = stripeKeyMismatch(
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    process.env.STRIPE_SECRET_KEY,
+  );
+  if (mismatch) {
+    console.error(`[checkout] ${mismatch} Fix the env vars before taking payments.`);
+    return Response.json(
+      {
+        error:
+          'Online booking is temporarily unavailable. Please email us and we will help right away.',
+      },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
   const parsed = body.safeParse(await request.json().catch(() => null));
