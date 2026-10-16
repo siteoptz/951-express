@@ -328,3 +328,21 @@ describe('QuoteReceivedEmail (to the customer)', () => {
     }
   });
 });
+
+describe('the dispatch-sheet phone', () => {
+  it('is never in the team or customer email bodies', async () => {
+    const d = buildBookingEmailData(booking, ctx);
+    const bodies = [
+      await html(<NewBookingEmail d={d} />),
+      await text(<NewBookingEmail d={d} />),
+      teamText(d),
+      await html(<CustomerConfirmationEmail d={d} />),
+      await text(<CustomerConfirmationEmail d={d} />),
+      customerText(d),
+    ];
+    for (const b of bodies) {
+      expect(b).not.toContain(company.dispatchPhone);
+      expect(b.replace(/\D/g, '')).not.toContain(company.dispatchPhone.replace(/\D/g, ''));
+    }
+  });
+});

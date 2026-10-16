@@ -109,7 +109,7 @@ export function DispatchSheet({ d }: { d: DispatchData }) {
         <View style={s.row}>
           <Half title="Shipper Info">
             <Pair a={['Shipper', d.shipper.lines]} b={['Contact Info', d.shipper.contact]} />
-            <Pair a={['Special Number', d.shipper.special]} b={['Load Contact Info', EMPTY]} />
+            <Pair a={['Special Number', d.shipper.special]} b={['Load Contact Info', d.shipper.loadContact]} />
           </Half>
           <Half title="Carrier Info">
             <Pair a={['Carrier', d.carrier.lines]} b={['Contact Info', d.carrier.contact]} />

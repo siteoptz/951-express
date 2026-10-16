@@ -30,7 +30,7 @@ One landing page with a booking modal:
    `needsReview` with the reason "city/ZIP mismatch" and stores `address_flags`). Pickup and delivery ZIPs must stay in the
    quoted regions, rechecked on the server.
 4. **Email:** full booking record to the 951 Express team with the one-page dispatch sheet PDF attached
-   (`src/pdf/DispatchSheet.tsx`, 951 Express branding only; if it cannot be made the email still goes out), plus a
+   (`src/pdf/DispatchSheet.tsx`, 951 Express branding only, and the only place a phone number is allowed; if it cannot be made the email still goes out), plus a
    confirmation to the customer.
    A quote request emails the team the lead and confirms it to the customer (`src/emails/QuoteReceivedEmail.tsx`, no phone,
    no price); each email can fail without affecting the lead or the other email.
@@ -93,6 +93,9 @@ One landing page with a booking modal:
   Cascadia profile is gallery item 2. Plates are blurred in the exports.
 - Logo: `public/images/logos/` (made from `originals/951-express-logo.*` by `scripts/optimize-images.mjs`); alt text "951 Express Inc. logo".
 - No phone number anywhere on the site or in emails. Contact is email only: `company.contactEmail` in `src/config/company.ts`.
+  - **One exception:** Cal's phone `company.dispatchPhone` appears on the dispatch sheet PDF only (shipper and carrier contact
+    info). Never on the website, in a component, or in any customer or team email body; `src/config/company-phone.test.ts`
+    and `src/emails/emails.test.tsx` fail if it appears there.
 - Only client-confirmed facts in the trust bar: USDOT 4020917, MC-1516594, "Fully licensed and bonded with a cargo limit of $250,000 per occurrence".
 - Headline: "Your vehicle, delivered safely and on schedule." Primary CTA: "Get My Instant Quote".
 

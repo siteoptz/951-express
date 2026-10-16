@@ -123,13 +123,13 @@ export function buildDispatchData(b: BookingForEmail, _ctx: EmailContext, siteUr
     // the carrier's MC number (Super Dispatch read the repeat as a mismatch).
     shipper: {
       lines: companyLines,
-      contact: [company.dispatchContact, company.contactEmail],
+      contact: [company.dispatchContact, company.dispatchPhone],
+      loadContact: company.dispatchPhone,
       special: EMPTY,
     },
-    // No phone number for the carrier: there is none on our side.
     carrier: {
       lines: companyLines,
-      contact: [company.dispatchContact],
+      contact: [company.dispatchContact, company.dispatchPhone],
       special: company.mc.replace('-', ''),
     },
     origin: party(b.pickupAddress, b.pickupContact),

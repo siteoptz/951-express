@@ -12,9 +12,12 @@ export const company = {
   // Used only on the dispatch sheet PDF (not on the site, in emails or in the Terms), from Cal's own dispatch sheet.
   // TODO(client): confirm this is the address to print on the sheet.
   dispatchAddress: '2108 Collett Ave Apt 204, Corona, CA 92879',
-  // The "Contact:" line of the carrier block on the dispatch sheet (no phone number goes with it).
+  // The "Contact:" line of the carrier block on the dispatch sheet (the sheet adds dispatchPhone below).
   // TODO(client): confirm Jesse Calzada is the right contact name to print.
   dispatchContact: 'Jesse Calzada',
+  // Cal's phone for the dispatch sheet PDF ONLY (approved by Cal). Never render it on the website or in any customer
+  // or team email body; src/config/company-phone.test.ts fails if it appears there.
+  dispatchPhone: '(951) 407-8198',
   usdot: '4020917',
   mc: 'MC-1516594',
   insurance: 'Fully licensed and bonded with a cargo limit of $250,000 per occurrence',

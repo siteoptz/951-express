@@ -16,9 +16,9 @@ export const booking = {
   // How the customer pays the balance at delivery. Shown in the cart, the confirmation, the emails, the dispatch
   // sheet and the Terms, always from here. Credit cards are not accepted for the balance.
   balanceMethods: ['Cash', "Cashier's Check", 'Zelle'],
-  // How the dispatch sheet names the balance payment so Super Dispatch reads it as Cash / Cash on Delivery (one method
+  // How the dispatch sheet names the balance payment so Super Dispatch reads it as Cash (one method
   // only; the full list above stays in the instructions). TODO(client): confirm with Cal's Super Dispatch account.
-  dispatchPaymentTerms: 'Cash on Delivery',
+  dispatchPaymentTerms: 'Cash upon delivery',
   // "Location Type" on the dispatch sheet for the pickup and delivery addresses (customers' homes and offices).
   dispatchLocationType: 'Residential',
   // The short form is for places that already sit under a "Balance due at delivery" label (the cart).

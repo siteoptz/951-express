@@ -119,11 +119,16 @@ describe('dispatch sheet PDF', () => {
         ['Shipper Info', 'Carrier Info'],
         ['Shipper', 'Contact Info', 'Carrier', 'Contact Info'],
         ['951 Express Inc', 'Jesse Calzada', '951 Express Inc', 'Jesse Calzada'],
-        ['2108 Collett Ave, Apt 204', '951.dispatcher@gmail.com', '2108 Collett Ave, Apt 204'],
+        [
+          '2108 Collett Ave, Apt 204',
+          '(951) 407-8198',
+          '2108 Collett Ave, Apt 204',
+          '(951) 407-8198',
+        ],
         ['Corona, CA 92879', 'Corona, CA 92879'],
         ['Special Number', 'Load Contact Info', 'Special Number', 'Driver'],
         // the shipper's special number is empty so it does not repeat the carrier's MC number
-        ['--', '--', 'MC1516594', '--'],
+        ['--', '(951) 407-8198', 'MC1516594', '--'],
       ]);
       expect(from(rows, 'Origin Info', 8)).toEqual([
         ['Origin Info', 'Destination Info'],
@@ -142,7 +147,7 @@ describe('dispatch sheet PDF', () => {
         ['Requested Pick Up', 'Requested Delivery', 'Total Price'],
         ['Estimated', 'Estimated', '$1,750'],
         ['10/19/2026', '10/26/2026', 'Payment Terms'],
-        ['Carrier will receive $1,750 via Cash on Delivery.'],
+        ['Carrier will receive $1,750 via Cash upon delivery.'],
         ['Vehicle Info (1 Total)'],
         ['Vehicle Year/Make/Model', 'VIN', 'Max Weight', 'Max Dimensions', 'Critical Notes'],
       ]);
@@ -183,7 +188,7 @@ describe('dispatch sheet PDF', () => {
       const b = { ...full, totalCents: 123400, depositCents: 10000, balanceCents: 113400 };
       const rows = cells(await layout(b)).map((r) => r.join('  '));
       expect(rows.some((r) => r.includes('$1,134'))).toBe(true);
-      expect(rows).toContain('Carrier will receive $1,134 via Cash on Delivery.');
+      expect(rows).toContain('Carrier will receive $1,134 via Cash upon delivery.');
       const at = rows.indexOf('Load-Specific Terms');
       expect(rows.slice(at + 1, at + 4)).toEqual([
         'DEPOSIT PAID: $100.00 (already deducted from the total)',
@@ -201,7 +206,7 @@ describe('dispatch sheet PDF', () => {
     async () => {
       const lines = (await raw(full)).split('\n').filter(Boolean);
       expect(lines.slice(0, 3)).toEqual(['Dispatch Sheet', 'Page 1 of 1', 'Load 3F2B6C1E']);
-      expect(lines).toContain('Carrier will receive $1,750 via Cash on Delivery.');
+      expect(lines).toContain('Carrier will receive $1,750 via Cash upon delivery.');
       expect(lines).toContain('MC1516594');
       for (const l of lines) {
         expect(l, l).not.toMatch(/Shipper InfoCarrier Info/);
@@ -264,12 +269,13 @@ describe('dispatch data', () => {
     const d = buildDispatchData(base, ctx, 'https://x.test');
     expect(d.shipper).toEqual({
       lines: ['951 Express Inc', '2108 Collett Ave, Apt 204', 'Corona, CA 92879'],
-      contact: ['Jesse Calzada', '951.dispatcher@gmail.com'],
+      contact: ['Jesse Calzada', '(951) 407-8198'],
+      loadContact: '(951) 407-8198',
       special: '--',
     });
     expect(d.carrier).toEqual({
       lines: ['951 Express Inc', '2108 Collett Ave, Apt 204', 'Corona, CA 92879'],
-      contact: ['Jesse Calzada'],
+      contact: ['Jesse Calzada', '(951) 407-8198'],
       special: 'MC1516594',
     });
     expect(d.carrier.special).toBe(company.mc.replace('-', '')); // from config
@@ -277,7 +283,7 @@ describe('dispatch data', () => {
   it('price is the balance, payment terms name one method, and the terms start with the money', () => {
     const d = buildDispatchData(base, ctx, 'https://x.test');
     expect(d.totalPrice).toBe('$1,600');
-    expect(d.paymentTerms).toBe('Carrier will receive $1,600 via Cash on Delivery.');
+    expect(d.paymentTerms).toBe('Carrier will receive $1,600 via Cash upon delivery.');
     expect(d.terms).toEqual([
       'DEPOSIT PAID: $100.00 (already deducted from the total)',
       "COLLECT AT DELIVERY: $1600.00 — Cash, Cashier's Check, or Zelle only. No credit cards.",
