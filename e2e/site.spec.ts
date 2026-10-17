@@ -108,29 +108,24 @@ test('the Terms page has the real terms, with a last-updated date and no draft w
   page,
 }) => {
   await page.goto('/terms');
-  await expect(page.getByRole('heading', { level: 1, name: 'Terms & Conditions' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Terms and Conditions' })).toBeVisible();
   await expect(
-    page.getByText('Last updated October 13, 2026 · Version 2026-10-13.4'),
+    page.getByText('Last updated October 17, 2026 · Version 2026-10-17.1'),
   ).toBeVisible();
   await expect(
     page.getByRole('banner').getByRole('img', { name: '951 Express Inc. logo' }),
   ).toBeVisible();
-  expect(await page.locator('main section').count()).toBe(14);
+  expect(await page.locator('main section').count()).toBe(15);
   const text = await page.locator('main').innerText();
   for (const s of [
-    'open carriers',
-    'a flat deposit of $100',
+    'its own fleet of commercial car haulers',
     "Cash, Cashier's Check, or Zelle only",
     '7–10 days after pickup',
-    '$150',
-    "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+    "up to 100 lbs of personal items confined solely to the vehicle's trunk",
     'Bill of Lading',
-    'toll tags',
-    'one-quarter tank',
+    'Toll Transponders',
     'State of California',
-    'USDOT 4020917',
-    'MC-1516594',
-    'cargo limit of $250,000 per occurrence',
+    'USDOT #4020917',
     EMAIL,
   ])
     expect(text, s).toContain(s);
@@ -144,10 +139,10 @@ test('the Terms page has the real terms, with a last-updated date and no draft w
   // The table of contents jumps to its section
   await page
     .getByRole('navigation', { name: 'Sections' })
-    .getByRole('link', { name: 'Cancellations and refunds' })
+    .getByRole('link', { name: 'Cancellation and refund policy' })
     .click();
-  await expect(page).toHaveURL(/#cancellations-and-refunds$/);
-  await expect(page.locator('#cancellations-and-refunds')).toBeInViewport();
+  await expect(page).toHaveURL(/#cancellation-and-refund-policy$/);
+  await expect(page.locator('#cancellation-and-refund-policy')).toBeInViewport();
   await axeClean(page, 'terms page');
 });
 

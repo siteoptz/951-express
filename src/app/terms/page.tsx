@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { Logo } from '@/components/landing/Logo';
 import { booking } from '@/config/booking';
 import { company, contactMailto } from '@/config/company';
-import { termsIntro, termsSections } from '@/content/terms';
+import { termsClosing, termsIntro, termsSections } from '@/content/terms';
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions | 951 Express',
+  title: 'Terms and Conditions | 951 Express',
   description: 'The terms that apply when you book vehicle transport with 951 Express Inc.',
 };
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
       <main className="mx-auto max-w-3xl px-5 py-10 sm:py-14">
         <article className="rounded-2xl bg-white p-6 shadow-lg sm:p-10">
           <h1 className="font-display text-4xl font-extrabold uppercase sm:text-5xl">
-            Terms &amp; Conditions
+            Terms and Conditions
           </h1>
           <p className="mt-2 text-sm text-muted">
             Last updated {booking.termsLastUpdated} · Version {booking.termsVersion}
@@ -63,11 +63,14 @@ export default function TermsPage() {
                     typeof block === 'string' ? (
                       <p key={i}>{block}</p>
                     ) : (
-                      <ul key={i} className="list-disc space-y-1.5 pl-6">
+                      <ol
+                        key={i}
+                        className="list-[lower-alpha] space-y-2 pl-7 marker:font-semibold"
+                      >
                         {block.list.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
-                      </ul>
+                      </ol>
                     ),
                   )}
                 </div>
@@ -75,7 +78,9 @@ export default function TermsPage() {
             ))}
           </div>
 
-          <p className="mt-10 border-t border-black/10 pt-6 text-sm text-muted">
+          <p className="mt-10 font-semibold leading-relaxed">{termsClosing}</p>
+
+          <p className="mt-6 border-t border-black/10 pt-6 text-sm text-muted">
             {company.name} · USDOT {company.usdot} ·{' '}
             <span className="whitespace-nowrap">{company.mc}</span> ·{' '}
             <a className="font-semibold text-navy underline" href={contactMailto}>

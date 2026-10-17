@@ -193,9 +193,7 @@ describe('CustomerConfirmationEmail', () => {
     expect(withTop).toContain('Eliminates the possibility of oil leaks from other vehicles');
     expect(withTop).toContain('Protects the vehicle from road debris');
     for (const out of [without, withTop]) {
-      expect(out).toContain(
-        "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
-      );
+      expect(out).toContain('Up to 100 lbs of personal items, in the trunk only.');
       expect(out).toContain('Balance due at delivery');
       expect(out).toContain(
         "Balance due at delivery: Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.",

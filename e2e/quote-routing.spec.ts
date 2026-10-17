@@ -267,12 +267,3 @@ test.describe('the server refuses a forged request', () => {
     expect(res.status()).toBe(400);
   });
 });
-
-test('the Terms say which vehicles need a personalized quote', async ({ page }) => {
-  await page.goto('/terms');
-  await expect(
-    page.getByText(
-      "Vehicles that don't run, modified vehicles, exotic or high-value vehicles (over $100,000), and large SUVs, pickups and vans require a personalized quote.",
-    ),
-  ).toBeVisible();
-});

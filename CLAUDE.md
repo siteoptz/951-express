@@ -17,8 +17,8 @@ One landing page with a booking modal:
    customer pick a class and the booking gets `needsReview`. Large SUVs, pickups and vans, inoperable and modified
    vehicles, and exotic or high-value vehicles (over $100,000) have no online price: they get a "Request a
    personalized quote" form that stores a lead with its reasons (no deposit, no hold; the server decides, see
-   `src/lib/eligibility.ts`). Options: high-value, operable and modified radios, a Standard / Top Deck Load (+$150) radio, personal items radio (Yes shows "100 lbs included.
-   Anything over 100 lbs is at the driver's discretion."), a pickup-week calendar limited to 6 spots per route
+   `src/lib/eligibility.ts`). Options: high-value, operable and modified radios, a Standard / Top Deck Load (+$150) radio, personal items radio (Yes shows "Up to 100 lbs of personal items, in the
+   trunk only."), a pickup-week calendar limited to 6 spots per route
    per week (Top Deck Load also has its own per-week limit), and a required Terms & Conditions checkbox linked to /terms.
 2. **Cart & Deposit:** price breakdown plus a flat $100 deposit (every booking, every class, with or without Top Deck)
    paid through Stripe Embedded Checkout. The balance is due at delivery by Cash, Cashier's Check, or Zelle only (no credit

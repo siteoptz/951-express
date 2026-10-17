@@ -96,7 +96,7 @@ export function NewBookingEmail({ d }: { d: BookingEmailData }) {
             d.loadType
           )}
         </Field>
-        <Field label="Personal items">{d.personalItems ? 'Yes (100 lbs included)' : 'No'}</Field>
+        <Field label="Personal items">{d.personalItems ? booking.personalItemsYes : 'No'}</Field>
         {d.notes && <Field label="Notes for the driver">{d.notes}</Field>}
       </Block>
 

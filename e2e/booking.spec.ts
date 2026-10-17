@@ -316,7 +316,7 @@ test('Top Deck Load adds exactly $150', async ({ page }) => {
   await expect(d.getByText('Deposit due today').locator('..')).toContainText('$100'); // flat, even with top deck
 });
 
-test('personal items show the 100 lb notice', async ({ page }) => {
+test('personal items show the trunk-only notice', async ({ page }) => {
   const d = dialog(page);
   await enterRoute(page, WEST, EAST);
   await chooseVehicle(page, '2020', 'Honda', 'Civic');
@@ -325,7 +325,7 @@ test('personal items show the 100 lb notice', async ({ page }) => {
     .getByText('Yes', { exact: true })
     .click();
   await expect(d.getByRole('note')).toHaveText(
-    "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+    'Up to 100 lbs of personal items, in the trunk only.',
   );
 });
 

@@ -1,168 +1,178 @@
-// Terms & Conditions. A standard auto-transport draft in plain American English, written from our actual booking rules.
-// Numbers come from config so the terms cannot drift from what the site charges.
-// TODO(client): every TODO(client) below is a default the client must confirm. An attorney should review the whole
-// document before the site takes live deposits (see docs/CLIENT_INPUTS.md). The markers stay in this source file only:
-// the public page shows the default text.
+// Terms & Conditions: Cal's final text (October 17, 2026). The company name, USDOT number, contact email, delivery
+// estimate, personal-items rule and balance methods come from config so the terms cannot drift from the site; the rest
+// is the client's wording, verbatim. Lettered sub-items are listed without their "a)" labels: /terms numbers them.
 import { booking } from '@/config/booking';
 import { company } from '@/config/company';
-import { pricing, topDeck } from '@/config/pricing';
 import { deliveryWindowText } from '@/lib/delivery-window';
-import { money } from '@/lib/format';
 
 export type TermsBlock = string | { list: string[] };
 export type TermsSection = { id: string; title: string; body: TermsBlock[] };
 
-const depositText =
-  pricing.deposit.type === 'flat'
-    ? `a flat deposit of ${money(pricing.deposit.amountCents)}`
-    : `a deposit of ${pricing.deposit.value}% of the transport price`;
-const topDeckPrice = money(topDeck.surchargeCents);
-// TODO(client): cancellation window (days before the first day of the pickup week).
-const refundDays = 7;
-// TODO(client): how long after delivery a damage claim may be filed.
-const claimDays = 7;
+const name = company.name;
+const methods = booking.balanceMethods;
+const methodList = `${methods.slice(0, -1).join(', ')}, or ${methods[methods.length - 1]}`;
 
 export const termsIntro =
-  'These Terms and Conditions are the agreement between you and 951 Express Inc when you book vehicle transport on this website. ' +
-  'When you check the box that says you agree to them, they apply to your booking. Please read them before you pay a deposit.';
+  `This agreement is entered into by and between ${name}, USDOT #${company.usdot}, and the vehicle owner, authorized agent, or entity booking the transport (hereinafter referred to as the "Customer"). ` +
+  `By booking a shipment with ${name}, the Customer agrees to all terms and conditions outlined below.`;
+
+export const termsClosing =
+  'By proceeding with the booking, the Customer warrants that they have read, understand, and agree to be bound by these Terms and Conditions in their entirety.';
 
 export const termsSections: TermsSection[] = [
   {
-    id: 'parties-and-scope',
-    title: '1. Who we are and what we do',
+    id: 'scope-of-services',
+    title: '1. Scope of services',
     body: [
-      `${company.name} ("951 Express," "we," "us") is a licensed motor carrier based in ${company.address.city}, ${company.address.state} (USDOT ${company.usdot}, ${company.mc}). "You" means the person who books the transport and anyone acting for you.`,
-      'We move vehicles on open carriers (open trailers) between our West region and our East region, in either direction. We do not move vehicles within the West region or within the East region. Our West region covers Southern California, Phoenix, Tucson, Yuma, and El Paso. Our East region covers parts of Alabama, Georgia, South Carolina, North Carolina, Virginia, Maryland, Delaware, and Washington, DC.',
-      'The ZIP code check on our website decides whether a pickup or delivery location is in our service area. If a ZIP code is not served, we cannot book it online.',
-    ],
-  },
-  {
-    id: 'quotes-and-pricing',
-    title: '2. Quotes and pricing',
-    body: [
-      "Our online price depends on your vehicle's size class (small sedan, large sedan, small SUV, midsize SUV, small pickup, midsize pickup, or minivan) and the route direction you choose. We set the size class from the year, make, and model you enter. If we cannot match your vehicle, you pick the closest size and we confirm it before pickup.",
-      `Top Deck Load is an optional upgrade for ${topDeckPrice}. It places your vehicle on the upper deck of the trailer, which keeps it away from oil and fluid leaks from other vehicles and shields it from road debris. Top deck space is limited each week, and we show you how much is left for the week you choose. Your top deck spot is held with your booking.`,
-      "Vehicles that don't run, modified vehicles, exotic or high-value vehicles (over $100,000), and large SUVs, pickups and vans require a personalized quote. You can ask for a personalized quote online. A quote request is not a booking: no deposit is taken and no space is held until you accept a quote from us.",
-      'The price you accept at booking is the price you pay, as long as the information you gave us is accurate (see section 6).',
-    ],
-  },
-  {
-    id: 'deposit-and-payment',
-    title: '3. Deposit and payment',
-    body: [
-      `To reserve your spot you pay ${depositText} when you book. We charge the deposit to your card at booking through our payment processor, Stripe. Your spot is held while you complete payment, and it is released if you do not finish in time.`,
-      'The remaining balance is due at delivery and is paid to the driver. The deposit is part of your price, not an extra charge.',
-      `${booking.balanceMessage} Please plan to have the balance ready in one of these forms when your vehicle arrives.`,
-    ],
-  },
-  {
-    id: 'cancellations-and-refunds',
-    title: '4. Cancellations and refunds',
-    body: [
-      // TODO(client): confirm the refund windows below.
-      {
-        list: [
-          `If you cancel ${refundDays} or more days before the first day of your pickup week, we refund your deposit in full.`,
-          `If you cancel fewer than ${refundDays} days before the first day of your pickup week, the deposit is not refundable.`,
-          'If we cancel your booking for any reason, we refund your deposit in full.',
-        ],
-      },
-      'To cancel, email us at the address in section 14 and include your booking reference. The date we receive your email is the cancellation date.',
-      // TODO(client): confirm refund timing.
-      'Refunds go back to the card you paid with. Your bank decides how long it takes to show up, which is usually 5 to 10 business days.',
-      'If we cannot pick up your vehicle because the information you gave us was not accurate, or because you were not available during the agreed pickup window, the cancellation terms above apply.',
+      `${name} is a licensed motor carrier. ${name} will transport the Customer's vehicle(s) directly on its own fleet of commercial car haulers.`,
     ],
   },
   {
     id: 'pickup-and-delivery-timing',
-    title: '5. Pickup and delivery timing',
+    title: '2. Pickup and delivery timing',
     body: [
-      `When you book, you choose an estimated pickup week. That week is an estimate, not a guaranteed date. We contact you to confirm the pickup date within your week. Standard delivery is estimated at ${deliveryWindowText()}. That is an estimate, not a guarantee, and we confirm delivery timing once your vehicle is on the road.`,
-      'Transport depends on things we do not control, including weather, road and traffic conditions, mechanical problems, and government rules such as driver hours-of-service limits. These can delay pickup or delivery. We will keep you informed and work to move your vehicle as soon as we can, but we are not responsible for delays that come from these causes.',
-      'Someone you trust must be available to hand over and receive the vehicle at the agreed times and places. A large truck cannot always reach a residential street. The driver may ask to meet you at a nearby large, safe parking area.',
+      `When the Customer books, the Customer chooses an estimated pickup week. That week is an estimate, not a guaranteed date. ${name} will contact the Customer to confirm the pickup date within the Customer's week. Standard delivery is estimated at ${deliveryWindowText()}. That is an estimate, not a guarantee, and ${name} confirms delivery timing once the Customer's vehicle is on the road. Unforeseen circumstances including, but not limited to, weather, traffic, road conditions, mechanical breakdowns, and mandatory FMCSA driver hours-of-service regulations may cause delays. ${name} shall not be liable for any expenses incurred due to delays, including but not limited to rental car fees, hotel accommodations, or lost wages.`,
     ],
   },
   {
-    id: 'vehicle-condition',
-    title: '6. Vehicle condition and accurate information',
+    id: 'pickup-and-delivery-location',
+    title: '3. Pickup and delivery location',
     body: [
-      'You must tell us accurately whether your vehicle runs and drives, and whether it has been modified in any way (for example lifted or lowered, larger tires, a roof rack, a spoiler, or any change that makes it taller, wider, longer, or heavier than the factory vehicle). You must also give us the correct year, make, and model.',
-      'If the vehicle is not as you described, we may charge the additional amount it costs to move it, or we may refuse to load it. If we refuse, the cancellation terms in section 4 apply.',
+      `${name}'s driver will pick up and deliver the vehicle as close to the requested locations as safely and legally possible. If the requested location has restricted access for a full-size commercial semi-truck (e.g., narrow streets, low-hanging trees, gated communities, weight limits), the Customer agrees to meet the driver at a mutually agreed-upon safe location, such as a nearby large parking lot.`,
     ],
   },
   {
-    id: 'personal-items',
-    title: '7. Personal items',
+    id: 'vehicle-description-and-preparation',
+    title: '4. Vehicle description, condition, and preparation',
     body: [
-      booking.personalItemsNotice,
-      // TODO(client): confirm packing rules for personal items.
-      "Personal items must be in the trunk or cargo area, below window height, and secured. Items travel at the owner's risk. Our cargo insurance does not cover personal items, and we are not responsible for loss of or damage to them.",
-      'You may not ship hazardous materials, flammable or explosive items, firearms or ammunition, illegal items, or anything of high value such as cash, jewelry, or important documents in or on the vehicle. We may refuse to move a vehicle that holds items we cannot carry.',
-    ],
-  },
-  {
-    id: 'preparing-your-vehicle',
-    title: '8. Getting your vehicle ready',
-    body: [
+      'The Customer is responsible for providing accurate vehicle details and preparing the vehicle for transport.',
       {
         list: [
-          'Remove all toll tags and transponders (such as E-ZPass, FasTrak, or SunPass), or place them in a shielded bag. Tolls charged while your vehicle is on the truck are your responsibility.',
-          'Leave one-quarter tank of fuel or less.',
-          'Tell the driver about any fluid leaks, warning lights, flat tires, or mechanical problems before loading.',
-          'Give the driver a working key, and turn off any alarm. The vehicle must be easy to start, drive, and load.',
-          'Remove or secure loose parts and accessories, and fold in antennas and mirrors.',
-          'Wash the vehicle if you can, so that its condition is easy to see at inspection.',
+          'Accurate Disclosure: The Customer must accurately disclose the correct year, make, and model. The Customer must also accurately state whether the vehicle runs and drives, and whether it has been modified in any way (for example, lifted or lowered, larger tires, a roof rack, a spoiler, or any change that makes it taller, wider, longer, or heavier than the factory vehicle).',
+          `Misrepresentation: If the vehicle is not as the Customer described, ${name} may charge the additional amount it costs to move it, or ${name} may refuse to load it. If ${name} refuses to load the vehicle due to an inaccurate description, the cancellation terms in Section 11 apply (the deposit is not refundable).`,
+          'Preparation: All loose parts, fragile accessories, low-hanging spoilers, antennas, and specialty racks must be removed or properly secured.',
+          `Toll Transponders: The Customer must remove or deactivate all toll transponders (e.g., FasTrak, EZ Pass). ${name} is not responsible for any toll charges incurred while the vehicle is in transit on ${name}'s trailer.`,
+          'Operability: The vehicle must be handed over in safe, running condition with a working battery and brakes, unless explicitly booked as an "Inoperable" vehicle. If a vehicle becomes inoperable during transport, an additional inoperable loading/unloading fee will be added to the final balance.',
+          'Alarms: Any alarm systems must be disabled. If an alarm triggers and cannot be silenced, the driver is authorized to silence it by any means necessary without liability.',
         ],
       },
     ],
   },
   {
-    id: 'inspection-and-claims',
-    title: '9. Inspection, Bill of Lading, and damage claims',
+    id: 'dealership-auction-and-third-party-releases',
+    title: '5. Dealership, auction, and third-party releases (CarMax, etc.)',
     body: [
-      'At pickup, the driver inspects your vehicle with you (or your representative) and records its condition on a Bill of Lading (BOL). Please check that the BOL is correct before you sign it.',
-      'At delivery, inspect your vehicle before you sign the BOL and before the driver leaves. Note any new damage on the BOL at that time. Damage that is not noted on the BOL at delivery may be harder to claim, and we may deny it.',
-      `To file a claim, email us within ${claimDays} days of delivery with your booking reference, a copy of the BOL, clear photos of the damage, and a repair estimate. We review each claim promptly and tell you our decision in writing.`,
+      `If ${name} is picking up or delivering the vehicle from a third-party facility, dealership (such as CarMax), or auto auction, the following conditions apply:`,
+      {
+        list: [
+          `Required Documentation: The Customer is solely responsible for providing ${name} with all required release documents (e.g., Gate Pass, Buyer's Order, Stock Number, Lot Number, or VIN) prior to dispatch.`,
+          `Refusal of Release: If the facility refuses to release the vehicle to ${name} because the Customer failed to provide the correct paperwork, or because the vehicle is not fully paid for, a "dry run" cancellation fee will apply, and the deposit becomes non-refundable.`,
+        ],
+      },
     ],
   },
   {
-    id: 'insurance',
-    title: '10. Insurance',
+    id: 'personal-property',
+    title: '6. Personal property',
     body: [
-      `${company.insurance} (USDOT ${company.usdot}, ${company.mc}).`,
-      'Our cargo coverage applies to damage to your vehicle that happens while it is in our care during transport. It does not cover personal items, damage that was already on the vehicle, or normal wear. Your own auto insurance may offer additional protection, so you may want to ask your insurer.',
+      `The Department of Transportation (DOT) regulates the transport of personal items in vehicles on auto haulers. The Customer may place up to 100 lbs of personal items confined solely to the vehicle's trunk. ${name} is strictly NOT liable for any loss, theft, or damage to personal property left in the vehicle, nor is ${name} liable for any damage to the vehicle caused by the shifting of personal property during transit. No illegal substances, firearms, explosives, or hazardous materials are permitted.`,
     ],
   },
   {
-    id: 'liability',
-    title: '11. Limitation of liability',
+    id: 'inspections-and-bill-of-lading',
+    title: '7. Inspections and the Bill of Lading (BOL)',
     body: [
-      'To the fullest extent that the law allows, our liability for loss of or damage to your vehicle is limited to the lesser of the cost to repair it or its fair market value, and never more than our cargo limit. We are not liable for indirect or consequential losses, such as loss of use, rental car costs, lost income, or the cost of a delayed delivery.',
-      'Nothing in these terms limits any right you have under federal or California law that cannot be limited by agreement.',
+      'The Bill of Lading (BOL) is the primary binding document for vehicle condition and liability.',
+      {
+        list: [
+          `At pickup, the Customer (or facility agent) and the driver will inspect the exterior of the vehicle and note any pre-existing damage on the BOL. The Customer or agent must sign the BOL to release the vehicle to ${name}.`,
+          'At delivery, the Customer and the driver must thoroughly inspect the vehicle again BEFORE the driver departs.',
+          `ALL DAMAGE MUST BE NOTED ON THE BOL AT THE TIME OF DELIVERY. If the Customer (or the Customer's designated receiving agent) signs the final BOL without noting any new damage, it acts as a final release of liability. ${name} will not be held responsible for any damage claims made after the BOL has been signed clear.`,
+        ],
+      },
     ],
   },
   {
-    id: 'indemnity',
-    title: '12. Your responsibility (indemnity)',
+    id: 'liability-exclusions',
+    title: '8. Liability exclusions',
     body: [
-      "You confirm that you own the vehicle or have the owner's permission to ship it. You agree to cover our reasonable costs and losses if a third party makes a claim because the information you gave us was inaccurate, because you shipped a prohibited item, or because you did not have the right to ship the vehicle.",
+      `Under federal law, ${name} is relieved of liability for damage resulting from the following specific causes:`,
+      {
+        list: [
+          'Acts of God: Unforeseeable natural events (e.g., hail, flooding, storms, earthquakes) that could not be prevented by reasonable care.',
+          "Act of the Shipper: Damage resulting from the Customer's election to ship the vehicle via an open-air transport trailer rather than an enclosed trailer, which inherently exposes the vehicle to standard weather conditions and road debris (e.g., rock chips, cracked windshields).",
+          `Inherent Vice or Nature of the Goods: This includes mechanical, exhaust, fluid leaks, or electrical failures. Because ${name} does not operate the vehicle for daily use, failure of internal components (e.g., engine, transmission, battery, alignment) is considered an inherent vice of the vehicle unless direct external impact or carrier negligence is proven.`,
+          "Damage caused by the Customer's vehicle leaking fluids (oil, coolant, brake fluid) during transport.",
+          'Expansion of pre-existing damage, such as a minor windshield chip expanding due to temperature changes.',
+          'Hidden or undetectable damage due to the vehicle being dirty, wet, snow-covered, or inspected in poor lighting.',
+          'Damage to tie-downs, exhaust systems, or undercarriage components that result from standard loading/unloading of lowered, modified, or inoperable vehicles requiring winching, unless modifications were explicitly disclosed in writing prior to booking.',
+          `Diminished Value & Loss of Use: ${name} shall not be liable for any claims of diminished value, depreciation, loss of use, or consequential damages of any kind.`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'insurance-and-claims',
+    title: '9. Insurance and claims',
+    body: [
+      `${name} maintains active Cargo and Auto Liability insurance as required by law. In the event of damage that occurred during transit (and was properly documented on the BOL at delivery), the Customer must submit a claim directly to ${name}. ${name} will process the claim through its insurance provider. ${name}'s liability is strictly limited to the cost of repair or the actual cash value of the vehicle, whichever is less.`,
+    ],
+  },
+  {
+    id: 'deposits-and-payments',
+    title: '10. Deposits and payments',
+    body: [
+      {
+        list: [
+          'Deposits are subject to the cancellation and refund policies outlined in Section 11.',
+          `The remaining balance is due at the time of delivery and must be paid directly to the driver by ${methodList} only. Credit cards are not accepted for the balance. A corporate billing arrangement is possible only if explicitly approved by ${name} in advance. Third-party facilities (like CarMax) will not issue COD payments on behalf of the Customer.`,
+          `Right to Lien: If the Customer fails to provide full payment upon delivery, ${name} claims a Carrier's Lien on the vehicle. ${name} has the legal right to place the vehicle in a secure storage facility. All resulting storage fees, towing fees, and re-delivery charges will be the sole responsibility of the Customer.`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'cancellation-and-refund-policy',
+    title: '11. Cancellation and refund policy',
+    body: [
+      {
+        list: [
+          `If the Customer cancels 7 or more days before the first day of the Customer's pickup week, ${name} will refund the deposit in full.`,
+          "If the Customer cancels fewer than 7 days before the first day of the Customer's pickup week, the deposit is not refundable.",
+          `If ${name} cancels the booking for any reason, ${name} will refund the deposit in full.`,
+          `To cancel, the Customer must email ${name} at the contact address provided in Section 14 and include the booking reference. The date ${name} receives the email is the cancellation date.`,
+          "Refunds go back to the card the Customer paid with. The Customer's bank decides how long it takes to show up, which is usually 5 to 10 business days.",
+          `If ${name} cannot pick up the vehicle because the information the Customer gave ${name} was not accurate, or because the Customer was not available during the agreed pickup window, the cancellation terms above apply (the deposit is not refundable).`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'indemnification',
+    title: '12. Indemnification',
+    body: [
+      `The Customer agrees to indemnify, defend, and hold ${name} harmless from any and all claims, losses, damages, or legal expenses (including attorney's fees) arising out of the Customer's breach of these terms, the Customer's failure to properly prepare the vehicle, or the inclusion of illegal/hazardous materials inside the vehicle.`,
     ],
   },
   {
     id: 'governing-law',
-    title: '13. Governing law and disputes',
+    title: '13. Governing law',
     body: [
-      // TODO(client): attorney to confirm governing law and venue.
-      'These terms are governed by the laws of the State of California, without regard to its conflict-of-law rules. Any dispute that we cannot resolve together will be brought in the state or federal courts located in Riverside County, California, and you and 951 Express consent to those courts.',
-      'Before taking any formal step, please email us so we can try to resolve the problem directly.',
+      'This agreement shall be governed by and construed in accordance with the laws of the State of California. Any legal action arising out of this agreement shall be filed in the appropriate state or federal courts located in California.',
     ],
   },
   {
-    id: 'contact',
-    title: '14. Contact',
+    id: 'contact-information',
+    title: '14. Contact information',
     body: [
-      `Questions, cancellations, and claims: ${company.contactEmail}`,
-      'We may update these terms from time to time. The version you accept when you book (shown at the top of this page, and saved with your booking) is the one that applies to your booking.',
+      `For all questions, cancellations, and claims, the Customer must contact ${name} via email at ${company.contactEmail}.`,
+    ],
+  },
+  {
+    id: 'modification-of-terms',
+    title: '15. Modification of terms',
+    body: [
+      `${name} may update these terms from time to time. The version of the terms and conditions that the Customer accepts at the time of booking (as saved with the Customer's booking) is the version that legally applies to the Customer's booking.`,
     ],
   },
 ];

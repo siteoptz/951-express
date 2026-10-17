@@ -55,7 +55,7 @@ export function teamText(d: BookingEmailData): string {
       line('Operable', yn(d.operable)),
       line('Modified', yn(d.modified)),
       line('Load type', d.topDeck ? 'TOP DECK LOAD' : d.loadType),
-      line('Personal items', d.personalItems ? 'Yes (100 lbs included)' : 'No'),
+      line('Personal items', d.personalItems ? booking.personalItemsYes : 'No'),
       ...(d.notes ? [line('Notes for the driver', d.notes)] : []),
     ]),
   );

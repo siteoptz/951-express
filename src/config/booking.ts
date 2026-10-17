@@ -1,4 +1,3 @@
-// TODO(client): confirm booking rules and replace the terms version when final text arrives.
 const balanceMessageShort =
   "Cash, Cashier's Check, or Zelle only. Credit cards are not accepted for the balance.";
 
@@ -26,8 +25,10 @@ export const booking = {
   balanceMessage: `Balance due at delivery: ${balanceMessageShort}`,
   // Standard delivery is an estimate of days after pickup, not a guarantee.
   deliveryWindowDays: { min: 7, max: 10 },
-  personalItemsNotice: "100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+  personalItemsNotice: 'Up to 100 lbs of personal items, in the trunk only.',
+  // The one-line answer in the emails' "Personal items" field.
+  personalItemsYes: 'Yes (up to 100 lbs, trunk only)',
   // Bumped whenever the terms text changes. It is saved with every booking. Date format: the day the text was published.
-  termsVersion: '2026-10-13.4',
-  termsLastUpdated: 'October 13, 2026',
+  termsVersion: '2026-10-17.1',
+  termsLastUpdated: 'October 17, 2026',
 } as const;

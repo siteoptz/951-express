@@ -175,7 +175,7 @@ describe('dispatch sheet PDF', () => {
       'Customer: Pat Driver, 9515550100, pat@example.com',
       'Delivery window: 7–10 days after pickup',
       'Top Deck Load: load on the top deck.',
-      "Personal items: Yes. 100 lbs included. Anything over 100 lbs is at the driver's discretion.",
+      'Personal items: Yes. Up to 100 lbs of personal items, in the trunk only.',
       'Typed by customer: 2021 chevy tahoe',
       'Needs review: city/ZIP mismatch',
       expect.stringContaining('Needs review: Delivery address: city "Parrs Ridge"'),

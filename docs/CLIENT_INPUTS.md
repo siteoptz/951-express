@@ -34,7 +34,7 @@ Items are grouped as: decisions, content and files, accounts and launch.
 ### Payments and legal
 
 - [ ] **Link and extra payment methods** ("Save my information with Link", Bank, Klarna): keep or switch off? They are Stripe Dashboard settings.
-- [ ] **Terms:** a standard draft. Confirm the `TODO(client)` items in `src/content/terms.ts` (cancellation window, refund timing, claim deadline, packing rules, governing venue) and have an attorney review it before live deposits.
+- [x] **Terms:** Cal's final text (version 2026-10-17.1) is live. Still open: an attorney review before live deposits, if the client wants one.
 
 ## 2. Content and files
 
